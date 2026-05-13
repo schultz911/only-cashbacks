@@ -1,12 +1,6 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
-
 # OnlyCashbacks: Make Your Credit Cards Pay
 
 OnlyCashbacks is an intelligent credit card recommendation engine that helps you maximize your rewards and minimize fees on every purchase. Powered by Google Gemini AI, it automatically categorizes merchants and identifies the best card in your wallet for maximum net value.
-
-View your app in AI Studio: https://ai.studio/apps/9dfa3f2d-5762-4049-a6c8-583bd3c24948
 
 ## ✨ Features
 
@@ -22,14 +16,19 @@ View your app in AI Studio: https://ai.studio/apps/9dfa3f2d-5762-4049-a6c8-583bd
 **Prerequisites:**  Node.js
 
 1. Install dependencies:
+
    ```bash
    npm install
    ```
+
 2. Set the `GEMINI_API_KEY` in `.env` (or `.env.local`) to your Gemini API key:
+
    ```env
    VITE_GEMINI_API_KEY=your_api_key_here
    ```
+
 3. Run the development server:
+
    ```bash
    npm run dev
    ```
@@ -38,5 +37,6 @@ View your app in AI Studio: https://ai.studio/apps/9dfa3f2d-5762-4049-a6c8-583bd
 
 - **Frontend:** React, TypeScript, Vite
 - **Styling:** Tailwind CSS, Framer Motion
-- **AI:** Google GenAI (Gemini)
 - **Icons:** Lucide React
+- **AI:** Google GenAI (Gemini)
+- **IDE:** Antigravity, Google AI Studio
