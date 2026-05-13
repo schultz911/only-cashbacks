@@ -189,7 +189,7 @@ export default function App() {
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100 px-6 py-4">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-[#0095f6] rounded-full flex items-center justify-center shadow-md relative overflow-hidden">
+            <div className="w-10 h-10 md:w-12 md:h-12 shrink-0 bg-[#0095f6] rounded-full flex items-center justify-center shadow-md relative overflow-hidden">
                <svg viewBox="0 0 100 100" className="w-[85%] h-[85%] mt-0.5 ml-0.5" fill="white" xmlns="http://www.w3.org/2000/svg">
                   {/* Outer circle shape similar to the 'O' in OF */}
                   <path d="M 50 15 A 35 35 0 1 0 50 85 A 35 35 0 0 0 50 15 Z M 50 35 A 15 15 0 1 1 50 65 A 15 15 0 0 1 50 35 Z"/>
@@ -197,10 +197,12 @@ export default function App() {
                   <path d="M 68 35 C 75 35 85 40 90 30 C 88 45 80 50 72 50 C 82 50 95 60 92 75 C 80 75 70 65 65 60 L 65 35 Z"/>
                </svg>
             </div>
-            <h1 className="text-xl font-black tracking-tight text-gray-900 leading-none pb-0.5">
-              OnlyCashbacks
-            </h1>
-            <p>Make Your Credit Cards Pay</p>
+            <div className="flex flex-col">
+              <h1 className="text-xl md:text-2xl font-black tracking-tight text-gray-900 leading-none pb-0.5">
+                OnlyCashbacks
+              </h1>
+              <p className="text-[10px] md:text-xs font-bold tracking-widest text-[#0095f6] uppercase">Make Your Credit Cards Pay</p>
+            </div>
           </div>
           <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
             <Info className="w-5 h-5 text-gray-500" />
@@ -211,7 +213,7 @@ export default function App() {
       <main className="max-w-6xl mx-auto px-6 pt-8">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
           {/* Left Column - Input */}
-          <div className="md:col-span-5 space-y-8 sticky top-24">
+          <div className="md:col-span-5 lg:col-span-4 lg:landscape:col-span-5 xl:col-span-5 space-y-8 md:sticky md:top-24">
             <section className="space-y-4">
               <div className="space-y-1">
                 <h2 className="text-2xl font-bold tracking-tight">Where are you spending?</h2>
@@ -257,23 +259,25 @@ export default function App() {
                   </button>
                 </div>
                 
-                <div className="flex flex-wrap gap-3 px-4 py-3 bg-white rounded-2xl border border-gray-100 shadow-sm">
-                   <button 
-                     type="button"
-                     onClick={() => setIsOnline(!isOnline)}
-                     className={cn("flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200", isOnline ? "bg-blue-600 text-white shadow-md shadow-blue-600/20" : "bg-gray-50 text-gray-600 hover:bg-gray-100")}
-                   >
-                     <Globe className="w-4 h-4" /> 
-                     Online
-                   </button>
-                   <button 
-                     type="button"
-                     onClick={() => setIsIntl(!isIntl)}
-                     className={cn("flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200", isIntl ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20" : "bg-gray-50 text-gray-600 hover:bg-gray-100")}
-                   >
-                     <Plane className="w-4 h-4" /> 
-                     International
-                   </button>
+                <div className="flex flex-nowrap md:portrait:flex-wrap items-center justify-between xl:justify-start gap-2 md:gap-3 px-3 md:px-4 py-3 bg-white rounded-2xl border border-gray-100 shadow-sm w-full overflow-x-auto scrollbar-hide">
+                   <div className="flex items-center gap-2 md:gap-3 shrink-0">
+                     <button 
+                       type="button"
+                       onClick={() => setIsOnline(!isOnline)}
+                       className={cn("flex items-center gap-1.5 md:gap-1 px-3 md:px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0", isOnline ? "bg-blue-600 text-white shadow-md shadow-blue-600/20" : "bg-gray-50 text-gray-600 hover:bg-gray-100")}
+                     >
+                       <Globe className="w-4 h-4 shrink-0" /> 
+                       <span className="whitespace-nowrap">Online</span>
+                     </button>
+                     <button 
+                       type="button"
+                       onClick={() => setIsIntl(!isIntl)}
+                       className={cn("flex items-center gap-1.5 md:gap-1 px-3 md:px-3 py-2 -ml-1 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0", isIntl ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20" : "bg-gray-50 text-gray-600 hover:bg-gray-100")}
+                     >
+                       <Plane className="w-4 h-4 shrink-0" /> 
+                       <span className="whitespace-nowrap">International</span>
+                     </button>
+                   </div>
                    
                    {!isOnline && (
                      <motion.button 
@@ -282,52 +286,53 @@ export default function App() {
                        animate={{ opacity: 1, scale: 1 }}
                        exit={{ opacity: 0, scale: 0.95 }}
                        onClick={() => setIsScanToPay(!isScanToPay)}
-                       className={cn("flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ml-auto", isScanToPay ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/20" : "bg-gray-50 text-gray-600 hover:bg-gray-100")}
+                       className={cn("flex items-center justify-center lg:ml-auto gap-2 px-3 md:px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0 md:portrait:w-full lg:w-auto", isScanToPay ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/20" : "bg-gray-50 text-gray-600 hover:bg-gray-100")}
                      >
-                       <QrCode className="w-4 h-4" /> 
-                       Scan to Pay
+                       <QrCode className="w-4 h-4 shrink-0" /> 
+                       <span className="hidden max-md:landscape:inline md:portrait:inline xl:inline whitespace-nowrap">Scan & Pay</span>
                      </motion.button>
                    )}
                 </div>
               </form>
             </section>
 
-            {/* Deprecated Quick Categories shortcut area */}
-
-            {/* Redemption Reminder Section */}
-            <section className="bg-white rounded-2xl p-5 border border-indigo-100 shadow-sm space-y-3">
-               <div className="flex items-center gap-2">
-                 <div className="p-1.5 bg-indigo-50 rounded-lg">
-                   <Wallet className="w-4 h-4 text-indigo-600" />
-                 </div>
-                 <h3 className="font-bold text-gray-900">Redemption Reminder</h3>
-               </div>
-               <p className="text-xs text-gray-600 leading-relaxed font-medium">
-                 Don't forget to redeem flat points and balances across your ecosystems. Small balances add up!
-               </p>
-               <ul className="text-xs space-y-2 text-gray-700 mt-2">
-                  <li className="flex justify-between items-center">
-                    <span className="font-semibold">Kiwi Neon</span>
-                    <span className="text-gray-500">Scan & Pay points</span>
-                  </li>
-                  <li className="flex justify-between items-center">
-                    <span className="font-semibold">Tata Neu</span>
-                    <span className="text-gray-500">NeuCoins</span>
-                  </li>
-                  <li className="flex justify-between items-center">
-                    <span className="font-semibold">Amazon Pay</span>
-                    <span className="text-gray-500">Wallet balance</span>
-                  </li>
-                  <li className="flex justify-between items-center">
-                    <span className="font-semibold">OneCard</span>
-                    <span className="text-gray-500">Reward points</span>
-                  </li>
-               </ul>
+            {/* Vouchers (Desktop) */}
+            <section className="space-y-4 hidden md:block">
+              <div className="space-y-1">
+                <h2 className="text-xl font-bold tracking-tight">Voucher Portals</h2>
+                <p className="text-gray-500 text-xs">Verify your portal to check card pairing.</p>
+              </div>
+              <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col gap-4 min-h-[180px]">
+                <div className="relative bg-gray-50 rounded-xl border border-gray-200 focus-within:ring-2 focus-within:ring-blue-500 hover:bg-gray-100 transition-colors">
+                  <CustomSelect
+                    value={selectedVoucherPortal}
+                    onChange={setSelectedVoucherPortal}
+                    options={Object.keys(VOUCHER_PORTALS).map(portal => ({ label: portal === 'tata neu' ? 'Tata Neu' : portal.charAt(0).toUpperCase() + portal.slice(1), value: portal }))}
+                    placeholder="Select a portal..."
+                    className="w-full px-4 py-3 font-medium text-gray-800"
+                    dropdownClassName="w-full left-0 right-0 top-full"
+                  />
+                </div>
+                <div className="p-4 bg-purple-50 border border-purple-100 rounded-xl flex items-center justify-between mt-auto gap-3 flex-wrap">
+                   <span className="text-sm font-semibold text-purple-900 shrink-0">Best Card:</span>
+                   {selectedVoucherPortal ? (
+                     <span className="text-sm font-bold text-purple-700 bg-white px-3 py-1 rounded-lg shadow-sm text-right">
+                       {VOUCHER_PORTALS[selectedVoucherPortal]}
+                     </span>
+                   ) : (
+                     <span className="text-sm font-medium text-purple-700/60 italic">
+                       Pending selection
+                     </span>
+                   )}
+                </div>
+              </div>
             </section>
+
+            {/* Deprecated Quick Categories shortcut area */}
           </div>
 
           {/* Right Column - Results */}
-          <div className="md:col-span-7 space-y-8 min-h-0">
+          <div className="md:col-span-7 lg:col-span-8 lg:landscape:col-span-7 xl:col-span-7 space-y-8 min-h-0">
             <AnimatePresence mode="wait">
               {recommendation ? (
                 <motion.section
@@ -342,7 +347,7 @@ export default function App() {
                     </h3>
                   </div>
                   
-                  <div className="grid md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 landscape:grid-cols-2 lg:grid-cols-2 gap-6">
                     <div className="space-y-4">
                       <CardItem 
                         layoutId={`card-rec-${recommendation.bestCard.id}`}
@@ -391,7 +396,7 @@ export default function App() {
                   {recommendation.alternatives.length > 0 && (
                     <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm mt-6">
                       <h4 className="text-sm uppercase font-bold text-gray-400 mb-4 tracking-wider">Top Alternatives</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 landscape:grid-cols-2 md:grid-cols-3 gap-4">
                         {recommendation.alternatives.map((alt) => (
                           <div key={alt.card.id} className="p-3 bg-gray-50 rounded-xl border border-gray-100">
                              <div className="font-semibold text-gray-800 mb-1 truncate">{alt.card.name}</div>
@@ -415,14 +420,14 @@ export default function App() {
               )}
             </AnimatePresence>
             
-            <div className="grid md:grid-cols-2 gap-6">
-              {/* Vouchers */}
-              <section className="space-y-4">
+            <div className="w-full flex flex-col gap-8 md:gap-6">
+              {/* Vouchers (Mobile) */}
+              <section className="space-y-4 md:hidden">
                 <div className="space-y-1">
                   <h2 className="text-xl font-bold tracking-tight">Voucher Portals</h2>
                   <p className="text-gray-500 text-xs">Verify your portal to check card pairing.</p>
                 </div>
-                <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm space-y-4 h-[180px]">
+                <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col gap-4 min-h-[180px]">
                   <div className="relative bg-gray-50 rounded-xl border border-gray-200 focus-within:ring-2 focus-within:ring-blue-500 hover:bg-gray-100 transition-colors">
                     <CustomSelect
                       value={selectedVoucherPortal}
@@ -433,10 +438,10 @@ export default function App() {
                       dropdownClassName="w-full left-0 right-0 top-full"
                     />
                   </div>
-                  <div className="p-4 bg-purple-50 border border-purple-100 rounded-xl flex items-center justify-between">
-                     <span className="text-sm font-semibold text-purple-900">Best Card:</span>
+                  <div className="p-4 bg-purple-50 border border-purple-100 rounded-xl flex items-center justify-between mt-auto gap-3 flex-wrap">
+                     <span className="text-sm font-semibold text-purple-900 shrink-0">Best Card:</span>
                      {selectedVoucherPortal ? (
-                       <span className="text-sm font-bold text-purple-700 bg-white px-3 py-1 rounded-lg shadow-sm">
+                       <span className="text-sm font-bold text-purple-700 bg-white px-3 py-1 rounded-lg shadow-sm text-right">
                          {VOUCHER_PORTALS[selectedVoucherPortal]}
                        </span>
                      ) : (
@@ -449,17 +454,17 @@ export default function App() {
               </section>
 
               {/* Lounge Access Tip */}
-              <section className="bg-gradient-to-tr from-gray-900 via-gray-800 to-gray-900 rounded-3xl p-6 text-white overflow-hidden relative shadow-lg h-[180px] flex flex-col justify-center mt-9 md:mt-0 lg:mt-0 xl:mt-0 border border-gray-700">
-                <div className="space-y-3 relative z-10 w-full h-full flex flex-col justify-center">
+              <section className="bg-gradient-to-tr from-gray-900 via-gray-800 to-gray-900 rounded-3xl p-6 py-6 md:py-8 text-white overflow-hidden relative shadow-lg min-h-[140px] flex flex-col sm:flex-row sm:items-center justify-between mt-6 md:mt-0 lg:mt-0 xl:mt-0 border border-gray-700">
+                <div className="space-y-3 relative z-10 sm:max-w-[70%]">
                   <div className="flex items-center gap-2">
                      <Plane className="w-5 h-5 text-gray-300 drop-shadow" />
                      <h4 className="text-lg font-bold tracking-wide">Lounge Tracker</h4>
                   </div>
-                  <p className="text-xs text-gray-300 max-w-[85%] leading-relaxed">
+                  <p className="text-xs text-gray-300 leading-relaxed">
                     You have {CARD_DATA.filter(c => c.benefits.some(b => b.type === 'lounge')).length} cards with tracking for lounge access.
                   </p>
-                  <button onClick={() => setIsLoungeOpen(true)} className="bg-white/10 hover:bg-white/20 border border-white/10 text-white text-xs font-bold px-5 py-2.5 rounded-full mt-auto backdrop-blur-sm transition-all w-fit">View Passes</button>
                 </div>
+                <button onClick={() => setIsLoungeOpen(true)} className="relative z-10 bg-white/10 hover:bg-white/20 border border-white/10 text-white text-xs font-bold px-5 py-2.5 rounded-full mt-4 sm:mt-0 backdrop-blur-sm transition-all w-fit shrink-0">View Passes</button>
                 <Plane className="absolute -bottom-10 -right-8 w-48 h-48 text-white opacity-[0.03] rotate-12 pointer-events-none" />
               </section>
             </div>
@@ -478,8 +483,9 @@ export default function App() {
           
           {/* We turn this into a horizontal scrolling container with a fade mask on the edges if there's overflow, or just a nice grid */}
           <div className="relative">
-             <div className="absolute top-0 right-0 bottom-0 w-12 bg-gradient-to-l from-[#F5F5F7] to-transparent z-10 pointer-events-none md:hidden"></div>
-             <div className="flex sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 overflow-x-auto pt-8 pb-4 px-1 snap-x scrollbar-hide">
+             <div className="absolute top-0 left-0 bottom-0 w-0.5 bg-gradient-to-r from-[#F5F5F7] to-transparent z-10 pointer-events-none sm:hidden"></div>
+             <div className="absolute top-0 right-0 bottom-0 w-0.5 bg-gradient-to-l from-[#F5F5F7] to-transparent z-10 pointer-events-none sm:hidden"></div>
+             <div className="flex sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 overflow-x-auto pt-8 pb-4 px-1 snap-x scrollbar-hide">
                {CARD_DATA.map((card) => (
                  <div key={card.id} className="snap-start shrink-0 w-72 sm:w-auto">
                    <CardItem layoutId={`card-list-${card.id}`} card={card} onClick={() => setSelectedCardForDetails({ card, source: 'list' })} className="h-full shadow-sm hover:shadow-md transition-shadow cursor-pointer" isExhausted={exhaustedCards[card.id]} />
@@ -488,6 +494,37 @@ export default function App() {
              </div>
           </div>
         </div>
+
+        {/* Redemption Reminder Section */}
+        <section className="mt-12 bg-white rounded-2xl p-5 border border-indigo-100 shadow-sm max-w-lg mx-auto">
+           <div className="flex items-center gap-2 mb-3">
+             <div className="p-1.5 bg-indigo-50 rounded-lg">
+               <Wallet className="w-4 h-4 text-indigo-600" />
+             </div>
+             <h3 className="font-bold text-gray-900">Redemption Reminder</h3>
+           </div>
+           <p className="text-xs text-gray-600 leading-relaxed font-medium mb-3">
+             Don't forget to redeem flat points and balances across your ecosystems. Small balances add up!
+           </p>
+           <ul className="text-xs space-y-2 text-gray-700">
+              <li className="flex justify-between items-center bg-gray-50 p-2 rounded-lg">
+                <span className="font-semibold">Kiwi Neon</span>
+                <span className="text-gray-500">Scan & Pay points</span>
+              </li>
+              <li className="flex justify-between items-center bg-gray-50 p-2 rounded-lg">
+                <span className="font-semibold">Tata Neu</span>
+                <span className="text-gray-500">NeuCoins</span>
+              </li>
+              <li className="flex justify-between items-center bg-gray-50 p-2 rounded-lg">
+                <span className="font-semibold">Amazon Pay</span>
+                <span className="text-gray-500">Wallet balance</span>
+              </li>
+              <li className="flex justify-between items-center bg-gray-50 p-2 rounded-lg">
+                <span className="font-semibold">OneCard</span>
+                <span className="text-gray-500">Reward points</span>
+              </li>
+           </ul>
+        </section>
       </main>
 
       <AnimatePresence>
@@ -651,8 +688,8 @@ export default function App() {
                 </button>
               </div>
               
-              <div className="flex-1 flex flex-col p-6 overflow-hidden">
-                  <div className="mb-6 relative" style={{ zIndex: 100 }}>
+              <div className="flex-1 flex flex-col p-6 overflow-hidden min-h-0">
+                  <div className="mb-6 relative shrink-0" style={{ zIndex: 100 }}>
                      <CustomSelect 
                        value={loungeTab}
                        onChange={(val: any) => setLoungeTab(val)}
@@ -665,7 +702,7 @@ export default function App() {
                      />
                   </div>
                   
-                  <div className="flex-1 overflow-y-auto flex flex-col gap-3 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
+                  <div className="flex-1 overflow-y-auto flex flex-col gap-3 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent pb-10">
                       {CARD_DATA.filter(c => c.benefits.some(b => b.type === 'lounge' && b.category === loungeTab))
                         .map(card => {
                            const b = card.benefits.find(x => x.type === 'lounge' && x.category === loungeTab)!;
@@ -710,6 +747,11 @@ export default function App() {
           </>
         )}
       </AnimatePresence>
+
+      <footer className="text-center py-6 mt-8 text-xs text-gray-400 font-medium px-6">
+        <p>Crafted by schultz911. Coded with Gemini.</p>
+        <p>For non-commercial use only.</p>
+      </footer>
     </div>
   );
 }

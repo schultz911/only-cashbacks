@@ -52,7 +52,7 @@ export const LoungeTrackerItem: React.FC<LoungeTrackerItemProps> = ({
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       className={cn(
-        "relative p-4 rounded-2xl flex flex-col gap-2 overflow-hidden transition-all duration-500 cursor-pointer shadow-sm border",
+        "relative p-4 rounded-2xl flex flex-col gap-2 overflow-hidden transition-all duration-500 cursor-pointer shadow-sm border shrink-0",
         isExhausted 
           ? "bg-gray-100 grayscale opacity-80 border-gray-200" 
           : isVerified && passesCount > 0 
