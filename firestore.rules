@@ -1,0 +1,33 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Primitives
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isSignedIn() { return request.auth != null; }
+
+    // Validation
+    function isValidUserProfile(data) {
+      let validUserId = data.userId is string && data.userId == request.auth.uid;
+      let validExhaustedCards = !('exhaustedCards' in data) || data.exhaustedCards is map;
+      let validLoungePassesUsed = !('loungePassesUsed' in data) || data.loungePassesUsed is map;
+      let validLoungeMilestonesVerified = !('loungeMilestonesVerified' in data) || data.loungeMilestonesVerified is map;
+      let validOfferUsage = !('offerUsage' in data) || data.offerUsage is map;
+      
+      return validUserId && validExhaustedCards && validLoungePassesUsed && validLoungeMilestonesVerified && validOfferUsage;
+    }
+
+    match /users/{userId} {
+      allow get, list: if isSignedIn() && request.auth.uid == userId && isValidId(userId);
+      allow create: if isSignedIn() && request.auth.uid == userId && isValidId(userId) && isValidUserProfile(incoming());
+      allow update: if isSignedIn() && request.auth.uid == userId && isValidId(userId) && isValidUserProfile(incoming()) && incoming().userId == existing().userId;
+      allow delete: if isSignedIn() && request.auth.uid == userId && isValidId(userId);
+    }
+  }
+}

@@ -3,10 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { GoogleGenAI, Type } from "@google/genai";
 import { MerchantInfo } from "../types";
-
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
 
 const EXHAUSTIVE_MERCHANT_MAPPINGS = [
   // Swiggy & Zomato Ecosystem
@@ -129,48 +126,21 @@ export async function categorizeMerchant(merchantName: string): Promise<Merchant
     return localMatch;
   }
 
-  // If local resolution fails and we have no API key, use fallback heuristics
-  if (!process.env.GEMINI_API_KEY) {
-     return {
-        name: merchantName,
-        category: "General",
-        isOnline: true,
-        // Extremely simple heuristic for name detection
-        isP2P: merchantName.split(' ').length <= 2 && !merchantName.toLowerCase().match(/pvt|ltd|limited|llp|inc|co/i)
-     };
-  }
-
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: `Analyze this transaction destination: "${merchantName}". 
-      Return the broad category (Food, Grocery, E-commerce, Fuel, Travel, Utilities, Dining, Gaming, Entertainment, etc.).
-      Determine if it is online or offline.
-      Also flag if it seems to be a personal P2P UPI payment (like paying a friend, a person's name) versus a business/merchant.
-      IMPORTANT PLATFORM MATCHING:
-      - If it is part of the Tata ecosystem (e.g. Croma, Westside, Zudio, BigBasket, 1mg, Qmin, IHCL, Tata Cliq, Taj), set 'platform' exactly to "Tata Brands".
-      - If it is a Swiggy property (Swiggy, Instamart, Dineout), set 'platform' to "Swiggy".
-      - Otherwise, if it's a known platform (Amazon, Flipkart, Cleartrip, Nykaa, etc.), put that in 'platform'.`,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            name: { type: Type.STRING },
-            category: { type: Type.STRING },
-            isOnline: { type: Type.BOOLEAN },
-            isP2P: { type: Type.BOOLEAN, description: "True if this is a person-to-person transfer, false if a merchant/business" },
-            platform: { type: Type.STRING }
-          },
-          required: ["name", "category", "isOnline", "isP2P"]
-        }
-      }
+    const response = await fetch("/api/categorize", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ merchantName })
     });
 
-    const result = JSON.parse(response.text || "{}");
+    if (!response.ok) {
+       throw new Error(`Server returned ${response.status}`);
+    }
+
+    const result = await response.json();
     return result as MerchantInfo;
   } catch (error) {
-    console.error("Gemini Error:", error);
+    console.error("API Error:", error);
     return {
       name: merchantName,
       category: "Other",

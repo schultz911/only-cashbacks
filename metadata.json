@@ -1,5 +1,5 @@
 {
-  "name": "SmartCard Recommender",
+  "name": "OnlyCashbacks",
   "description": "Maximize your rewards with AI-driven card recommendations for every merchant. Track cashback, lounge access, and exclusive offers.",
   "requestFramePermissions": [
     "geolocation"

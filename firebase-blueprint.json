@@ -1,0 +1,44 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Stores user tracking data for cards, lounge passes, and offers",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user."
+        },
+        "exhaustedCards": {
+          "type": "object",
+          "description": "Map of card ID to boolean indicating if max spend is exhausted"
+        },
+        "loungePassesUsed": {
+          "type": "object",
+          "description": "Map of card ID + lounge tab to number of passes used"
+        },
+        "loungeMilestonesVerified": {
+          "type": "object",
+          "description": "Map of card ID + lounge tab to boolean indicating if milestone is met"
+        },
+        "offerUsage": {
+          "type": "object",
+          "description": "Map of card ID + category + value to number of uses"
+        },
+        "updatedAt": {
+          "type": "number",
+          "description": "Timestamp of last update."
+        }
+      },
+      "required": ["userId"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/UserProfile"
+      },
+      "description": "User profile data including cards tracking."
+    }
+  }
+}
