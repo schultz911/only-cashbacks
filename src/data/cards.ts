@@ -18,18 +18,18 @@ export const CARD_DATA: Card[] = [
     baseRewardRate: 0,
     benefits: [
       { type: 'cashback', category: 'Swiggy', value: '10%', percentValue: 10, description: 'Cashback on food delivery, dining, and grocery spends on Swiggy.', minSpend: 249, maxSpend: 15000, fallbackRate: 0 },
-      { type: 'cashback', category: 'Online', value: '5%', percentValue: 5, description: '5% cashback on online shopping. Plus 5% off on Nykaa and up to 20% off on Cleartrip (Code: CTSWHDFC).', minSpend: 100, maxSpend: 30000 },
+      { type: 'cashback', category: 'Online', value: '5%', percentValue: 5, description: 'Cashback on online shopping. Plus 5% off on Nykaa and up to 20% off on Cleartrip (Code: CTSWHDFC).', minSpend: 100, maxSpend: 30000 },
       { type: 'cashback', category: 'All Spends', value: '1%', percentValue: 1, description: 'Cashback on all eligible domestic transactions.', maxSpend: 100000, isHidden: true },
       { type: 'exclusion', category: 'Gift Card', value: '0%', description: 'Gift Cards' },
-      { type: 'exclusion', category: 'Gaming', value: '0%', description: 'Gaming' },
-      { type: 'exclusion', category: 'Government', value: '0%', description: 'Government' },
-      { type: 'exclusion', category: 'Wallet', value: '0%', description: 'Wallets & Amazon Pay Balance' },
+      { type: 'exclusion', category: 'Gaming', value: '0%', description: 'Online Gaming' },
+      { type: 'exclusion', category: 'Government', value: '0%', description: 'Government Transactions' },
+      { type: 'exclusion', category: 'Wallet', value: '0%', description: 'Wallet Loads & Amazon Pay Balance' },
       { type: 'exclusion', category: 'Rent', value: '0%', description: 'Rent' },
       { type: 'exclusion', category: 'Education', value: '0%', description: 'Education' },
       { type: 'exclusion', category: 'Insurance', value: '0%', description: 'Insurance' },
       { type: 'exclusion', category: 'Fuel', value: '0%', description: 'Fuel' },
-      { type: 'exclusion', category: 'EMI', value: '0%', description: 'EMI' },
-      { type: 'exclusion', category: 'Cash Withdrawal', value: '0%', description: 'Cash Withdrawal' },
+      { type: 'exclusion', category: 'Finance', value: '0%', description: 'Loan Repayments & EMI' },
+      { type: 'exclusion', category: 'ATM', value: '0%', description: 'ATM Withdrawals' },
     ]
   },
   {
@@ -46,15 +46,13 @@ export const CARD_DATA: Card[] = [
       { type: 'cashback', category: 'Dining', value: '10%', percentValue: 10, description: 'Cashback on food delivery, dining, and groceries on all online and offline merchants.', maxSpend: 10000, fallbackRate: 0 },
       { type: 'lounge', category: 'Domestic', value: '1/qtr', description: 'Complimentary domestic lounge access.' },
       { type: 'exclusion', category: 'Fuel', value: '0%', description: 'Fuel' },
-      { type: 'exclusion', category: 'Wallet', value: '0%', description: 'Wallets' },
+      { type: 'exclusion', category: 'Wallet', value: '0%', description: 'Wallet Loads' },
       { type: 'exclusion', category: 'Rent', value: '0%', description: 'Rent' },
-      { type: 'exclusion', category: 'Property Management', value: '0%', description: 'Property Management' },
       { type: 'exclusion', category: 'Education', value: '0%', description: 'Education' },
-      { type: 'exclusion', category: 'Government', value: '0%', description: 'Government Services' },
+      { type: 'exclusion', category: 'Government', value: '0%', description: 'Government Transactions' },
       { type: 'exclusion', category: 'Insurance', value: '0%', description: 'Insurance' },
-      { type: 'exclusion', category: 'Jeweler', value: '0%', description: 'Jewelers' },
+      { type: 'exclusion', category: 'Jewellery', value: '0%', description: 'Jewellery' },
       { type: 'exclusion', category: 'Toll', value: '0%', description: 'Tolls' },
-      { type: 'exclusion', category: 'Wholesale Club', value: '0%', description: 'Wholesale Clubs' }
     ]
   },
   {
@@ -77,11 +75,11 @@ export const CARD_DATA: Card[] = [
       { type: 'lounge', category: 'International', value: '1/qtr', description: 'Complimentary through Priority Pass.' },
       { type: 'exclusion', category: 'Fuel', value: '0%', description: 'Fuel' },
       { type: 'exclusion', category: 'Wallet', value: '0%', description: 'Wallet Loads' },
-      { type: 'exclusion', category: 'Cash Withdrawal', value: '0%', description: 'Cash Advances' },
+      { type: 'exclusion', category: 'ATM', value: '0%', description: 'ATM Withdrawals' },
       { type: 'exclusion', category: 'Rent', value: '0%', description: 'Rent' },
       { type: 'exclusion', category: 'Government', value: '0%', description: 'Government Transactions' },
-      { type: 'exclusion', category: 'Gaming', value: '0%', description: 'Online Gaming (MCC 5816)' },
-      { type: 'exclusion', category: 'Education', value: '0%', description: 'Education (Third-party platforms)' }
+      { type: 'exclusion', category: 'Gaming', value: '0%', description: 'Online Gaming' },
+      { type: 'exclusion', category: 'Education', value: '0%', description: 'Education' }
     ]
   },
   {
@@ -99,15 +97,15 @@ export const CARD_DATA: Card[] = [
       { type: 'cashback', category: 'Offline', value: '1%', percentValue: 1, description: 'Cashback on offline transactions.', maxSpend: 200000 },
       { type: 'exclusion', category: 'Rent', value: '0%', description: 'Rent' },
       { type: 'exclusion', category: 'Fuel', value: '0%', description: 'Fuel' },
-      { type: 'exclusion', category: 'Wallet', value: '0%', description: 'Wallets & Amazon Pay Balance' },
+      { type: 'exclusion', category: 'Wallet', value: '0%', description: 'Wallet Loads & Amazon Pay Balance' },
       { type: 'exclusion', category: 'Utilities', value: '0%', description: 'Utilities' },
       { type: 'exclusion', category: 'Insurance', value: '0%', description: 'Insurance' },
       { type: 'exclusion', category: 'Education', value: '0%', description: 'Education' },
       { type: 'exclusion', category: 'Jewellery', value: '0%', description: 'Jewellery' },
       { type: 'exclusion', category: 'Railways', value: '0%', description: 'Railways' },
-      { type: 'exclusion', category: 'Gaming', value: '0%', description: 'Digital Gaming Platforms (MCC 7993, 7994, 5816)' },
-      { type: 'exclusion', category: 'Toll', value: '0%', description: 'Toll Payments (MCC 4784)' },
-      { type: 'exclusion', category: 'Government', value: '0%', description: 'Government Transactions (MCC 9222, 9311, 9402)' }
+      { type: 'exclusion', category: 'Gaming', value: '0%', description: 'Online Gaming' },
+      { type: 'exclusion', category: 'Toll', value: '0%', description: 'Toll Payments' },
+      { type: 'exclusion', category: 'Government', value: '0%', description: 'Government Transactions' }
     ]
   },
   {
@@ -122,13 +120,13 @@ export const CARD_DATA: Card[] = [
     baseRewardRate: 0,
     benefits: [
       { type: 'cashback', category: 'All Spends', value: '5%', percentValue: 5, capPerTxn: 100, description: 'Cashback on online and offline spends. Forex-positive.', maxSpend: 10000 },
-      { type: 'offer', category: 'Dining', value: 'Zomato', percentValue: 20, capPerTxn: 750, minSpend: 2000, usageLimit: 1, description: '20% discount on Zomato Dining up to Rs. 750 once a month on min spend of Rs. 2,000.' },
-      { type: 'offer', category: 'Movies', value: 'BookMyShow', percentValue: 50, capPerTxn: 300, minSpend: 400, usageLimit: 1, description: '1+1 on movie tickets booked through BookMyShow up to Rs. 300 once a month on min spend of Rs. 400.' },
+      { type: 'offer', category: 'Dining', value: 'District', percentValue: 20, capPerTxn: 750, minSpend: 2000, usageLimit: 1, description: '20% discount up to ₹750 on a min spend of ₹2,000 once a month.' },
+      { type: 'offer', category: 'Movies', value: 'BookMyShow', percentValue: 50, capPerTxn: 300, minSpend: 400, usageLimit: 1, description: 'Buy 1 Get 1 on movie tickets up to ₹300 on a min spend of ₹400 once a month.' },
       { type: 'exclusion', category: 'UPI', value: '0%', description: 'UPI Payments' },
       { type: 'exclusion', category: 'ATM', value: '0%', description: 'ATM Withdrawals' },
       { type: 'exclusion', category: 'Wallet', value: '0%', description: 'Wallet Loads' },
-      { type: 'exclusion', category: 'EMI/Loan', value: '0%', description: 'Loan Repayments' },
-      { type: 'exclusion', category: 'Utilities', value: '0%', description: 'Utility & Credit Card Bill Payments' },
+      { type: 'exclusion', category: 'Finance', value: '0%', description: 'Loan Repayments and EMI' },
+      { type: 'exclusion', category: 'Utilities', value: '0%', description: 'Utilities' },
       { type: 'lounge', category: 'Domestic', value: '1/qtr', description: 'Complimentary domestic lounge access.' }
     ]
   },
@@ -142,14 +140,14 @@ export const CARD_DATA: Card[] = [
     forexMarkup: 3.5,
     baseRewardRate: 0,
     benefits: [
-      { type: 'upi', category: 'Scan & Pay', value: '2-5%', percentValue: 2, description: 'Cashback on Scan & pay UPI spends. Rate increases to 5% with milestones.' },
-      { type: 'upi', category: 'Online', value: '0.5%', percentValue: 0.5, description: 'Cashback on online payments via Kiwi App. Counts towards milestones.' },
+      { type: 'upi', category: 'Scan & Pay', value: '2-5%', percentValue: 2, description: 'Cashback on Scan & Pay UPI spends. Rate increases to 5% with milestones.' },
+      { type: 'cashback', category: 'Online', value: '0.5%', percentValue: 0.5, description: 'Cashback on online payments via Kiwi App. Counts towards milestones.' },
       { type: 'exclusion', category: 'Telecom', value: '0%', description: 'Telecom' },
       { type: 'exclusion', category: 'Utilities', value: '0%', description: 'Utilities' },
       { type: 'exclusion', category: 'Jewellery', value: '0%', description: 'Jewellery' },
       { type: 'exclusion', category: 'Rent', value: '0%', description: 'Rent' },
       { type: 'exclusion', category: 'Insurance', value: '0%', description: 'Insurance' },
-      { type: 'exclusion', category: 'Government', value: '0%', description: 'Government Services' },
+      { type: 'exclusion', category: 'Government', value: '0%', description: 'Government Transactions' },
       { type: 'lounge', category: 'Domestic', value: '1/milestone', description: 'Redeem lounge voucher from the Kiwi app after hitting every 50k spend milestone.' }
     ]
   },
@@ -165,7 +163,7 @@ export const CARD_DATA: Card[] = [
     baseRewardRate: 0,
     benefits: [
       { type: 'cashback', category: 'Fuel', value: '5%', percentValue: 5, capPerTxn: 50, description: 'Reward points up to ₹50 and surcharge reversal on fuel transactions.' },
-      { type: 'offer', category: 'Around Me', value: '5%', percentValue: 5, capPerTxn: 50, description: 'Reward points up to ₹50 on hyper-local offers.' }
+      { type: 'cashback', category: 'Around Me', value: '5%', percentValue: 5, capPerTxn: 50, description: 'Reward points up to ₹50 on hyper-local offers.' }
     ]
   },
   {
@@ -180,7 +178,7 @@ export const CARD_DATA: Card[] = [
     baseRewardRate: 0,
     benefits: [
       { type: 'forex', category: 'Forex', value: '0%', percentValue: 0, description: 'No forex fees on international spends.' },
-      { type: 'offer', category: 'International ATM', value: '100%', description: 'Niyo points back on one international ATM withdrawal per quarter.' },
+      { type: 'offer', category: 'International', value: 'ATM', percentValue: 100, capPerTxn: 500, usageLimit: 1, description: '100% back as Niyo points up to ₹500 on one international ATM withdrawal per quarter.' },
       { type: 'lounge', category: 'International', value: '1/qtr', description: 'Generate voucher on the Niyo app after international spends of ₹75k.' }
     ]
   },
@@ -195,10 +193,10 @@ export const CARD_DATA: Card[] = [
     forexMarkup: 3.5,
     baseRewardRate: 0,
     benefits: [
-      { type: 'offer', category: 'Swiggy', value: 'Flat ₹120', percentValue: 24, minSpend: 500, capPerTxn: 120, usageLimit: 2, description: 'Flat ₹120 off on Swiggy food orders over ₹500 (Code: AXIS120).' },
-      { type: 'offer', category: 'Movies', value: '1+1', percentValue: 50, capPerTxn: 200, usageLimit: 1, description: 'Buy 1 Get 1 free on movie tickets via District up to ₹200 (Code: AXIS200).' },
-      { type: 'offer', category: 'Fashion', value: 'Ajio', percentValue: 33, minSpend: 2999, capPerTxn: 1000, usageLimit: 1, description: 'Up to ₹1,000 off on Ajio orders over ₹2,999 (Code: AJIOAXISMZ).' },
-      { type: 'offer', category: 'Dining', value: '15%', percentValue: 15, minSpend: 2500, capPerTxn: 500, usageLimit: 1, description: '15% discount on EazyDiner up to ₹500 on min bill of ₹2,500.' },
+      { type: 'offer', category: 'Food', value: 'Swiggy', percentValue: 24, minSpend: 500, capPerTxn: 120, usageLimit: 2, description: 'Flat ₹120 off on orders over ₹500 twice a month (Code: AXIS120).' },
+      { type: 'offer', category: 'Movies', value: 'District', percentValue: 50, capPerTxn: 200, usageLimit: 1, description: 'Buy 1 Get 1 on movie tickets up to ₹200 once a month (Code: AXIS200).' },
+      { type: 'offer', category: 'Fashion', value: 'Ajio', percentValue: 33, minSpend: 2999, capPerTxn: 1000, description: 'Up to ₹1,000 off on orders over ₹2,999 (Code: AJIOAXISMZ).' },
+      { type: 'offer', category: 'Dining', value: 'EazyDiner', percentValue: 15, minSpend: 2500, capPerTxn: 500, usageLimit: 1, description: '15% off up to ₹500 on min bill of ₹2,500 once a month.' },
       { type: 'exclusion', category: 'Rent', value: '0%', description: 'Rent' },
       { type: 'exclusion', category: 'Wallet', value: '0%', description: 'Wallet Loads' },
       { type: 'exclusion', category: 'Fuel', value: '0%', description: 'Fuel' },
@@ -221,9 +219,9 @@ export const CARD_DATA: Card[] = [
     forexMarkup: 3.5,
     baseRewardRate: 0,
     benefits: [
-      { type: 'offer', category: 'Movies', value: '25%', percentValue: 25, usageLimit: 1, description: 'Cashback points up to ₹250 on tickets booked through BookMyShow per calendar month.', maxSpend: 1000 },
-      { type: 'offer', category: 'Swiggy', value: '5%', percentValue: 5, description: 'Cashback points up to ₹150 on spends in the Swiggy app per calendar month.', maxSpend: 3000 },
-      { type: 'cashback', category: 'Online', value: '1%', percentValue: 1, description: 'Cashback points on all online spends to be redeemed through the HDFC Banking app.', maxSpend: 75000 },
+      { type: 'offer', category: 'Movies', value: 'BookMyShow', percentValue: 25, usageLimit: 1, description: '25% cashback points up to ₹250 on tickets per calendar month.', maxSpend: 1000 },
+      { type: 'offer', category: 'Food', value: 'Swiggy', percentValue: 5, usageLimit: 1, description: '5% cashback points up to ₹150 per calendar month.', maxSpend: 3000 },
+      { type: 'cashback', category: 'Online', value: '1%', percentValue: 1, description: 'Cashback points on all eligible online spends.', maxSpend: 75000 },
       { type: 'lounge', category: 'Domestic', value: '2/qtr', description: 'Generate voucher on the SmartBuy portal on quarterly spends of 10k.' }
     ]
   },

@@ -678,12 +678,12 @@ export default function App() {
               <span className="text-gray-500">Wallet balance</span>
             </li>
             <li className="flex justify-between items-center bg-gray-50 p-2 rounded-lg">
-              <span className="font-semibold">Imperia Debit</span>
-              <span className="text-gray-500">Cashback points</span>
-            </li>
-            <li className="flex justify-between items-center bg-gray-50 p-2 rounded-lg">
               <span className="font-semibold">OneCard</span>
               <span className="text-gray-500">Reward points</span>
+            </li>
+            <li className="flex justify-between items-center bg-gray-50 p-2 rounded-lg">
+              <span className="font-semibold">Imperia Platinum</span>
+              <span className="text-gray-500">Cashback points</span>
             </li>
           </ul>
         </section>
@@ -802,7 +802,7 @@ export default function App() {
                       Earned: ₹{kiwiNeonEarnRate === 2 ? '500' : kiwiNeonEarnRate === 3 ? '1,500' : kiwiNeonEarnRate === 4 ? '4,000' : '7,500'}
                     </span>
                   </div>
-                  
+
                   <div className="relative pt-6 pb-2 px-1">
                     <div className="flex justify-between absolute top-0 left-0 right-0 px-2 text-[10px] font-bold text-white/70">
                       <span>25k</span>
@@ -941,7 +941,7 @@ export default function App() {
                       const used = loungePassesUsed[`${card.id}-${loungeTab}`] || 0;
                       const passesRemaining = Math.max(0, parsed.passesCount - used);
                       const isExhausted = parsed.passesCount > 0 && passesRemaining === 0;
-                      const isVerified = card.id === 'kiwi-neon' ? true : (loungeMilestonesVerified[`${card.id}-${loungeTab}`] ?? parsed.isFree);
+                      const isVerified = card.id === 'kiwi-neon' ? (card.kiwiPasses > 0) : (loungeMilestonesVerified[`${card.id}-${loungeTab}`] ?? parsed.isFree);
                       return { card, b, parsed, isExhausted, isVerified };
                     })
                     .sort((a, b) => {
