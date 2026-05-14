@@ -14,7 +14,7 @@ import { CardItem } from './components/CardItem';
 import { LoungeTrackerItem } from './components/LoungeTrackerItem';
 import { cn } from './lib/utils';
 import { auth, googleProvider, db, handleFirestoreError, OperationType } from './firebase';
-import { signInWithPopup, onAuthStateChanged, signOut, User } from 'firebase/auth';
+import { signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut, User } from 'firebase/auth';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 
 const CustomSelect = ({ value, onChange, options, placeholder, className, dropdownClassName }: any) => {
@@ -204,8 +204,15 @@ export default function App() {
   const handleLogin = async () => {
     try {
       await signInWithPopup(auth, googleProvider);
-    } catch (error) {
-      console.error('Login error:', error);
+    } catch (error: any) {
+      console.error('Login error with popup:', error);
+      if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+        try {
+          await signInWithRedirect(auth, googleProvider);
+        } catch (redirectError) {
+          console.error('Redirect login error:', redirectError);
+        }
+      }
     }
   };
 
@@ -419,7 +426,10 @@ export default function App() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setIsIntl(!isIntl)}
+                      onClick={() => {
+                        setIsIntl(!isIntl);
+                        if (!isIntl) setIsScanToPay(false);
+                      }}
                       className={cn("flex items-center gap-1.5 md:gap-1 px-3 md:px-3 py-2 -ml-1 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0", isIntl ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20" : "bg-gray-50 text-gray-600 hover:bg-gray-100")}
                     >
                       <Plane className="w-4 h-4 shrink-0" />
@@ -427,7 +437,7 @@ export default function App() {
                     </button>
                   </div>
 
-                  {!isOnline && (
+                  {!isOnline && !isIntl && (
                     <motion.button
                       type="button"
                       initial={{ opacity: 0, scale: 0.95 }}
@@ -609,7 +619,7 @@ export default function App() {
                     <h4 className="text-lg font-bold tracking-wide">Lounge Tracker</h4>
                   </div>
                   <p className="text-xs text-gray-300 leading-relaxed">
-                    You have {CARD_DATA.filter(c => c.benefits.some(b => b.type === 'lounge')).length} cards with tracking for lounge access.
+                    You have {CARD_DATA.filter(c => !c.isDummy && c.benefits.some(b => b.type === 'lounge')).length} cards with tracking for lounge access.
                   </p>
                 </div>
                 <button onClick={() => setIsLoungeOpen(true)} className="relative z-10 bg-white/10 hover:bg-white/20 border border-white/10 text-white text-xs font-bold px-5 py-2.5 rounded-full mt-4 sm:mt-0 backdrop-blur-sm transition-all w-fit shrink-0">View Passes</button>
@@ -626,7 +636,7 @@ export default function App() {
               <History className="w-5 h-5 text-gray-500" />
               My Cards
             </h3>
-            <span className="text-sm text-blue-600 font-semibold bg-blue-50 px-3 py-1.5 rounded-full">{CARD_DATA.length} Active Cards</span>
+            <span className="text-sm text-blue-600 font-semibold bg-blue-50 px-3 py-1.5 rounded-full">{CARD_DATA.filter(c => !c.isDummy).length} Active Cards</span>
           </div>
 
           {/* We turn this into a horizontal scrolling container with a fade mask on the edges if there's overflow, or just a nice grid */}
@@ -634,8 +644,8 @@ export default function App() {
             <div className="absolute top-0 left-0 bottom-0 w-0.5 bg-gradient-to-r from-[#F5F5F7] to-transparent z-10 pointer-events-none sm:hidden"></div>
             <div className="absolute top-0 right-0 bottom-0 w-0.5 bg-gradient-to-l from-[#F5F5F7] to-transparent z-10 pointer-events-none sm:hidden"></div>
             <div className="flex sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 overflow-x-auto pt-8 pb-4 px-1 snap-x scrollbar-hide">
-              {CARD_DATA.map((card) => (
-                <div key={card.id} className="snap-start shrink-0 w-72 sm:w-auto">
+              {CARD_DATA.filter(c => !c.isDummy).map((card) => (
+                <div key={card.id} className={cn("snap-start shrink-0 w-72 sm:w-auto transition-opacity duration-200", selectedCardForDetails?.card.id === card.id ? "opacity-0 pointer-events-none" : "opacity-100")}>
                   <CardItem layoutId={`card-list-${card.id}`} card={card} onClick={() => setSelectedCardForDetails({ card, source: 'list' })} className="h-full shadow-sm hover:shadow-md transition-shadow cursor-pointer" isExhausted={exhaustedCards[card.id]} />
                 </div>
               ))}
@@ -685,12 +695,14 @@ export default function App() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
             className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-white/40 backdrop-blur-md"
             onClick={() => setSelectedCardForDetails(null)}
           >
             <motion.div
               layoutId={`card-${selectedCardForDetails.source}-${selectedCardForDetails.card.id}`}
               onClick={(e) => e.stopPropagation()}
+              transition={{ type: "spring", damping: 30, stiffness: 300 }}
               className={cn(
                 "rounded-3xl p-6 max-w-md w-full relative flex flex-col text-white max-h-[85vh] bg-gradient-to-br",
                 selectedCardForDetails.card.gradient || "from-gray-700 to-gray-900"
@@ -783,27 +795,51 @@ export default function App() {
 
               {/* Kiwi Neon Slider */}
               {selectedCardForDetails.card.id === 'kiwi-neon' && (
-                <div className="mt-4 pt-4 border-t border-white/10 relative z-10">
+                <div className="mt-6 pt-6 border-t border-white/20 relative z-10 flex flex-col gap-2">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-bold block leading-none">Milestone Rate ({kiwiNeonEarnRate}%)</span>
-                    <span className="text-xs font-black bg-white/20 px-2 py-0.5 rounded shadow-sm text-white">
+                    <span className="text-sm font-extrabold tracking-widest uppercase text-white/90">Current Milestone</span>
+                    <span className="text-xs font-black bg-white/20 px-3 py-1 rounded-full shadow-inner text-white border border-white/10">
                       Earned: ₹{kiwiNeonEarnRate === 2 ? '500' : kiwiNeonEarnRate === 3 ? '1,500' : kiwiNeonEarnRate === 4 ? '4,000' : '7,500'}
                     </span>
                   </div>
-                  <input
-                    type="range"
-                    min="2"
-                    max="5"
-                    step="1"
-                    value={kiwiNeonEarnRate}
-                    onChange={(e) => setKiwiNeonEarnRate(parseInt(e.target.value, 10))}
-                    className="w-full h-1.5 bg-black/20 rounded-lg appearance-none cursor-pointer accent-white"
-                  />
-                  <div className="flex justify-between text-[10px] text-white/70 font-bold mt-1.5 px-0.5">
-                    <span>25k (2%)</span>
-                    <span>50k (3%)</span>
-                    <span>100k (4%)</span>
-                    <span>150k+ (5%)</span>
+                  
+                  <div className="relative pt-6 pb-2 px-1">
+                    <div className="flex justify-between absolute top-0 left-0 right-0 px-2 text-[10px] font-bold text-white/70">
+                      <span>25k</span>
+                      <span>50k</span>
+                      <span>100k</span>
+                      <span>150k+</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="2"
+                      max="5"
+                      step="1"
+                      value={kiwiNeonEarnRate}
+                      onChange={(e) => setKiwiNeonEarnRate(parseInt(e.target.value, 10))}
+                      className="w-full h-2.5 rounded-full appearance-none cursor-pointer outline-none shadow-inner"
+                      style={{
+                        background: `linear-gradient(to right, #4ade80 0%, #fef08a ${((kiwiNeonEarnRate - 2) / 3) * 100}%, rgba(0,0,0,0.3) ${((kiwiNeonEarnRate - 2) / 3) * 100}%, rgba(0,0,0,0.3) 100%)`,
+                      }}
+                    />
+                    <style>{`
+                      input[type=range]::-webkit-slider-thumb {
+                        appearance: none;
+                        width: 20px;
+                        height: 20px;
+                        border-radius: 50%;
+                        background: white;
+                        cursor: pointer;
+                        box-shadow: 0 0 10px rgba(0,0,0,0.3);
+                        border: 2px solid ${kiwiNeonEarnRate === 5 ? '#fef08a' : '#4ade80'};
+                      }
+                    `}</style>
+                    <div className="flex justify-between mt-3 px-2 text-sm font-black text-white">
+                      <span className={kiwiNeonEarnRate >= 2 ? "opacity-100 drop-shadow-md" : "opacity-50"}>2%</span>
+                      <span className={kiwiNeonEarnRate >= 3 ? "opacity-100 drop-shadow-md" : "opacity-50"}>3%</span>
+                      <span className={kiwiNeonEarnRate >= 4 ? "opacity-100 drop-shadow-md" : "opacity-50"}>4%</span>
+                      <span className={kiwiNeonEarnRate >= 5 ? "opacity-100 drop-shadow-md" : "opacity-50"}>5%</span>
+                    </div>
                   </div>
                 </div>
               )}
@@ -882,7 +918,7 @@ export default function App() {
                 </div>
 
                 <div className="flex-1 overflow-y-auto flex flex-col gap-3 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent pb-10">
-                  {CARD_DATA.map(c => {
+                  {CARD_DATA.filter(c => !c.isDummy).map(c => {
                     if (c.id === 'kiwi-neon') {
                       let passes = 0;
                       if (kiwiNeonEarnRate >= 3) passes += 1;
@@ -890,18 +926,22 @@ export default function App() {
                       if (kiwiNeonEarnRate >= 5) passes += 1;
                       return {
                         ...c,
-                        benefits: c.benefits.map(b => b.type === 'lounge' ? { ...b, value: `${passes}/year` } : b)
-                      };
+                        benefits: c.benefits.map(b => b.type === 'lounge' ? { ...b, value: '1/milestone' } : b),
+                        kiwiPasses: passes
+                      } as any;
                     }
                     return c;
                   }).filter(c => c.benefits.some(b => b.type === 'lounge' && b.category === loungeTab))
-                    .map(card => {
-                      const b = card.benefits.find(x => x.type === 'lounge' && x.category === loungeTab)!;
+                    .map((card: any) => {
+                      const b = card.benefits.find((x: any) => x.type === 'lounge' && x.category === loungeTab)!;
                       const parsed = parseLoungeBenefit(b);
+                      if (card.id === 'kiwi-neon') {
+                        parsed.passesCount = card.kiwiPasses;
+                      }
                       const used = loungePassesUsed[`${card.id}-${loungeTab}`] || 0;
                       const passesRemaining = Math.max(0, parsed.passesCount - used);
                       const isExhausted = parsed.passesCount > 0 && passesRemaining === 0;
-                      const isVerified = loungeMilestonesVerified[`${card.id}-${loungeTab}`] ?? parsed.isFree;
+                      const isVerified = card.id === 'kiwi-neon' ? true : (loungeMilestonesVerified[`${card.id}-${loungeTab}`] ?? parsed.isFree);
                       return { card, b, parsed, isExhausted, isVerified };
                     })
                     .sort((a, b) => {
@@ -943,12 +983,14 @@ export default function App() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
             className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
           >
             <motion.div
               initial={{ scale: 0.95 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0.95 }}
+              transition={{ type: "spring", damping: 35, stiffness: 400 }}
               className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl relative"
             >
               <button onClick={() => setIsApiModalOpen(false)} className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500">

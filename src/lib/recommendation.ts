@@ -49,6 +49,18 @@ export function getRecommendations(
     let benefitText = 'Base Rewards';
     let isExcluded = false;
     let discountAmount = 0;
+    let cardToUse = { ...card };
+
+    if (isScanToPay) {
+      const allowedUpiCards = ['kiwi-neon', 'amazon-pay-upi', 'cred-pay-upi', 'kotak-811-infinity'];
+      if (!allowedUpiCards.includes(card.id)) {
+        isExcluded = true;
+        benefitText = "Not a Scan & Pay option";
+      }
+      if (card.id === 'kotak-811-infinity') {
+        cardToUse.name = '811 Scan & Pay';
+      }
+    }
 
     const defaultExclusions = ['fuel', 'wallet', 'rent', 'housing', 'gambling', 'gaming', 'toll', 'finance', 'school', 'education', 'jewellery', 'insurance', 'railway', 'government', 'tax'];
 
@@ -127,8 +139,11 @@ export function getRecommendations(
         cashbackAmount = amount * card.baseRewardRate / 100;
         benefitText = '1.5% NeuCoins';
       }
-    } else if (card.id === 'hdfc-swiggy' && !isIntl) {
-      if (nameL.includes('swiggy') || nameL.includes('dineout') || platL.includes('swiggy') || platL.includes('dineout') || platL.includes('instamart')) {
+    } else if (card.id === 'hdfc-swiggy') {
+      if (isIntl) {
+        isExcluded = true;
+        benefitText = 'Excluded from earning rewards on International';
+      } else if (nameL.includes('swiggy') || nameL.includes('dineout') || platL.includes('swiggy') || platL.includes('dineout') || platL.includes('instamart') || isGrocery || catL.includes('dining') || nameL.includes('dining') || nameL.includes('restaurant') || catL.includes('restaurant')) {
         const eligible = Math.min(amount, 15000);
         cashbackAmount = (eligible * 0.10);
         benefitText = '10% Cashback';
@@ -160,6 +175,25 @@ export function getRecommendations(
     } else if (card.id === 'kiwi-neon' && (isScanToPay || isOnline)) {
       cashbackAmount = amount * (kiwiNeonEarnRate / 100);
       benefitText = `${kiwiNeonEarnRate}% Cashback on ${isScanToPay ? 'Scan & Pay' : 'Online UPI'}`;
+    } else if (card.id === 'kotak-811-infinity' && !isScanToPay) {
+      // Special logic for Kotak 811 offers + cashback
+      const movieUsed = offerUsage['kotak-811-infinity-Movies-BookMyShow'] || 0;
+      const diningUsed = offerUsage['kotak-811-infinity-Dining-District'] || 0;
+
+      if ((catL.includes('movie') || nameL.includes('bookmyshow')) && movieUsed < 1) {
+        discountAmount = Math.min(amount * 0.5, 300);
+        const remaining = amount - discountAmount;
+        cashbackAmount = discountAmount + (remaining * 0.05);
+        benefitText = '50% BMS Discount + 5% Cashback';
+      } else if ((catL.includes('dining') || nameL.includes('district')) && diningUsed < 1) {
+        discountAmount = Math.min(amount * 0.15, 500); // Assuming 15% up to 500 for District
+        const remaining = amount - discountAmount;
+        cashbackAmount = discountAmount + (remaining * 0.05);
+        benefitText = '15% District Discount + 5% Cashback';
+      } else {
+        cashbackAmount = amount * 0.05;
+        benefitText = '5% Cashback';
+      }
     } else {
       let matchedBenefitValue = -1;
       let usedBenefit = null;
@@ -302,7 +336,7 @@ export function getRecommendations(
     const netValue = isExcluded ? -forexFee : (cashbackAmount - forexFee);
 
     return {
-      card, netValue, cashbackEarned: isExcluded ? 0 : cashbackAmount, feesPaid: forexFee, benefitText, isExcluded
+      card: cardToUse, netValue, cashbackEarned: isExcluded ? 0 : cashbackAmount, feesPaid: forexFee, benefitText, isExcluded
     };
   });
 

@@ -31,6 +31,7 @@ export interface Card {
   isExempt?: boolean;
   forexMarkup: number; // Base markup e.g., 3.5
   baseRewardRate: number; // e.g., 1.0 or 1.5
+  isDummy?: boolean;
 }
 
 export interface MerchantInfo {

@@ -39,7 +39,9 @@ export const LoungeTrackerItem: React.FC<LoungeTrackerItemProps> = ({
     if (isExhausted) {
       // Return to original state where spend milestone isn't finished
       setPassesUsed(0);
-      setIsVerified(parsed.isFree);
+      if (card.id !== 'kiwi-neon') {
+        setIsVerified(parsed.isFree);
+      }
     } else {
       // Use pass
       setPassesUsed(p => p + 1);

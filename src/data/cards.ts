@@ -17,9 +17,9 @@ export const CARD_DATA: Card[] = [
     forexMarkup: 3.5,
     baseRewardRate: 0,
     benefits: [
-      { type: 'cashback', category: 'Swiggy', value: '10%', percentValue: 10, description: 'Cashback on spends within the Swiggy ecosystem.', minSpend: 249, maxSpend: 15000 },
+      { type: 'cashback', category: 'Swiggy', value: '10%', percentValue: 10, description: 'Cashback on food delivery, dining, and grocery spends on Swiggy.', minSpend: 249, maxSpend: 15000, fallbackRate: 0 },
       { type: 'cashback', category: 'Online', value: '5%', percentValue: 5, description: 'Cashback on online shopping. Additional instant discounts on Nykaa and Cleartrip.', minSpend: 100, maxSpend: 30000 },
-      { type: 'cashback', category: 'All', value: '1%', percentValue: 1, description: 'Cashback on all eligible domestic transactions.', maxSpend: 100000, isHidden: true },
+      { type: 'cashback', category: 'All Spends', value: '1%', percentValue: 1, description: 'Cashback on all eligible domestic transactions.', maxSpend: 100000, isHidden: true },
       { type: 'exclusion', category: 'Gift Card', value: '0%', description: 'Gift Cards' },
       { type: 'exclusion', category: 'Gaming', value: '0%', description: 'Gaming' },
       { type: 'exclusion', category: 'Government', value: '0%', description: 'Government' },
@@ -43,7 +43,7 @@ export const CARD_DATA: Card[] = [
     forexMarkup: 3.5,
     baseRewardRate: 1.5,
     benefits: [
-      { type: 'cashback', category: 'Dining', value: '10%', percentValue: 10, description: 'Cashback on food delivery, dining, and groceries, online and offline.', maxSpend: 10000, fallbackRate: 0 },
+      { type: 'cashback', category: 'Dining', value: '10%', percentValue: 10, description: 'Cashback on food delivery, dining, and groceries on all online and offline merchants.', maxSpend: 10000, fallbackRate: 0 },
       { type: 'lounge', category: 'Domestic', value: '1/qtr', description: 'Complimentary domestic lounge access.' },
       { type: 'exclusion', category: 'Fuel', value: '0%', description: 'Fuel' },
       { type: 'exclusion', category: 'Wallet', value: '0%', description: 'Wallets' },
@@ -72,7 +72,7 @@ export const CARD_DATA: Card[] = [
       { type: 'cashback', category: 'Groceries', value: '10%', percentValue: 10, capPerTxn: 1500, description: 'NeuCoins on grocery spends within the Tata Neu app on BigBasket.', maxSpend: 40000, minSpend: 67, isHidden: true },
       { type: 'cashback', category: 'Utilities', value: '5%', percentValue: 5, description: 'NeuCoins on utility bill payments on the Tata Neu app.', maxSpend: 40000, minSpend: 67 },
       { type: 'cashback', category: 'Telecom', value: '5%', percentValue: 5, description: 'NeuCoins on telecom and internet payments on the Tata Neu app.', maxSpend: 40000, minSpend: 67, isHidden: true },
-      { type: 'cashback', category: 'Offline (Tata Partner Brands)', value: '5%', percentValue: 5, description: 'NeuCoins on spends on Tata partner brands in offline stores like Croma, Westside, Zudio, IHCL, Bigbasket.', minSpend: 67 },
+      { type: 'cashback', category: 'Offline', value: '5%', percentValue: 5, description: 'NeuCoins on spends on Tata partner brands in offline stores like Croma, Westside, Zudio, IHCL, Bigbasket.', minSpend: 67 },
       { type: 'lounge', category: 'Domestic', value: '2/qtr', description: 'Generate voucher on the SmartBuy portal on quarterly spends of 50k.' },
       { type: 'lounge', category: 'International', value: '1/qtr', description: 'Complimentary through Priority Pass.' },
       { type: 'exclusion', category: 'Fuel', value: '0%', description: 'Fuel' },
@@ -215,6 +215,36 @@ export const CARD_DATA: Card[] = [
       { type: 'offer', category: 'Swiggy', value: '5%', percentValue: 5, description: 'Cashback points up to 150 on spends in the Swiggy app per calendar month.', maxSpend: 3000 },
       { type: 'cashback', category: 'Online', value: '1%', percentValue: 1, description: 'Cashback points on all online spends to be redeemed through the HDFC Banking app.', maxSpend: 75000 },
       { type: 'lounge', category: 'Domestic', value: '2/qtr', description: 'Generate voucher on the SmartBuy portal on quarterly spends of 10k.' }
+    ]
+  },
+  {
+    id: 'amazon-pay-upi',
+    name: 'Amazon Pay',
+    bank: 'Amazon',
+    network: 'Other',
+    tier: 'UPI',
+    gradient: 'from-[#ff9900] to-[#146eb4]',
+    type: 'Prepaid',
+    forexMarkup: 0,
+    baseRewardRate: 0,
+    isDummy: true,
+    benefits: [
+      { type: 'upi', category: 'Scan & Pay', value: 'Scratch Card', percentValue: 0.1, description: 'Mystery scratch card for UPI spends.' }
+    ]
+  },
+  {
+    id: 'cred-pay-upi',
+    name: 'Cred Pay',
+    bank: 'Cred',
+    network: 'Other',
+    tier: 'UPI',
+    gradient: 'from-[#111827] to-[#374151]',
+    type: 'Prepaid',
+    forexMarkup: 0,
+    baseRewardRate: 0,
+    isDummy: true,
+    benefits: [
+      { type: 'upi', category: 'Scan & Pay', value: 'Cashback', percentValue: 0.2, description: 'Mystery cashback on Cred Pay UPI.' }
     ]
   }
 ];
