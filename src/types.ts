@@ -13,6 +13,8 @@ export interface CardBenefit {
   capPerTxn?: number;
   minSpend?: number;
   usageLimit?: number;
+  fallbackRate?: number;
+  isHidden?: boolean;
 }
 
 export interface Card {
