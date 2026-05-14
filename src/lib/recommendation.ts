@@ -155,7 +155,7 @@ export function getRecommendations(
       if (isIntl) {
         isExcluded = true;
         benefitText = 'Excluded from earning rewards on International';
-      } else if (isFoodDelivery || isDining || isGrocery) {
+      } else if (isOnline && (isFoodDelivery || isDining || isGrocery)) {
         const eligible = Math.min(amount, 15000);
         cashbackAmount = (eligible * 0.10);
         benefitText = '10% Cashback';
