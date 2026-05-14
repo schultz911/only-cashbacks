@@ -21,10 +21,10 @@ export function getRecommendations(
   const catL = merchant.category.toLowerCase();
   const platL = merchant.platform?.toLowerCase() || '';
 
-  const isGrocery = catL.includes('grocery') || nameL.includes('grocery') || ['bigbasket', 'blinkit', 'instamart', 'zepto', 'swiggy instamart', 'dmart', 'reliance fresh', "nature's basket", 'spencers'].some(g => nameL.includes(g) || platL.includes(g) || catL.includes(g));
+  const isGrocery = catL.includes('grocery') || nameL.includes('grocery') || catL.includes('food') || nameL.includes('food') || catL.includes('groceries') || nameL.includes('groceries') || ['bigbasket', 'blinkit', 'instamart', 'zepto', 'instamart', 'dmart', 'reliance fresh', "nature's basket", 'spencers'].some(g => nameL.includes(g) || platL.includes(g) || catL.includes(g));
 
   // Google Play special logic
-  if (nameL.includes('google play') || platL.includes('google play')) {
+  if (nameL.includes('google') || platL.includes('google')) {
     const sbiCard = CARD_DATA.find(c => c.id === 'sbi-cashback')!;
     const isExhausted = exhaustedCards['sbi-cashback'];
     return {
@@ -107,10 +107,10 @@ export function getRecommendations(
       if (isGrocery && isTataNeuAppMerchant && isOnline) {
         const eligibleSpend = Math.min(amount, 15000);
         cashbackAmount = (eligibleSpend * 0.035) + (amount * card.baseRewardRate / 100) + (amount * 0.05);
-        benefitText = '10% NeuCoins on BigBasket via Tata Neu app';
+        benefitText = '10% NeuCoins on BigBasket via Tata Neu';
       } else if (!isGrocery && isTataNeuAppMerchant && isOnline) {
         cashbackAmount = (amount * 0.035) + (amount * card.baseRewardRate / 100) + (amount * 0.05);
-        benefitText = '10% NeuCoins via Tata neu app';
+        benefitText = '10% NeuCoins via Tata Neu';
       } else if (!isGrocery && isTataNeuAppMerchant && !isOnline) {
         {
           cashbackAmount = (amount * 0.035) + (amount * card.baseRewardRate / 100);
@@ -122,7 +122,7 @@ export function getRecommendations(
           cashbackAmount = (eligibleSpend * 0.035) + (amount * card.baseRewardRate / 100) + (amount * 0.05);
           benefitText = '10% NeuCoins on BigBasket via Tata Neu app';
         }
-      } else if ((nameL.includes('grocery') || nameL.includes('groceries')) && !isOnline) {
+      } else if (isGrocery && !isOnline) {
         {
           cashbackAmount = amount * card.baseRewardRate / 100;
           benefitText = '1.5% NeuCoins';
@@ -183,16 +183,16 @@ export function getRecommendations(
       if ((catL.includes('movie') || nameL.includes('bookmyshow')) && movieUsed < 1) {
         discountAmount = Math.min(amount * 0.5, 300);
         const remaining = amount - discountAmount;
-        cashbackAmount = discountAmount + (remaining * 0.05);
+        cashbackAmount = discountAmount + Math.min(remaining * 0.05, 100);
         benefitText = '50% BMS Discount + 5% Cashback';
       } else if ((catL.includes('dining') || nameL.includes('district')) && diningUsed < 1) {
         discountAmount = Math.min(amount * 0.15, 500); // Assuming 15% up to 500 for District
         const remaining = amount - discountAmount;
-        cashbackAmount = discountAmount + (remaining * 0.05);
+        cashbackAmount = discountAmount + Math.min(remaining * 0.05, 100);
         benefitText = '15% District Discount + 5% Cashback';
       } else {
-        cashbackAmount = amount * 0.05;
-        benefitText = '5% Cashback';
+        cashbackAmount = Math.min(amount * 0.05, 100);
+        benefitText = '5% Cashback (Capped at ₹100)';
       }
     } else {
       let matchedBenefitValue = -1;
