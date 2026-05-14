@@ -85,6 +85,7 @@ export function getRecommendations(
         if (isExcludedCat === 'gaming' && !catL.includes('gambling') && !nameL.includes('gambling')) {
           if (card.id === 'hsbc-live-plus' || card.id === 'kotak-811-infinity') {
             isExcluded = false;
+            benefitText = 'Base Rewards';
           }
         }
         if (card.id === 'hdfc-tata-neu-infinity') {
@@ -92,13 +93,16 @@ export function getRecommendations(
             (isExcludedCat === 'jewellery') ||
             (isExcludedCat === 'insurance')) {
             isExcluded = false;
+            benefitText = 'Base Rewards';
           }
         }
         if (card.id === 'kotak-811-infinity' && isExcludedCat === 'fuel') {
           isExcluded = false;
+          benefitText = 'Base Rewards';
         }
         if (card.id === 'one-card' && isExcludedCat === 'fuel') {
           isExcluded = false; // it will hit the 5% benefit up to 50 Rs logic
+          benefitText = 'Base Rewards';
         }
       }
     }
@@ -331,7 +335,7 @@ export function getRecommendations(
     }
 
     // Apply Universal Offers (Coupons from Swiggy One apply regardless of card limits if not excluded)
-    if (!isExcluded && !exhaustedCards[card.id] && !isIntl) {
+    if (!isExcluded && !exhaustedCards[card.id] && !isIntl && isOnline) {
       if (isMovie) {
         const cinepolisDiscount = Math.min(amount * 0.25, 75);
         let onlineRate = card.baseRewardRate;
@@ -363,7 +367,7 @@ export function getRecommendations(
         if (totalCinepolisValue > cashbackAmount && !nameL.match(/bookmyshow|district/i)) {
           cashbackAmount = totalCinepolisValue;
           const dealDetail = `Swiggy Cinepolis Coupon (₹${cinepolisDiscount.toFixed(0)} off)`;
-          if (benefitText.includes('Base Rewards')) {
+          if (benefitText.includes('Base Rewards') || benefitText.includes('Excluded')) {
             benefitText = `${onlineRate}% Online + ${dealDetail}`;
           } else if (!nameL.includes('cinepolis')) {
             benefitText = `${benefitText} (Better Deal: ${dealDetail})`;
@@ -376,7 +380,13 @@ export function getRecommendations(
       if ((catL.includes('ajio') || nameL.includes('ajio') || platL.includes('ajio')) && amount >= 999) {
         const ajioDisc = amount * 0.20;
         cashbackAmount += ajioDisc;
-        benefitText += ` with Swiggy One Coupon (20% off)`;
+        const ajioDetail = `Swiggy One Coupon (20% off)`;
+        if (benefitText.includes('Base Rewards') || benefitText.includes('Excluded')) {
+          const onlineRate = card.id === 'sbi-cashback' || card.id === 'hdfc-swiggy' || card.id === 'kotak-811-infinity' ? 5 : card.baseRewardRate;
+          benefitText = `${onlineRate}% Online + ${ajioDetail}`;
+        } else {
+          benefitText += ` with ${ajioDetail}`;
+        }
       }
     }
 
