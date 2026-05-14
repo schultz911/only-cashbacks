@@ -19,7 +19,7 @@ export const CARD_DATA: Card[] = [
     benefits: [
       { type: 'cashback', category: 'Swiggy', value: '10%', percentValue: 10, description: 'Cashback on spends within the Swiggy ecosystem.', minSpend: 249, maxSpend: 15000 },
       { type: 'cashback', category: 'Online', value: '5%', percentValue: 5, description: 'Cashback on online shopping. Additional instant discounts on Nykaa and Cleartrip.', minSpend: 100, maxSpend: 30000 },
-      { type: 'cashback', category: 'All', value: '1%', percentValue: 1, description: 'Cashback on all eligible transactions.', maxSpend: 100000, isHidden: true },
+      { type: 'cashback', category: 'All', value: '1%', percentValue: 1, description: 'Cashback on all eligible domestic transactions.', maxSpend: 100000, isHidden: true },
       { type: 'exclusion', category: 'Gift Card', value: '0%', description: 'Gift Cards' },
       { type: 'exclusion', category: 'Gaming', value: '0%', description: 'Gaming' },
       { type: 'exclusion', category: 'Government', value: '0%', description: 'Government' },
@@ -43,7 +43,7 @@ export const CARD_DATA: Card[] = [
     forexMarkup: 3.5,
     baseRewardRate: 1.5,
     benefits: [
-      { type: 'cashback', category: 'Dining', value: '10%', percentValue: 10, description: 'Cashback on food delivery, dining, and groceries.', maxSpend: 10000, fallbackRate: 0 },
+      { type: 'cashback', category: 'Dining', value: '10%', percentValue: 10, description: 'Cashback on food delivery, dining, and groceries, online and offline.', maxSpend: 10000, fallbackRate: 0 },
       { type: 'lounge', category: 'Domestic', value: '1/qtr', description: 'Complimentary domestic lounge access.' },
       { type: 'exclusion', category: 'Fuel', value: '0%', description: 'Fuel' },
       { type: 'exclusion', category: 'Wallet', value: '0%', description: 'Wallets' },
