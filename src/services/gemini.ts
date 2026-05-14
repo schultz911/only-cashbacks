@@ -50,7 +50,7 @@ const EXHAUSTIVE_MERCHANT_MAPPINGS = [
   { pattern: /netflix|amazon prime|disney|hotstar|jiohotstar|sony|zee5|mx player|youtube|apple tv|spotify|apple music/i, category: "Entertainment", isOnline: true, isP2P: false },
 
   // Gaming (Storefronts, Top-Ups & Gray Markets)
-  { pattern: /steam|playstation|xbox|blizzard|gog|ea ?play|ubisoft|rockstar|epic games|nintendo|greenmangaming|fanatical|gamersgate/i, category: "Gaming", isOnline: true, isP2P: false },
+  { pattern: /steam|playstation|xbox|blizzard|gog|ea ?play|ubisoft|rockstar|epic games|nintendo|greenmangaming|fanatical|gamersgate|game|games|gaming/i, category: "Gaming", isOnline: true, isP2P: false },
   { pattern: /codashop|unipin|game kharido|lapakgaming|itemku|enjoygm|rushbuy|keygold|lootbar|allkeyshop|kiosgamer|g2a|driffle|eneba|kinguin|gamivo|royalcdkeys|startselect|gameseal|relic play|instant-gaming|keysworlds|all keys|gmg|voidu/i, category: "Reseller", isOnline: true, isP2P: false },
 
   // Education & EdTech

@@ -782,9 +782,13 @@ export default function App() {
             onClick={() => setSelectedCardForDetails(null)}
           >
             <motion.div
-              layoutId={`card-${selectedCardForDetails.source}-${selectedCardForDetails.card.id}`}
+              {...(selectedCardForDetails.source === 'rec' ? { layoutId: `card-${selectedCardForDetails.source}-${selectedCardForDetails.card.id}` } : {
+                initial: { y: '100%', opacity: 0 },
+                animate: { y: 0, opacity: 1 },
+                exit: { y: '100%', opacity: 0 }
+              })}
               onClick={(e) => e.stopPropagation()}
-              transition={{ type: "spring", damping: 30, stiffness: 300 }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
               className={cn(
                 "rounded-3xl p-6 max-w-md w-full relative flex flex-col text-white max-h-[85vh] bg-gradient-to-br",
                 selectedCardForDetails.card.gradient || "from-gray-700 to-gray-900"
@@ -1141,7 +1145,7 @@ export default function App() {
                               const card = CARD_DATA.find(c => c.id === offer.cardId);
                               if (card) {
                                 setShowOffersOverlay(false);
-                                setSelectedCardForDetails({ card, source: 'rec' });
+                                setSelectedCardForDetails({ card, source: 'offer' });
                               }
                             }
                           }}
