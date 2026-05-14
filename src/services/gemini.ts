@@ -131,12 +131,7 @@ function categorizeLocal(merchantName: string): MerchantInfo | null {
 export async function categorizeMerchant(merchantName: string, apiKey?: string): Promise<MerchantInfo> {
   if (!merchantName) throw new Error("Merchant name is required");
 
-  // First attempt local string/regex resolution to minimize API usages
-  const localMatch = categorizeLocal(merchantName);
-  if (localMatch) {
-    return localMatch;
-  }
-
+  // Attempt the AI API first as requested (Regex is now just a fallback)
   try {
     const response = await fetch("/api/categorize", {
       method: "POST",
@@ -144,20 +139,29 @@ export async function categorizeMerchant(merchantName: string, apiKey?: string):
       body: JSON.stringify({ merchantName, apiKey })
     });
 
-    if (!response.ok) {
-      throw new Error(`Server returned ${response.status}`);
+    if (response.ok) {
+      const result = await response.json();
+      // Ensure we got a valid object with required fields
+      if (result && result.category) {
+        return result as MerchantInfo;
+      }
     }
-
-    const result = await response.json();
-    return result as MerchantInfo;
   } catch (error) {
-    console.error("API Error:", error);
-    return {
-      name: merchantName,
-      category: "Other",
-      isOnline: true,
-      isP2P: false
-    };
+    console.error("API Error (Attempting local fallback):", error);
   }
+
+  // Fallback to local string/regex resolution if API fails or returns invalid data
+  const localMatch = categorizeLocal(merchantName);
+  if (localMatch) {
+    return localMatch;
+  }
+
+  // Final fallback
+  return {
+    name: merchantName,
+    category: "Other",
+    isOnline: true,
+    isP2P: false
+  };
 }
 

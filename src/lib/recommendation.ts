@@ -74,7 +74,7 @@ export function getRecommendations(
       }
     }
 
-    const defaultExclusions = ['fuel', 'wallet', 'rent', 'housing', 'gambling', 'gaming', 'toll', 'finance', 'school', 'education', 'jewellery', 'insurance', 'railway', 'government', 'tax', 'utility', 'bills', 'bill', 'telecom', 'internet'];
+    const defaultExclusions = ['fuel', 'wallet', 'rent', 'housing', 'gambling', 'gaming', 'tolls', 'toll', 'finance', 'school', 'education', 'jewellery', 'insurance', 'railway', 'rail', 'government', 'tax', 'utilities', 'utility', 'bills', 'bill', 'telecom', 'internet', 'atm', 'cash', 'charity', 'donation'];
 
     if (card.type === 'Credit' || card.type === 'Debit') {
       const isExcludedCat = defaultExclusions.find(ex => catL.includes(ex) || nameL.includes(ex) || platL.includes(ex));
@@ -86,13 +86,13 @@ export function getRecommendations(
           if (card.id === 'hsbc-live-plus' || card.id === 'kotak-811-infinity') {
             // Only bypass if it wasn't already excluded by Scan & Pay or International
             if (benefitText.includes('Excluded category')) {
-               isExcluded = false;
-               benefitText = 'Base Rewards';
+              isExcluded = false;
+              benefitText = 'Base Rewards';
             }
           }
         }
         if (card.id === 'hdfc-tata-neu-infinity') {
-          if (catL.includes('utility') || isExcludedCat === 'toll' ||
+          if (catL.includes('utility') || catL.includes('utilities') || isExcludedCat === 'toll' || isExcludedCat === 'tolls' ||
             (isExcludedCat === 'jewellery') ||
             (isExcludedCat === 'insurance')) {
             isExcluded = false;
@@ -133,42 +133,46 @@ export function getRecommendations(
         if (isGrocery) {
           const eligibleSpend = Math.min(amount, 15000);
           cashbackAmount = (eligibleSpend * 0.035) + (amount * card.baseRewardRate / 100) + (amount * 0.05);
-          benefitText = '10% NeuCoins on BigBasket via Tata Neu';
+          benefitText = '10% NeuCoins on BigBasket';
         } else if (isFoodDelivery) {
           const eligibleSpend = Math.min(amount, 15000);
           cashbackAmount = (eligibleSpend * 0.035) + (amount * card.baseRewardRate / 100) + (amount * 0.05);
-          benefitText = '10% NeuCoins on Qmin via Tata Neu';
+          benefitText = '10% NeuCoins on Qmin';
         } else {
           cashbackAmount = (amount * 0.035) + (amount * card.baseRewardRate / 100) + (amount * 0.05);
-          benefitText = '10% NeuCoins via Tata Neu';
+          benefitText = '10% NeuCoins on Tata Neu';
         }
       } else if (isTataNeuAppMerchant && !isOnline) {
         cashbackAmount = (amount * 0.035) + (amount * card.baseRewardRate / 100);
-        benefitText = '5% NeuCoins in Offline Stores';
+        benefitText = '5% NeuCoins at Offline Stores';
         // Priority 2: Generic food/grocery searches (suggest routing through Tata Neu app)
       } else if ((isGrocery || isFoodDelivery) && isOnline) {
         const eligibleSpend = Math.min(amount, 15000);
         cashbackAmount = (eligibleSpend * 0.035) + (amount * card.baseRewardRate / 100) + (amount * 0.05);
         benefitText = isGrocery
-          ? '10% NeuCoins — Buy via BigBasket on Tata Neu'
-          : '10% NeuCoins — Order via Tata Neu';
+          ? '10% NeuCoins on BigBasket'
+          : '10% NeuCoins on Qmin';
         // Priority 3: Tata partner category merchants (fashion, electronics, etc.)
       } else if (isTataNeuPartnerMerchant && isOnline) {
         cashbackAmount = (amount * 0.035) + (amount * card.baseRewardRate / 100) + (amount * 0.05);
-        benefitText = '10% NeuCoins via Tata Neu';
+        benefitText = '10% NeuCoins on Tata Neu';
       } else if (isTataNeuPartnerMerchant && !isOnline) {
         cashbackAmount = (amount * 0.035) + (amount * card.baseRewardRate / 100);
-        benefitText = '5% NeuCoins in Offline Stores';
+        benefitText = '5% NeuCoins at Offline Stores';
         // Priority 4: Utilities & bill payments
       } else if (catL.includes('utilities') || nameL.includes('internet') || nameL.includes('bill') || nameL.includes('bills') || nameL.includes('toll') || nameL.includes('tata play') || nameL.includes('fastag')) {
         const eligibleSpend = Math.min(amount, 40000);
         cashbackAmount = (eligibleSpend * 0.035) + (eligibleSpend * card.baseRewardRate / 100);
-        benefitText = '5% NeuCoins via Tata Neu';
+        benefitText = '5% NeuCoins on Tata Neu';
         // Fallback: Base rewards
       } else {
         cashbackAmount = amount * card.baseRewardRate / 100;
         benefitText = '1.5% NeuCoins';
       }
+    } else if (isExcluded) {
+      // If already marked as excluded (Intl, Scan & Pay, or Category), skip matching benefits
+      // This prevents benefit matching from overwriting the exclusion status or text
+      cashbackAmount = 0;
     } else if (card.id === 'hdfc-swiggy') {
       if (isIntl) {
         isExcluded = true;
@@ -233,80 +237,84 @@ export function getRecommendations(
     } else {
       let matchedBenefitValue = -1;
       let usedBenefit = null;
+      
+      if (isExcluded) {
+        // Skip benefit matching for excluded cards
+      } else {
+        const moviePlatforms = ['bookmyshow', 'bms', 'paytm insider', 'townscript', 'mera event', 'pvr', 'inox', 'cinepolis', 'movie', 'cinema', 'theatre', 'district'];
+        const diningPlatforms = ['swiggy', 'toing', 'dineout', 'zomato', 'bistro', 'blinkit', 'zepto cafe', 'eatsure', 'fresh menu', 'box8', 'eat club', 'uber eats', 'domino', 'pizza hut', 'magicpin', 'starbucks', 'mcdonald', 'kfc', 'burger king', 'haldiram', 'bikanervala', 'cafe', 'restaurant', 'diner', 'eatery', 'pub', 'bar', 'coffee', 'district'];
+        const searchedMoviePlat = moviePlatforms.find(p => nameL.includes(p) || (platL && platL.includes(p)));
+        const searchedDiningPlat = diningPlatforms.find(p => nameL.includes(p) || (platL && platL.includes(p)));
 
-      const moviePlatforms = ['bookmyshow', 'bms', 'paytm insider', 'townscript', 'mera event', 'pvr', 'inox', 'cinepolis', 'movie', 'cinema', 'theatre', 'district'];
-      const diningPlatforms = ['swiggy', 'toing', 'dineout', 'zomato', 'bistro', 'blinkit', 'zepto cafe', 'eatsure', 'fresh menu', 'box8', 'eat club', 'uber eats', 'domino', 'pizza hut', 'magicpin', 'starbucks', 'mcdonald', 'kfc', 'burger king', 'haldiram', 'bikanervala', 'cafe', 'restaurant', 'diner', 'eatery', 'pub', 'bar', 'coffee', 'district'];
-      const searchedMoviePlat = moviePlatforms.find(p => nameL.includes(p) || (platL && platL.includes(p)));
-      const searchedDiningPlat = diningPlatforms.find(p => nameL.includes(p) || (platL && platL.includes(p)));
+        for (const benefit of card.benefits) {
+          let matchScore = -1;
 
-      for (const benefit of card.benefits) {
-        let matchScore = -1;
-
-        const usageKey = `${card.id}-${benefit.category}-${benefit.value}`;
-        const usedCount = offerUsage[usageKey] || 0;
-        if (benefit.usageLimit && usedCount >= benefit.usageLimit) {
-          continue;
-        }
-
-        if (benefit.type === 'offer') {
-          const descL = benefit.description.toLowerCase();
-          const valLower = benefit.value.toLowerCase();
-          const isMovieOffer = benefit.category.toLowerCase().includes('movie') || descL.includes('movie') || descL.includes('ticket');
-          const isDiningOffer = benefit.category.toLowerCase().includes('dining') || benefit.category.toLowerCase().includes('swiggy') || benefit.category.toLowerCase().includes('zomato');
-
-          let skip = false;
-          const specificPlatforms = ['bookmyshow', 'district', 'swiggy', 'zomato', 'dineout', 'eazydiner', 'nykaa', 'cleartrip', 'ajio'];
-
-          for (const plat of specificPlatforms) {
-            if (descL.includes(plat) || valLower.includes(plat)) {
-              if (!nameL.includes(plat) && !(platL && platL.includes(plat))) {
-                skip = true;
-
-                if (isMovieOffer && (catL.includes('movie') || nameL.includes('movie')) && !nameL.match(/cinepolis|pvr|inox|bookmyshow|district|bms|paytm insider|townscript|mera event|cinema|theatre/i)) {
-                  if (!searchedMoviePlat) skip = false;
-                }
-                if (isDiningOffer && (catL.includes('dining') || nameL.includes('dining')) && !nameL.match(/swiggy|zomato|eazydiner|dineout|district|toing|bistro|blinkit|zepto cafe|eatsure|fresh menu|box8|eat club|uber eats|domino|pizza hut|magicpin|starbucks|mcdonald|kfc|burger king|haldiram|bikanervala|cafe|restaurant|diner|eatery|pub|bar|coffee/i)) {
-                  if (!searchedDiningPlat) skip = false;
-                }
-              }
-              break;
-            }
+          const usageKey = `${card.id}-${benefit.category}-${benefit.value}`;
+          const usedCount = offerUsage[usageKey] || 0;
+          if (benefit.usageLimit && usedCount >= benefit.usageLimit) {
+            continue;
           }
 
-          if (skip) continue;
-        }
+          if (benefit.type === 'offer') {
+            const descL = benefit.description.toLowerCase();
+            const valLower = benefit.value.toLowerCase();
+            const isMovieOffer = benefit.category.toLowerCase().includes('movie') || descL.includes('movie') || descL.includes('ticket');
+            const isDiningOffer = benefit.category.toLowerCase().includes('dining') || benefit.category.toLowerCase().includes('swiggy') || benefit.category.toLowerCase().includes('zomato');
 
-        const pLower = `${benefit.category} ${benefit.value} ${benefit.description || ''}`.toLowerCase();
-        if (platL && pLower.includes(platL)) matchScore = 100 + (benefit.percentValue || 0);
-        else if (pLower.includes(catL) && catL !== 'other') matchScore = 50 + (benefit.percentValue || 0);
-        else if (card.id === 'hsbc-live-plus' && !isIntl && (isGrocery || isFoodDelivery || isDining)) {
-          if (pLower.includes('dining') || pLower.includes('grocery') || pLower.includes('groceries') || pLower.includes('food')) matchScore = 60;
-        }
-        else if ((isFoodDelivery || isDining) && (pLower.includes('swiggy') || pLower.includes('district') || pLower.includes('dining'))) {
-          matchScore = 70;
-        }
-        else if (isMovie && (pLower.includes('movie') || pLower.includes('ticket'))) {
-          matchScore = 70;
-        }
-        else if ((card.id === 'axis-myzone') && (nameL.includes('ajio') || platL.includes('ajio'))) {
-          if (pLower.includes('fashion') || pLower.includes('ajio')) matchScore = 95;
-        }
-        else if ((card.id === 'axis-myzone' || card.id === 'kotak-811-infinity') && (nameL.includes('eazydiner') || platL.includes('eazydiner') || nameL.includes('district') || platL.includes('district'))) {
-          if (pLower.includes('dining') || pLower.includes('eazydiner') || pLower.includes('district')) matchScore = 95;
-        }
-        else if (isOnline && benefit.category.toLowerCase().includes('online')) matchScore = 20 + (benefit.percentValue || 0);
-        else if (!isOnline && benefit.category.toLowerCase().includes('offline')) matchScore = 20 + (benefit.percentValue || 0);
-        else if (isScanToPay && pLower.includes('scan')) matchScore = 30 + (benefit.percentValue || 0);
-        else if (benefit.type === 'offer' && (benefit.description.toLowerCase().includes(nameL) || (platL && benefit.description.toLowerCase().includes(platL)))) {
-          matchScore = 80;
-        }
-        else if (pLower.includes('all') || pLower.includes('all spends') || pLower.includes('other')) {
-          matchScore = (benefit.percentValue || 0) * 5;
-        }
+            let skip = false;
+            const specificPlatforms = ['bookmyshow', 'district', 'swiggy', 'zomato', 'dineout', 'eazydiner', 'nykaa', 'cleartrip', 'ajio'];
 
-        if (matchScore > matchedBenefitValue) {
-          matchedBenefitValue = matchScore;
-          usedBenefit = benefit;
+            for (const plat of specificPlatforms) {
+              if (descL.includes(plat) || valLower.includes(plat)) {
+                if (!nameL.includes(plat) && !(platL && platL.includes(plat))) {
+                  skip = true;
+
+                  if (isMovieOffer && (catL.includes('movie') || nameL.includes('movie')) && !nameL.match(/cinepolis|pvr|inox|bookmyshow|district|bms|paytm insider|townscript|mera event|cinema|theatre/i)) {
+                    if (!searchedMoviePlat) skip = false;
+                  }
+                  if (isDiningOffer && (catL.includes('dining') || nameL.includes('dining')) && !nameL.match(/swiggy|zomato|eazydiner|dineout|district|toing|bistro|blinkit|zepto cafe|eatsure|fresh menu|box8|eat club|uber eats|domino|pizza hut|magicpin|starbucks|mcdonald|kfc|burger king|haldiram|bikanervala|cafe|restaurant|diner|eatery|pub|bar|coffee/i)) {
+                    if (!searchedDiningPlat) skip = false;
+                  }
+                }
+                break;
+              }
+            }
+
+            if (skip) continue;
+          }
+
+          const pLower = `${benefit.category} ${benefit.value} ${benefit.description || ''}`.toLowerCase();
+          if (platL && pLower.includes(platL)) matchScore = 100 + (benefit.percentValue || 0);
+          else if (pLower.includes(catL) && catL !== 'other') matchScore = 50 + (benefit.percentValue || 0);
+          else if (card.id === 'hsbc-live-plus' && !isIntl && (isGrocery || isFoodDelivery || isDining)) {
+            if (pLower.includes('dining') || pLower.includes('grocery') || pLower.includes('groceries') || pLower.includes('food')) matchScore = 60;
+          }
+          else if ((isFoodDelivery || isDining) && (pLower.includes('swiggy') || pLower.includes('district') || pLower.includes('dining'))) {
+            matchScore = 70;
+          }
+          else if (isMovie && (pLower.includes('movie') || pLower.includes('ticket'))) {
+            matchScore = 70;
+          }
+          else if ((card.id === 'axis-myzone') && (nameL.includes('ajio') || platL.includes('ajio'))) {
+            if (pLower.includes('fashion') || pLower.includes('ajio')) matchScore = 95;
+          }
+          else if ((card.id === 'axis-myzone' || card.id === 'kotak-811-infinity') && (nameL.includes('eazydiner') || platL.includes('eazydiner') || nameL.includes('district') || platL.includes('district'))) {
+            if (pLower.includes('dining') || pLower.includes('eazydiner') || pLower.includes('district')) matchScore = 95;
+          }
+          else if (isOnline && benefit.category.toLowerCase().includes('online')) matchScore = 20 + (benefit.percentValue || 0);
+          else if (!isOnline && benefit.category.toLowerCase().includes('offline')) matchScore = 20 + (benefit.percentValue || 0);
+          else if (isScanToPay && pLower.includes('scan')) matchScore = 30 + (benefit.percentValue || 0);
+          else if (benefit.type === 'offer' && (benefit.description.toLowerCase().includes(nameL) || (platL && benefit.description.toLowerCase().includes(platL)))) {
+            matchScore = 80;
+          }
+          else if (pLower.includes('all') || pLower.includes('all spends') || pLower.includes('other')) {
+            matchScore = (benefit.percentValue || 0) * 5;
+          }
+
+          if (matchScore > matchedBenefitValue) {
+            matchedBenefitValue = matchScore;
+            usedBenefit = benefit;
+          }
         }
       }
 
@@ -330,7 +338,6 @@ export function getRecommendations(
           cashbackAmount = calculatedCb + baseCb;
           const capType = usedBenefit.type.charAt(0).toUpperCase() + usedBenefit.type.slice(1);
           if (card.id === 'axis-myzone') {
-
             if (usedBenefit.value === 'Swiggy') benefitText = `Flat ₹120 Off (Code: AXIS120)`;
             else if (usedBenefit.category === 'Movies') benefitText = `1+1 via District (Code: AXIS200)`;
             else if (usedBenefit.category === 'Fashion') benefitText = `Up to ₹1,000 Off (Code: AJIOAXISMZ)`;
