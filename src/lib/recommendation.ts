@@ -143,7 +143,7 @@ export function getRecommendations(
       if (isIntl) {
         isExcluded = true;
         benefitText = 'Excluded from earning rewards on International';
-      } else if (nameL.includes('swiggy') || nameL.includes('dineout') || platL.includes('swiggy') || platL.includes('dineout') || platL.includes('instamart') || isGrocery || catL.includes('dining') || nameL.includes('dining') || nameL.includes('restaurant') || catL.includes('restaurant')) {
+      } else if (nameL.includes('swiggy') || nameL.includes('dineout') || platL.includes('swiggy') || platL.includes('dineout') || platL.includes('instamart') || isGrocery || catL.includes('dining') || nameL.includes('dining') || catL.includes('food') || nameL.includes('food') || nameL.includes('restaurant') || catL.includes('restaurant')) {
         const eligible = Math.min(amount, 15000);
         cashbackAmount = (eligible * 0.10);
         benefitText = '10% Cashback';
