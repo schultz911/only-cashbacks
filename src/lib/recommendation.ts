@@ -84,8 +84,11 @@ export function getRecommendations(
 
         if (isExcludedCat === 'gaming' && !catL.includes('gambling') && !nameL.includes('gambling')) {
           if (card.id === 'hsbc-live-plus' || card.id === 'kotak-811-infinity') {
-            isExcluded = false;
-            benefitText = 'Base Rewards';
+            // Only bypass if it wasn't already excluded by Scan & Pay or International
+            if (benefitText.includes('Excluded category')) {
+               isExcluded = false;
+               benefitText = 'Base Rewards';
+            }
           }
         }
         if (card.id === 'hdfc-tata-neu-infinity') {
@@ -114,8 +117,13 @@ export function getRecommendations(
     );
 
     if (exclusion) {
-      isExcluded = true;
-      benefitText = 'Excluded from earning rewards';
+      // Special bypass for HSBC Live+ and Gaming (if it was accidentally categorized as an exclusion)
+      if (card.id === 'hsbc-live-plus' && catL === 'gaming') {
+        isExcluded = false;
+      } else {
+        isExcluded = true;
+        benefitText = 'Excluded from earning rewards';
+      }
     } else if (exhaustedCards[card.id]) {
       cashbackAmount = amount * (card.baseRewardRate / 100);
       benefitText = `Monthly limit reached. Earning (${card.baseRewardRate}% base rewards.)`;
