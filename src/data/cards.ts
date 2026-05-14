@@ -142,15 +142,15 @@ export const CARD_DATA: Card[] = [
     forexMarkup: 3.5,
     baseRewardRate: 0,
     benefits: [
-      { type: 'upi', category: 'Scan & Pay', value: '2%', percentValue: 2, description: 'Cashback on Scan & pay UPI spends. Rate increases to 5% with milestones.' },
-      { type: 'upi', category: 'Online UPI', value: '2%', percentValue: 2, description: 'Cashback on online UPI payments via Kiwi App. Counts towards milestones.' },
+      { type: 'upi', category: 'Scan & Pay', value: '2-5%', percentValue: 2, description: 'Cashback on Scan & pay UPI spends. Rate increases to 5% with milestones.' },
+      { type: 'upi', category: 'Online UPI', value: '0.5%', percentValue: 0.5, description: 'Cashback on online UPI payments via Kiwi App. Counts towards milestones.' },
       { type: 'exclusion', category: 'Telecom', value: '0%', description: 'Telecom' },
       { type: 'exclusion', category: 'Utilities', value: '0%', description: 'Utilities' },
       { type: 'exclusion', category: 'Jewellery', value: '0%', description: 'Jewellery' },
       { type: 'exclusion', category: 'Rent', value: '0%', description: 'Rent' },
       { type: 'exclusion', category: 'Insurance', value: '0%', description: 'Insurance' },
       { type: 'exclusion', category: 'Government', value: '0%', description: 'Government Services' },
-      { type: 'lounge', category: 'Domestic', value: '0/milestone', description: 'Redeem lounge voucher from the Kiwi app after hitting every 50k spend milestone.' }
+      { type: 'lounge', category: 'Domestic', value: '1/milestone', description: 'Redeem lounge voucher from the Kiwi app after hitting every 50k spend milestone.' }
     ]
   },
   {
