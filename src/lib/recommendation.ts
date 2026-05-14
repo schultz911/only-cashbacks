@@ -261,8 +261,8 @@ export function getRecommendations(
         else if ((card.id === 'axis-myzone' || card.id === 'kotak-811-infinity') && (nameL.includes('eazydiner') || platL.includes('eazydiner') || nameL.includes('district') || platL.includes('district'))) {
           if (pLower.includes('dining') || pLower.includes('eazydiner') || pLower.includes('district')) matchScore = 95;
         }
-        else if (isOnline && pLower.includes('online')) matchScore = 20 + (benefit.percentValue || 0);
-        else if (!isOnline && pLower.includes('offline')) matchScore = 20 + (benefit.percentValue || 0);
+        else if (isOnline && benefit.category.toLowerCase().includes('online')) matchScore = 20 + (benefit.percentValue || 0);
+        else if (!isOnline && benefit.category.toLowerCase().includes('offline')) matchScore = 20 + (benefit.percentValue || 0);
         else if (isScanToPay && pLower.includes('scan')) matchScore = 30 + (benefit.percentValue || 0);
         else if (benefit.type === 'offer' && (benefit.description.toLowerCase().includes(nameL) || (platL && benefit.description.toLowerCase().includes(platL)))) {
           matchScore = 80;
