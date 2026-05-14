@@ -43,7 +43,7 @@ export const CARD_DATA: Card[] = [
     forexMarkup: 3.5,
     baseRewardRate: 1.5,
     benefits: [
-      { type: 'cashback', category: 'Dining', value: '10%', percentValue: 10, description: '10% Cashback on food delivery, dining, and groceries (Domestic only).', maxSpend: 10000, fallbackRate: 0 },
+      { type: 'cashback', category: 'Dining', value: '10%', percentValue: 10, description: '10% Cashback on food delivery, dining, and groceries.', maxSpend: 10000, fallbackRate: 0 },
       { type: 'lounge', category: 'Domestic', value: '1/qtr', description: 'Complimentary domestic lounge access.' },
       { type: 'exclusion', category: 'Fuel', value: '0%', description: 'Fuel' },
       { type: 'exclusion', category: 'Wallet', value: '0%', description: 'Wallet Loads' },

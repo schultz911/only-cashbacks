@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
-import { Search, History, Plane, Loader2, Sparkles, Globe, Wallet, QrCode, X, ChevronDown, Check, UserCircle, LogOut, AlertCircle, Ticket, Tag } from 'lucide-react';
+import { Search, History, Plane, Loader2, Sparkles, Globe, Wallet, QrCode, X, ChevronDown, Check, UserCircle, LogOut, AlertCircle, Ticket, Tag, CreditCard, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { categorizeMerchant } from './services/gemini';
 import { getRecommendations } from './lib/recommendation';
@@ -122,6 +122,7 @@ export default function App() {
   const [showOffersOverlay, setShowOffersOverlay] = useState(false);
   const [selectedCardForDetails, setSelectedCardForDetails] = useState<{ card: Card, source: string } | null>(null);
   const [exhaustedCards, setExhaustedCards] = useState<Record<string, boolean>>({});
+  const [isMyCardsOpen, setIsMyCardsOpen] = useState(false);
   const [loungeTab, setLoungeTab] = useState<'Domestic' | 'International'>('Domestic');
   const [loungePassesUsed, setLoungePassesUsed] = useState<Record<string, number>>({});
   const [loungeMilestonesVerified, setLoungeMilestonesVerified] = useState<Record<string, boolean>>({});
@@ -367,10 +368,18 @@ export default function App() {
               </button>
             </div>
           ) : (
-            <button
-              onClick={handleLogin}
-              className="flex items-center gap-2 bg-white text-gray-700 px-4 py-2 border border-gray-200 rounded-full font-semibold text-sm hover:bg-gray-50 transition-colors shadow-sm"
-            >
+            <>
+              <button
+                onClick={() => setIsMyCardsOpen(true)}
+                className="flex items-center gap-2 bg-[#0095f6]/10 text-[#0095f6] px-4 py-2 rounded-full font-bold text-sm hover:bg-[#0095f6]/20 transition-all active:scale-95 border border-[#0095f6]/20 shadow-sm"
+              >
+                <CreditCard className="w-4 h-4" />
+                <span>My Cards</span>
+              </button>
+              <button
+                onClick={handleLogin}
+                className="flex items-center gap-2 bg-white text-gray-700 px-4 py-2 border border-gray-200 rounded-full font-semibold text-sm hover:bg-gray-50 transition-colors shadow-sm"
+              >
               <svg className="w-4 h-4" viewBox="0 0 24 24">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
                 <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
@@ -379,6 +388,7 @@ export default function App() {
               </svg>
               Sign In
             </button>
+            </>
           )}
         </div>
       </header>
@@ -1059,6 +1069,94 @@ export default function App() {
         )}
 
         <AnimatePresence>
+          {isMyCardsOpen && (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[1100] bg-black/60 backdrop-blur-xl"
+                onClick={() => setIsMyCardsOpen(false)}
+              />
+              <motion.div
+                initial={{ x: '100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '100%' }}
+                transition={{ type: "spring", damping: 30, stiffness: 300 }}
+                className="fixed inset-y-0 right-0 z-[1101] w-full md:w-[32rem] bg-[#f8f9fa] shadow-2xl flex flex-col border-l border-white/20"
+              >
+                <div className="p-8 pb-6 flex items-center justify-between bg-white border-b border-gray-100">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-600/30">
+                      <CreditCard className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-black text-gray-900 tracking-tight">My Cards</h3>
+                      <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">Collection Manager</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsMyCardsOpen(false)}
+                    className="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-all border border-gray-200"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-8 pt-6 space-y-6 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
+                  <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex items-center gap-3">
+                    <Info className="w-5 h-5 text-blue-500 shrink-0" />
+                    <p className="text-xs font-bold text-blue-700/80 leading-relaxed uppercase tracking-wide">
+                      Manage limits and exhaustion status for your cards here to refine recommendations.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4">
+                    {CARD_DATA.filter(c => !c.isDummy).map(card => (
+                      <motion.div
+                        key={card.id}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className={cn(
+                          "p-6 rounded-[2rem] border transition-all relative overflow-hidden group cursor-pointer",
+                          exhaustedCards[card.id]
+                            ? "bg-white border-red-100 opacity-80"
+                            : "bg-white border-gray-100 shadow-lg shadow-gray-200/40 hover:border-blue-200"
+                        )}
+                        onClick={() => setSelectedCardForDetails({ card, source: 'rec' })}
+                      >
+                        <div className="flex items-center justify-between relative z-10">
+                          <div className="flex items-center gap-4">
+                            <div className={cn(
+                              "w-12 h-12 rounded-xl flex items-center justify-center text-white font-black text-xs shadow-md",
+                              card.color || "bg-gray-800"
+                            )}>
+                              {card.bank.substring(0, 1)}
+                            </div>
+                            <div>
+                              <h4 className="font-black text-gray-900 tracking-tight">{card.name}</h4>
+                              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">{card.bank}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            {exhaustedCards[card.id] && (
+                              <span className="px-2 py-1 bg-red-50 text-red-600 text-[10px] font-black uppercase tracking-widest rounded-lg border border-red-100">
+                                Exhausted
+                              </span>
+                            )}
+                            <ChevronDown className="w-5 h-5 text-gray-300 -rotate-90 group-hover:text-blue-500 transition-colors" />
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
           {showOffersOverlay && recommendation?.availableOffers && (
             <motion.div
               initial={{ opacity: 0 }}
@@ -1134,10 +1232,18 @@ export default function App() {
                             <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
                             <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Verified</span>
                           </div>
-                          <div className="flex items-center gap-2 text-blue-600 font-black text-xs uppercase tracking-tighter group-hover:translate-x-1 transition-transform">
+                          <button
+                            onClick={() => {
+                              if (offer.cardId) {
+                                setShowOffersOverlay(false);
+                                setTimeout(() => setIsMyCardsOpen(true), 300);
+                              }
+                            }}
+                            className="flex items-center gap-2 text-blue-600 font-black text-xs uppercase tracking-tighter hover:text-blue-700 transition-colors group/btn"
+                          >
                             Details
-                            <ChevronDown className="w-4 h-4 -rotate-90" />
-                          </div>
+                            <ChevronDown className="w-4 h-4 -rotate-90 group-hover/btn:translate-x-1 transition-transform" />
+                          </button>
                         </div>
                       </motion.div>
                     ))}

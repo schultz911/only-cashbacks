@@ -439,43 +439,43 @@ export function getRecommendations(
     reason += " Also, don't forget to redeem your Indigo BluChips!";
   }
 
-  const availableOffers: { id: string; icon: string; title: string; description: string; category: string; }[] = [];
+  const availableOffers: { id: string; icon: string; title: string; description: string; cardId?: string; category: string; }[] = [];
 
   if (isMovie) {
     if ((offerUsage['kotak-811-infinity-Movies-BMS'] || 0) < 1) {
-      availableOffers.push({ id: 'k-bms', icon: '🎬', title: 'Kotak 811', description: 'Buy 1 Get 1 Ticket up to ₹300', category: 'BMS' });
+      availableOffers.push({ id: 'k-bms', icon: '🎬', title: 'Kotak 811', description: 'Buy 1 Get 1 Ticket up to ₹300', category: 'BMS', cardId: 'kotak-811-infinity' });
     }
     if ((offerUsage['axis-myzone-Movies-District'] || 0) < 1) {
-      availableOffers.push({ id: 'a-district', icon: '🍿', title: 'Axis MyZone', description: 'Buy 1 Get 1 Ticket up to ₹200', category: 'District' });
+      availableOffers.push({ id: 'a-district', icon: '🍿', title: 'Axis MyZone', description: 'Buy 1 Get 1 Ticket up to ₹200', category: 'District', cardId: 'axis-myzone' });
     }
     if ((offerUsage['hdfc-imperia-Movies-BMS'] || 0) < 1) {
-      availableOffers.push({ id: 'i-bms', icon: '🎟️', title: 'HDFC Imperia', description: '25% points up to ₹250', category: 'BMS' });
+      availableOffers.push({ id: 'i-bms', icon: '🎟️', title: 'HDFC Imperia', description: '25% points up to ₹250', category: 'BMS', cardId: 'hdfc-imperia' });
     }
     if (!nameL.match(/bookmyshow|bms|district/i)) {
-      availableOffers.push({ id: 's-cine', icon: '🎥', title: 'Swiggy oneBLCK', description: '25% off up to ₹75', category: 'Cinepolis' });
+      availableOffers.push({ id: 's-cine', icon: '🎥', title: 'Swiggy oneBLCK', description: '25% off up to ₹75', category: 'Cinepolis', cardId: 'hdfc-swiggy' });
     }
   }
 
   if (isDining) {
     if ((offerUsage['kotak-811-infinity-Dining-District'] || 0) < 1) {
-      availableOffers.push({ id: 'k-dist', icon: '🍽️', title: 'Kotak 811', description: '20% off up to ₹750', category: 'District' });
+      availableOffers.push({ id: 'k-dist', icon: '🍽️', title: 'Kotak 811', description: '20% off up to ₹750', category: 'District', cardId: 'kotak-811-infinity' });
     }
     if ((offerUsage['axis-myzone-Dining-EazyDiner'] || 0) < 1) {
-      availableOffers.push({ id: 'a-eazy', icon: '🥂', title: 'Axis MyZone', description: '15% off up to ₹500', category: 'EazyDiner' });
+      availableOffers.push({ id: 'a-eazy', icon: '🥂', title: 'Axis MyZone', description: '15% off up to ₹500', category: 'EazyDiner', cardId: 'axis-myzone' });
     }
   }
 
   if (isFoodDelivery) {
     if ((offerUsage['axis-myzone-Food-Swiggy'] || 0) < 2) {
-      availableOffers.push({ id: 'a-swig', icon: '🍔', title: 'Axis MyZone', description: 'Flat ₹120 off (AXIS120)', category: 'Swiggy' });
+      availableOffers.push({ id: 'a-swig', icon: '🍔', title: 'Axis MyZone', description: 'Flat ₹120 off (AXIS120)', category: 'Swiggy', cardId: 'axis-myzone' });
     }
     if ((offerUsage['hdfc-imperia-Food-Swiggy'] || 0) < 1) {
-      availableOffers.push({ id: 'i-swig', icon: '🍕', title: 'HDFC Imperia', description: '5% cashback up to ₹150', category: 'Swiggy' });
+      availableOffers.push({ id: 'i-swig', icon: '🍕', title: 'HDFC Imperia', description: '5% cashback up to ₹150', category: 'Swiggy', cardId: 'hdfc-imperia' });
     }
   }
 
   if ((nameL.includes('ajio') || platL.includes('ajio') || catL.includes('apparel')) && amount >= 999) {
-    availableOffers.push({ id: 's-ajio', icon: '🛍️', title: 'Swiggy oneBLCK', description: 'Flat 20% off on select styles', category: 'Ajio' });
+    availableOffers.push({ id: 's-ajio', icon: '🛍️', title: 'Swiggy oneBLCK', description: 'Flat 20% off on select styles', category: 'Ajio', cardId: 'hdfc-swiggy' });
   }
 
   const tiedCards = validOptions

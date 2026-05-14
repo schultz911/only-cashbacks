@@ -22,6 +22,7 @@ export interface Card {
   name: string;
   bank: string;
   image?: string;
+  color?: string;
   benefits: CardBenefit[];
   network: 'Visa' | 'Mastercard' | 'RuPay' | 'Amex' | 'Other';
   tier?: string;
@@ -61,6 +62,7 @@ export interface Recommendation {
     icon: string;
     title: string;
     description: string;
+    cardId?: string;
     category: string;
   }[];
 }
