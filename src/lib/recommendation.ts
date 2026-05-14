@@ -21,7 +21,10 @@ export function getRecommendations(
   const catL = merchant.category.toLowerCase();
   const platL = merchant.platform?.toLowerCase() || '';
 
-  const isGrocery = catL.includes('grocery') || nameL.includes('grocery') || nameL.includes('groceries') || catL.includes('food delivery') || nameL.includes('delivery') || nameL.includes('food') || ['bigbasket', 'blinkit', 'instamart', 'zepto', 'instamart', 'dmart', 'reliance fresh', "nature's basket", 'spencers'].some(g => nameL.includes(g) || platL.includes(g) || catL.includes(g));
+  const isGrocery = catL.includes('grocery') || nameL.includes('grocery') || nameL.includes('groceries') || ['bigbasket', 'blinkit', 'instamart', 'zepto', 'dmart', 'reliance fresh', "nature's basket", 'spencers'].some(g => nameL.includes(g) || platL.includes(g) || catL.includes(g));
+  const isFoodDelivery = catL.includes('food delivery') || nameL.includes('delivery') || nameL.includes('food') || ['swiggy', 'zomato', 'toing', 'bistro', 'box8', 'eatsure', 'freshmenu', 'eatclub', 'uber eats'].some(d => nameL.includes(d) || platL.includes(d) || catL.includes(d));
+  const isDining = catL.includes('dining') || nameL.includes('dining') || nameL.includes('restaurant') || ['dineout', 'eazydiner', 'zomato', 'district', 'eatery', 'pub', 'microbrewery', 'cafe'].some(r => nameL.includes(r) || platL.includes(r) || catL.includes(r));
+  const isMovie = catL.includes('movie') || nameL.includes('movie') || ['bookmyshow', 'bms', 'pvr', 'inox', 'cinepolis', 'theatre', 'cinema', 'district'].some(m => nameL.includes(m) || platL.includes(m) || catL.includes(m));
 
   // Google Play special logic
   if (nameL.includes('google') || platL.includes('google')) {
@@ -43,6 +46,7 @@ export function getRecommendations(
   // Tata Neu merchants
   const tataNeuMerchants = ['croma', 'westside', 'zudio', 'ihcl', 'bigbasket', '1mg', 'cliq', 'air india', 'air india express', 'qmin', 'cult', 'tata play', 'titan', 'tanishq', 'mia', 'fastrack', 'caratlane', 'helios', 'zoya'];
   const isTataNeuAppMerchant = tataNeuMerchants.some(tm => nameL.includes(tm) || catL.includes(tm) || platL.includes(tm));
+  const isTataNeuPartnerMerchant = ['pharmacy', 'medical', 'health', 'apparel', 'clothing', 'fashion', 'electronics', 'gadgets', 'footwear', 'watches', 'accessories', 'jewelry', 'jewellery', 'hotel', 'resort', 'travel', 'luxury'].some(k => nameL.includes(k));
 
   const calculationResults = CARD_DATA.map(card => {
     let cashbackAmount = 0;
@@ -104,34 +108,30 @@ export function getRecommendations(
       cashbackAmount = amount * (card.baseRewardRate / 100);
       benefitText = `Monthly limit reached. Earning (${card.baseRewardRate}% base rewards.)`;
     } else if (card.id === 'hdfc-tata-neu-infinity' && !isIntl) {
-      if (isGrocery && isTataNeuAppMerchant && isOnline) {
+      if ((isGrocery || isFoodDelivery) && isTataNeuAppMerchant && isOnline) {
         const eligibleSpend = Math.min(amount, 15000);
         cashbackAmount = (eligibleSpend * 0.035) + (amount * card.baseRewardRate / 100) + (amount * 0.05);
-        benefitText = '10% NeuCoins on BigBasket via Tata Neu';
-      } else if (!isGrocery && isTataNeuAppMerchant && isOnline) {
+        if (isGrocery) {
+          benefitText = '10% NeuCoins on BigBasket via Tata Neu';
+        } else {
+          benefitText = '10% NeuCoins on Qmin via Tata Neu';
+        }
+      } else if (!(isGrocery || isFoodDelivery) && isTataNeuAppMerchant && isOnline) {
         cashbackAmount = (amount * 0.035) + (amount * card.baseRewardRate / 100) + (amount * 0.05);
         benefitText = '10% NeuCoins via Tata Neu';
-      } else if (!isGrocery && isTataNeuAppMerchant && !isOnline) {
-        {
-          cashbackAmount = (amount * 0.035) + (amount * card.baseRewardRate / 100);
-          benefitText = '5% NeuCoins in Offline Stores';
-        }
-      } else if (isGrocery && isOnline) {
-        {
-          const eligibleSpend = Math.min(amount, 15000);
-          cashbackAmount = (eligibleSpend * 0.035) + (amount * card.baseRewardRate / 100) + (amount * 0.05);
-          benefitText = '10% NeuCoins on BigBasket via Tata Neu app';
-        }
-      } else if (isGrocery && !isOnline) {
-        {
-          cashbackAmount = amount * card.baseRewardRate / 100;
-          benefitText = '1.5% NeuCoins';
-        }
-      }
-      else if (catL.includes('utility') || catL.includes('utilities') || catL.includes('telecom') || catL.includes('internet') || catL.includes('bill') || catL.includes('bills') || catL.includes('toll') || platL.includes('tata play') || (platL.includes('fastag'))) {
+      } else if (isTataNeuPartnerMerchant && isOnline) {
+        cashbackAmount = (amount * 0.035) + (amount * card.baseRewardRate / 100) + (amount * 0.05);
+        benefitText = '10% NeuCoins via Tata Neu';
+      } else if (isTataNeuPartnerMerchant && !isOnline) {
+        cashbackAmount = (amount * 0.035) + (amount * card.baseRewardRate / 100);
+        benefitText = '5% NeuCoins in Offline Stores';
+      } else if (!(isGrocery || isFoodDelivery) && isTataNeuAppMerchant && !isOnline) {
+        cashbackAmount = (amount * 0.035) + (amount * card.baseRewardRate / 100);
+        benefitText = '5% NeuCoins in Offline Stores';
+      } else if (catL.includes('utilities') || nameL.includes('internet') || nameL.includes('bill') || nameL.includes('bills') || nameL.includes('toll') || nameL.includes('tata play') || nameL.includes('fastag')) {
         const eligibleSpend = Math.min(amount, 40000);
         cashbackAmount = (eligibleSpend * 0.035) + (eligibleSpend * card.baseRewardRate / 100);
-        benefitText = '5% NeuCoins via Tata Neu App';
+        benefitText = '5% NeuCoins via Tata Neu';
       } else if (!isOnline) {
         cashbackAmount = amount * card.baseRewardRate / 100;
         benefitText = '1.5% NeuCoins';
@@ -143,18 +143,18 @@ export function getRecommendations(
       if (isIntl) {
         isExcluded = true;
         benefitText = 'Excluded from earning rewards on International';
-      } else if (nameL.includes('swiggy') || nameL.includes('dineout') || platL.includes('swiggy') || platL.includes('dineout') || platL.includes('instamart') || isGrocery || catL.includes('dining') || nameL.includes('dining') || catL.includes('food') || nameL.includes('food') || nameL.includes('restaurant') || catL.includes('restaurant')) {
+      } else if (isFoodDelivery || isDining || isGrocery) {
         const eligible = Math.min(amount, 15000);
         cashbackAmount = (eligible * 0.10);
         benefitText = '10% Cashback';
-      } else if (isOnline && (nameL.includes('nykaa') || platL.includes('nykaa'))) {
+      } else if (isOnline && (nameL.includes('nykaa') || platL.includes('nykaa') || catL.includes('beauty'))) {
         const eligible = Math.min(amount, 30000);
         const over = Math.max(0, amount - 30000);
         cashbackAmount = (eligible * 0.05) + (over * 0.01);
         discountAmount = amount * 0.05;
         benefitText = `5% Cashback + 5% Instant Discount`;
         cashbackAmount += discountAmount;
-      } else if (isOnline && (nameL.includes('cleartrip') || platL.includes('cleartrip'))) {
+      } else if (isOnline && (nameL.includes('cleartrip') || catL.includes('travel') || platL.includes('cleartrip'))) {
         const eligible = Math.min(amount, 30000);
         const over = Math.max(0, amount - 30000);
         cashbackAmount = (eligible * 0.05) + (over * 0.01);
@@ -163,7 +163,7 @@ export function getRecommendations(
         discountAmount = amount * ctDisc;
         cashbackAmount += discountAmount;
         benefitText = `5% Cashback + ${(ctDisc * 100).toFixed(2)}% Instant Discount (Code: CTSWHDFC)`;
-      } else if (isOnline && !catL.includes('utility') && !nameL.includes('utility')) {
+      } else if (isOnline && !catL.includes('utility') && !nameL.includes('utility') && !catL.includes('fuel') && !nameL.includes('fuel') && !catL.includes('gaming') && !nameL.includes('gaming') && !catL.includes('gambling') && !nameL.includes('gambling') && !catL.includes('finance') && !nameL.includes('finance') && !catL.includes('education') && !nameL.includes('education') && !catL.includes('school') && !nameL.includes('school') && !catL.includes('rail') && !nameL.includes('rail') && !catL.includes('travel') && !nameL.includes('travel') && !catL.includes('flights') && !nameL.includes('flights') && !catL.includes('hotel') && !nameL.includes('hotel')) {
         const eligible = Math.min(amount, 30000);
         const over = Math.max(0, amount - 30000);
         cashbackAmount = (eligible * 0.05) + (over * 0.01);
@@ -177,29 +177,29 @@ export function getRecommendations(
       benefitText = `${kiwiNeonEarnRate}% Cashback on ${isScanToPay ? 'Scan & Pay' : 'Online UPI'}`;
     } else if (card.id === 'kotak-811-infinity' && !isScanToPay) {
       // Special logic for Kotak 811 offers + cashback
-      const movieUsed = offerUsage['kotak-811-infinity-Movies-BookMyShow'] || 0;
+      const movieUsed = offerUsage['kotak-811-infinity-Movies-BMS'] || 0;
       const diningUsed = offerUsage['kotak-811-infinity-Dining-District'] || 0;
 
-      if ((catL.includes('movie') || nameL.includes('movie') || nameL.includes('bookmyshow')) && movieUsed < 1) {
+      if (isMovie && movieUsed < 1) {
         discountAmount = Math.min(amount * 0.5, 300);
         const remaining = amount - discountAmount;
         cashbackAmount = discountAmount + Math.min(remaining * 0.05, 100);
-        benefitText = '50% BMS Discount + 5% Cashback';
-      } else if ((catL.includes('dining') || nameL.includes('dining') || nameL.includes('district')) && diningUsed < 1) {
+        benefitText = '1+1 Movie on BookMyShow + 5% Cashback';
+      } else if ((isDining || nameL.includes('district')) && diningUsed < 1) {
         discountAmount = Math.min(amount * 0.15, 500); // Assuming 15% up to 500 for District
         const remaining = amount - discountAmount;
         cashbackAmount = discountAmount + Math.min(remaining * 0.05, 100);
-        benefitText = '15% District Discount + 5% Cashback';
+        benefitText = '15% Instant Discount + 5% Cashback';
       } else {
         cashbackAmount = Math.min(amount * 0.05, 100);
-        benefitText = '5% Cashback (Capped at ₹100)';
+        benefitText = '5% Cashback';
       }
     } else {
       let matchedBenefitValue = -1;
       let usedBenefit = null;
 
-      const moviePlatforms = ['bookmyshow', 'district', 'pvr', 'inox', 'cinepolis', 'paytm'];
-      const diningPlatforms = ['swiggy', 'zomato', 'eazydiner', 'dineout', 'district'];
+      const moviePlatforms = ['bookmyshow', 'bms', 'paytm insider', 'townscript', 'mera event', 'pvr', 'inox', 'cinepolis', 'movie', 'cinema', 'theatre', 'district'];
+      const diningPlatforms = ['swiggy', 'toing', 'dineout', 'zomato', 'bistro', 'blinkit', 'zepto cafe', 'eatsure', 'fresh menu', 'box8', 'eat club', 'uber eats', 'domino', 'pizza hut', 'magicpin', 'starbucks', 'mcdonald', 'kfc', 'burger king', 'haldiram', 'bikanervala', 'cafe', 'restaurant', 'diner', 'eatery', 'pub', 'bar', 'coffee', 'district'];
       const searchedMoviePlat = moviePlatforms.find(p => nameL.includes(p) || (platL && platL.includes(p)));
       const searchedDiningPlat = diningPlatforms.find(p => nameL.includes(p) || (platL && platL.includes(p)));
 
@@ -226,10 +226,10 @@ export function getRecommendations(
               if (!nameL.includes(plat) && !(platL && platL.includes(plat))) {
                 skip = true;
 
-                if (isMovieOffer && (catL.includes('movie') || nameL.includes('movie')) && !nameL.match(/cinepolis|pvr|inox|bookmyshow|district/i)) {
+                if (isMovieOffer && (catL.includes('movie') || nameL.includes('movie')) && !nameL.match(/cinepolis|pvr|inox|bookmyshow|district|bms|paytm insider|townscript|mera event|cinema|theatre/i)) {
                   if (!searchedMoviePlat) skip = false;
                 }
-                if (isDiningOffer && (catL.includes('dining') || nameL.includes('dining')) && !nameL.match(/swiggy|zomato|eazydiner|dineout|district/i)) {
+                if (isDiningOffer && (catL.includes('dining') || nameL.includes('dining')) && !nameL.match(/swiggy|zomato|eazydiner|dineout|district|toing|bistro|blinkit|zepto cafe|eatsure|fresh menu|box8|eat club|uber eats|domino|pizza hut|magicpin|starbucks|mcdonald|kfc|burger king|haldiram|bikanervala|cafe|restaurant|diner|eatery|pub|bar|coffee/i)) {
                   if (!searchedDiningPlat) skip = false;
                 }
               }
@@ -240,31 +240,33 @@ export function getRecommendations(
           if (skip) continue;
         }
 
-        const pLower = benefit.category.toLowerCase();
-        if (platL && pLower === platL) matchScore = 100 + (benefit.percentValue || 0);
-        else if (pLower === catL) matchScore = 50 + (benefit.percentValue || 0);
-        else if (card.id === 'hsbc-live-plus' && (isGrocery || nameL.includes('food') || catL.includes('food') || nameL.includes('restaurant') || catL.includes('restaurant') || nameL.includes('dining'))) {
-          if (pLower.includes('dining') || pLower.includes('grocery')) matchScore = 60;
+        const pLower = `${benefit.category} ${benefit.value} ${benefit.description || ''}`.toLowerCase();
+        if (platL && pLower.includes(platL)) matchScore = 100 + (benefit.percentValue || 0);
+        else if (pLower.includes(catL) && catL !== 'other') matchScore = 50 + (benefit.percentValue || 0);
+        else if (card.id === 'hsbc-live-plus' && (isGrocery || isFoodDelivery || isDining)) {
+          if (pLower.includes('dining') || pLower.includes('grocery') || pLower.includes('groceries') || pLower.includes('food')) matchScore = 60;
         }
-        else if ((nameL.includes('food') || catL.includes('food') || nameL.includes('dining') || catL.includes('dining')) && (pLower === 'swiggy' || pLower === 'zomato' || pLower === 'dining')) {
+        else if ((isFoodDelivery || isDining) && (pLower.includes('swiggy') || pLower.includes('district') || pLower.includes('dining'))) {
           matchScore = 70;
         }
-        else if ((nameL.includes('movie') || catL.includes('movie') || nameL.includes('bookmyshow') || nameL.includes('district') || nameL.includes('pvr') || nameL.includes('inox') || nameL.includes('cinepolis') || nameL.includes('entertainment')) && (pLower === 'movies' || pLower === 'entertainment' || benefit.description.toLowerCase().includes('movie'))) {
+        else if (isMovie && (pLower.includes('movie') || pLower.includes('ticket'))) {
           matchScore = 70;
         }
-        else if (card.id === 'axis-myzone' && (nameL.includes('ajio') || platL.includes('ajio'))) {
+        else if ((card.id === 'axis-myzone') && (nameL.includes('ajio') || platL.includes('ajio'))) {
           if (pLower.includes('fashion') || pLower.includes('ajio')) matchScore = 95;
         }
-        else if (card.id === 'axis-myzone' && (nameL.includes('eazydiner') || platL.includes('eazydiner'))) {
-          if (pLower.includes('dining') || pLower.includes('eazydiner')) matchScore = 95;
+        else if ((card.id === 'axis-myzone' || card.id === 'kotak-811-infinity') && (nameL.includes('eazydiner') || platL.includes('eazydiner') || nameL.includes('district') || platL.includes('district'))) {
+          if (pLower.includes('dining') || pLower.includes('eazydiner') || pLower.includes('district')) matchScore = 95;
         }
-        else if (isOnline && (pLower === 'online' || pLower === 'online upi')) matchScore = 20 + (benefit.percentValue || 0);
-        else if (!isOnline && pLower === 'offline') matchScore = 20 + (benefit.percentValue || 0);
-        else if (isScanToPay && pLower === 'upi scan') matchScore = 30 + (benefit.percentValue || 0);
+        else if (isOnline && pLower.includes('online')) matchScore = 20 + (benefit.percentValue || 0);
+        else if (!isOnline && pLower.includes('offline')) matchScore = 20 + (benefit.percentValue || 0);
+        else if (isScanToPay && pLower.includes('scan')) matchScore = 30 + (benefit.percentValue || 0);
         else if (benefit.type === 'offer' && (benefit.description.toLowerCase().includes(nameL) || (platL && benefit.description.toLowerCase().includes(platL)))) {
           matchScore = 80;
         }
-        else if (pLower === 'all' || pLower === 'all spends' || pLower === 'other') matchScore = benefit.percentValue || 0;
+        else if (pLower.includes('all') || pLower.includes('all spends') || pLower.includes('other')) {
+          matchScore = (benefit.percentValue || 0) * 5;
+        }
 
         if (matchScore > matchedBenefitValue) {
           matchedBenefitValue = matchScore;
@@ -292,12 +294,19 @@ export function getRecommendations(
           cashbackAmount = calculatedCb + baseCb;
           const capType = usedBenefit.type.charAt(0).toUpperCase() + usedBenefit.type.slice(1);
           if (card.id === 'axis-myzone') {
-            if (usedBenefit.category === 'Swiggy') benefitText = `Flat ₹120 Off (Code: AXIS120)`;
+
+            if (usedBenefit.value === 'Swiggy') benefitText = `Flat ₹120 Off (Code: AXIS120)`;
             else if (usedBenefit.category === 'Movies') benefitText = `1+1 via District (Code: AXIS200)`;
             else if (usedBenefit.category === 'Fashion') benefitText = `Up to ₹1,000 Off (Code: AJIOAXISMZ)`;
             else if (usedBenefit.category === 'Dining') benefitText = `${rate}% Off via EazyDiner`;
             else benefitText = `${usedBenefit.value} ${capType}`;
-          } else {
+          }
+          else if (card.id === 'kotak-811-infinity') {
+            if (usedBenefit.category === 'Dining' && usedBenefit.value === 'District') benefitText = `20% Off via District`;
+            else if (usedBenefit.category === 'Movies' && usedBenefit.value === 'BMS') benefitText = `1+1 Movie Ticket on BMS`;
+            else benefitText = `${usedBenefit.value} ${capType}`;
+          }
+          else {
             benefitText = `${usedBenefit.value} ${capType}`;
           }
         }
@@ -309,24 +318,28 @@ export function getRecommendations(
 
     // Apply Universal Offers (Coupons from Swiggy One apply regardless of card limits if not excluded)
     if (!isExcluded && !exhaustedCards[card.id] && !isIntl) {
-      if (catL.includes('movie') || nameL.match(/movie|cinepolis|pvr|inox|bookmyshow/i)) {
+      if (isMovie) {
         const cinepolisDiscount = Math.min(amount * 0.25, 75);
         let onlineRate = card.baseRewardRate;
         let onlineCap = amount;
+
         if (card.id === 'sbi-cashback') {
           onlineRate = 5;
           onlineCap = 40000;
-        }
-        if (card.id === 'hdfc-swiggy') {
+        } else if (card.id === 'hdfc-swiggy') {
           onlineRate = 5;
           onlineCap = 30000;
+        } else if (card.id === 'kotak-811-infinity') {
+          onlineRate = 5;
+          onlineCap = 10000;
         }
+
         const eligibleAmt = Math.min(amount, onlineCap);
         const overSpend = Math.max(0, amount - onlineCap);
         const onlineCb = (eligibleAmt * onlineRate / 100) + (overSpend * card.baseRewardRate / 100);
         const totalCinepolisValue = cinepolisDiscount + onlineCb;
 
-        if (totalCinepolisValue > cashbackAmount && !nameL.includes('bookmyshow') && !nameL.includes('district')) {
+        if (totalCinepolisValue > cashbackAmount && !nameL.match(/bookmyshow|district/i)) {
           cashbackAmount = totalCinepolisValue;
           if (!nameL.includes('cinepolis')) {
             benefitText += ` (Better Deal: Swiggy Cinepolis with ₹${cinepolisDiscount.toFixed(0)} off)`;
@@ -336,7 +349,7 @@ export function getRecommendations(
         }
       }
 
-      if ((catL.includes('ajio') || nameL.includes('ajio')) && amount >= 999) {
+      if ((catL.includes('ajio') || nameL.includes('ajio') || platL.includes('ajio')) && amount >= 999) {
         const ajioDisc = amount * 0.20;
         cashbackAmount += ajioDisc;
         benefitText += ` with Swiggy One Coupon (20% off)`;
@@ -362,7 +375,7 @@ export function getRecommendations(
 
   let reason = '';
   if (isIntl) {
-    if (bestResult.card.id === 'kotak-811-infinity') reason = "Kotak 811 is best for small international purchases as the 5% cashback beats the forex markup, limited to ₹2000 per txn.";
+    if (bestResult.card.id === 'kotak-811-infinity') reason = "Kotak 811 is best for small international purchases as the 5% cashback beats the forex markup, limited to ₹2,000 per transaction.";
     else reason = "Calculates exact net value factoring in Forex markup + 18% GST vs Cashback earned.";
   }
   else if (bestResult.card.id === 'hdfc-tata-neu-infinity' && isTataNeuAppMerchant && !platL.includes('tata neu')) {
@@ -382,46 +395,47 @@ export function getRecommendations(
     reason += " Also, don't forget to redeem your Indigo BluChips!";
   }
 
-  if (catL.includes('movie') || nameL.match(/movie|cinepolis|pvr|inox|bookmyshow|district/i)) {
-    const movieOffers = [];
-    const bmsUsed = offerUsage['kotak-811-infinity-Movies-BookMyShow'] || 0;
-    if (!nameL.match(/cinepolis|pvr|inox|district/i)) {
-      if (bmsUsed < 1) movieOffers.push("\n🔹 Kotak 811 BookMyShow 1+1");
-      const imperiaUsed = offerUsage['hdfc-imperia-Movies-25%'] || 0;
-      if (imperiaUsed < 1) movieOffers.push("\n🔹 HDFC Imperia BookMyShow 25%");
-    }
-    const districtUsed = offerUsage['axis-myzone-Movies-District'] || 0;
-    if (districtUsed < 1 && !nameL.match(/cinepolis|pvr|inox|bookmyshow/i)) movieOffers.push("\n🔹 Axis MyZone District 1+1");
+  const availableOffers: { id: string; icon: string; title: string; description: string; category: string; }[] = [];
 
-    if (!nameL.match(/bookmyshow|district/i)) {
-      movieOffers.push("\n🔹 Swiggy Cinepolis (25% up to ₹75)\n🔹 Club Cinepolis Points");
+  if (isMovie) {
+    if ((offerUsage['kotak-811-infinity-Movies-BMS'] || 0) < 1) {
+      availableOffers.push({ id: 'k-bms', icon: '🎬', title: 'Kotak 811 BMS', description: 'Buy 1 Get 1 Ticket up to ₹300', category: 'Movie' });
     }
-
-    reason += ` \n\n🎬 Available Movie Offers: ${movieOffers.join(" ")}`;
+    if ((offerUsage['axis-myzone-Movies-District'] || 0) < 1) {
+      availableOffers.push({ id: 'a-district', icon: '🍿', title: 'Axis District', description: 'Buy 1 Get 1 Ticket up to ₹200', category: 'Movie' });
+    }
+    if ((offerUsage['hdfc-imperia-Movies-BMS'] || 0) < 1) {
+      availableOffers.push({ id: 'i-bms', icon: '🎟️', title: 'HDFC Imperia BMS', description: '25% points up to ₹250', category: 'Movie' });
+    }
+    if (!nameL.match(/bookmyshow|bms|district/i)) {
+      availableOffers.push({ id: 's-cine', icon: '🎥', title: 'oneBLCK Cinepolis', description: '25% off on Cinepolis tickets', category: 'Movie' });
+    }
   }
 
-  if (nameL.includes('ajio') || platL.includes('ajio') || catL.includes('ajio')) {
-    reason += " \n\n🛍️ Make sure to use your Swiggy Coupon for Ajio (Flat 20% off on min ₹999 spend) with whichever card you choose!";
+  if (isDining) {
+    if ((offerUsage['kotak-811-infinity-Dining-District'] || 0) < 1) {
+      availableOffers.push({ id: 'k-dist', icon: '🍽️', title: 'Kotak District', description: '20% off up to ₹750 via District', category: 'Dining' });
+    }
+    if ((offerUsage['axis-myzone-Dining-EazyDiner'] || 0) < 1) {
+      availableOffers.push({ id: 'a-eazy', icon: '🥂', title: 'Axis EazyDiner', description: '15% off via EazyDiner', category: 'Dining' });
+    }
+    availableOffers.push({ id: 'h-swig-d', icon: '🥘', title: 'HDFC Swiggy', description: '10% cashback on Dining', category: 'Dining' });
+    availableOffers.push({ id: 'hs-live-d', icon: '🍷', title: 'HSBC Live+', description: '10% cashback on Dining', category: 'Dining' });
   }
 
-  if ((catL.includes('food') || catL.includes('dining') || nameL.includes('food') || nameL.includes('dining') || catL.includes('food delivery') || nameL.includes('delivery') || nameL.includes('swiggy') || nameL.includes('zomato')) && !nameL.includes('cinepolis')) {
-    const swiggyOffers = [];
-
-    const districtDiningUsed = offerUsage['kotak-811-infinity-Dining-District'] || 0;
-    if (districtDiningUsed < 1) {
-      if (nameL.includes('district') || nameL.includes('dining') || catL.includes('dining')) {
-        swiggyOffers.push("\n🔹 Kotak 811 Infinity District Dining 15%");
-      }
+  if (isFoodDelivery) {
+    if ((offerUsage['axis-myzone-Food-Swiggy'] || 0) < 2) {
+      availableOffers.push({ id: 'a-swig', icon: '🍔', title: 'Axis Swiggy', description: 'Flat ₹120 off (AXIS120)', category: 'Food' });
     }
-
-    const myZoneSwiggyUsed = offerUsage['axis-myzone-Swiggy-Flat ₹120'] || 0;
-    if (myZoneSwiggyUsed < 2) swiggyOffers.push("\n🔹 Axis MyZone Flat ₹120 off");
-    const imperiaSwiggyUsed = offerUsage['hdfc-imperia-Swiggy-5%'] || 0;
-    if (imperiaSwiggyUsed < 3000) swiggyOffers.push("\n🔹 HDFC Imperia 5% up to ₹150");
-
-    if (swiggyOffers.length > 0) {
-      reason += ` \n\n🍔 Available Dining Offers: ${swiggyOffers.join(" ")}`;
+    if ((offerUsage['hdfc-imperia-Food-Swiggy'] || 0) < 1) {
+      availableOffers.push({ id: 'i-swig', icon: '🍕', title: 'HDFC Imperia', description: '5% cashback up to ₹150', category: 'Food' });
     }
+    availableOffers.push({ id: 'h-swig-f', icon: '🍱', title: 'HDFC Swiggy', description: '10% cashback on Food', category: 'Food' });
+    availableOffers.push({ id: 'hs-live-f', icon: '🍛', title: 'HSBC Live+', description: '10% cashback on Food', category: 'Food' });
+  }
+
+  if ((nameL.includes('ajio') || platL.includes('ajio') || catL.includes('apparel')) && amount >= 999) {
+    availableOffers.push({ id: 's-ajio', icon: '🛍️', title: 'oneBLCK Ajio', description: 'Flat 20% off on Ajio', category: 'Ajio' });
   }
 
   return {
@@ -431,6 +445,7 @@ export function getRecommendations(
     netValue: bestResult.netValue,
     cashbackEarned: bestResult.cashbackEarned,
     feesPaid: bestResult.feesPaid,
-    alternatives: validOptions.slice(1, 4).map(s => ({ card: s.card, benefit: s.benefitText, netValue: s.netValue }))
+    alternatives: validOptions.slice(1, 4).map(s => ({ card: s.card, benefit: s.benefitText, netValue: s.netValue })),
+    availableOffers
   };
 }

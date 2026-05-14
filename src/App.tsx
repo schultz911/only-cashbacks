@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
-import { Search, History, Crown, Info, Landmark, Plane, Coffee, ShoppingBag, Loader2, Sparkles, Globe, Wallet, QrCode, X, ChevronDown, Check, UserCircle, LogOut, AlertCircle } from 'lucide-react';
+import { Search, History, Plane, Loader2, Sparkles, Globe, Wallet, QrCode, X, ChevronDown, Check, UserCircle, LogOut, AlertCircle, Ticket, Tag } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { categorizeMerchant } from './services/gemini';
 import { getRecommendations } from './lib/recommendation';
@@ -119,6 +119,7 @@ export default function App() {
 
   const [selectedVoucherPortal, setSelectedVoucherPortal] = useState('');
   const [isLoungeOpen, setIsLoungeOpen] = useState(false);
+  const [showOffersOverlay, setShowOffersOverlay] = useState(false);
   const [selectedCardForDetails, setSelectedCardForDetails] = useState<{ card: Card, source: string } | null>(null);
   const [exhaustedCards, setExhaustedCards] = useState<Record<string, boolean>>({});
   const [loungeTab, setLoungeTab] = useState<'Domestic' | 'International'>('Domestic');
@@ -142,11 +143,6 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  useEffect(() => {
-    if (user && !isAuthLoading && !skipSyncRef.current && !openRouterApiKey) {
-      // Just flag they need it, could auto open but let them click badge
-    }
-  }, [user, isAuthLoading, openRouterApiKey]);
 
   useEffect(() => {
     if (!user) {
@@ -244,6 +240,19 @@ export default function App() {
       })
       .catch(err => console.error("Could not fetch exchange rates:", err));
   }, []);
+
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (showOffersOverlay) setShowOffersOverlay(false);
+        else if (selectedCardForDetails) setSelectedCardForDetails(null);
+        else if (isLoungeOpen) setIsLoungeOpen(false);
+        else if (isApiModalOpen) setIsApiModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [showOffersOverlay, selectedCardForDetails, isLoungeOpen, isApiModalOpen]);
 
   useEffect(() => {
     if (history.length > 0) {
@@ -533,6 +542,26 @@ export default function App() {
                         </div>
 
                         <p className="text-sm font-medium text-gray-700 leading-relaxed whitespace-pre-line">{recommendation.reason}</p>
+
+                        {recommendation.availableOffers && recommendation.availableOffers.length > 0 && (
+                          <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => setShowOffersOverlay(true)}
+                            className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-100 rounded-xl group relative overflow-hidden"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-amber-500/20 animate-pulse">
+                                <Ticket className="w-5 h-5" />
+                              </div>
+                              <div className="text-left">
+                                <div className="text-sm font-bold text-amber-900">Offers Available</div>
+                                <div className="text-xs text-amber-700 font-medium">{recommendation.availableOffers.length} exclusive deals found</div>
+                              </div>
+                            </div>
+                            <Sparkles className="w-5 h-5 text-amber-400 group-hover:rotate-12 transition-transform" />
+                          </motion.button>
+                        )}
                       </div>
 
                       {recommendation.voucherOption && (
@@ -556,10 +585,10 @@ export default function App() {
                       <h4 className="text-sm uppercase font-bold text-gray-400 mb-4 tracking-wider">Top Alternatives</h4>
                       <div className="grid grid-cols-1 landscape:grid-cols-2 md:grid-cols-3 gap-4">
                         {recommendation.alternatives.map((alt) => (
-                          <div key={alt.card.id} className="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                            <div className="font-semibold text-gray-800 mb-1 truncate">{alt.card.name}</div>
-                            <div className="text-xs text-gray-500 mb-2 truncate" title={alt.benefit}>{alt.benefit}</div>
-                            <div className="text-sm text-blue-600 font-bold bg-blue-100/50 inline-block px-2 py-1 rounded">Net: ₹{alt.netValue.toFixed(0)}</div>
+                          <div key={alt.card.id} className="p-4 bg-gray-50 rounded-xl border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all duration-200 group/alt cursor-default">
+                            <div className="font-semibold text-gray-800 mb-1 truncate group-hover/alt:text-blue-700 transition-colors">{alt.card.name}</div>
+                            <div className="text-xs text-gray-500 mb-3 truncate" title={alt.benefit}>{alt.benefit}</div>
+                            <div className="text-sm text-blue-600 font-bold bg-blue-100/60 inline-block px-2.5 py-1 rounded-lg">Net: ₹{alt.netValue.toFixed(0)}</div>
                           </div>
                         ))}
                       </div>
@@ -975,6 +1004,90 @@ export default function App() {
             </motion.div>
           </>
         )}
+
+        <AnimatePresence>
+          {showOffersOverlay && recommendation?.availableOffers && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[1000] flex items-center justify-center p-4 md:p-8 bg-black/60 backdrop-blur-xl"
+              onClick={() => setShowOffersOverlay(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, y: 40, opacity: 0 }}
+                animate={{ scale: 1, y: 0, opacity: 1 }}
+                exit={{ scale: 0.9, y: 40, opacity: 0 }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-lg bg-white/90 backdrop-blur-2xl rounded-[3rem] overflow-hidden shadow-[0_32px_64px_-12px_rgba(0,0,0,0.3)] border border-white/20 relative flex flex-col max-h-[85vh]"
+              >
+                {/* Glossy Header */}
+                <div className="p-8 pb-6 flex items-center justify-between sticky top-0 z-10">
+                  <div className="space-y-1">
+                    <h3 className="text-3xl font-black text-gray-900 leading-none tracking-tight">Daily Deals</h3>
+                    <div className="flex items-center gap-2">
+                      <div className="flex gap-0.5">
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-bounce" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce [animation-delay:0.2s]" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-300 animate-bounce [animation-delay:0.4s]" />
+                      </div>
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.25em] pl-1">Swipe across</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowOffersOverlay(false)}
+                    className="w-12 h-12 bg-gray-100/80 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-all active:scale-90 border border-gray-200/50"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+
+                <div className="flex-1 overflow-x-auto flex gap-6 scrollbar-hide snap-x snap-mandatory px-8 pb-12 pt-2">
+                  {recommendation.availableOffers.map((offer) => (
+                    <motion.div
+                      key={offer.id}
+                      whileHover={{ y: -8 }}
+                      className="min-w-[85%] md:min-w-[320px] min-h-[340px] bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-xl shadow-gray-200/40 snap-center flex flex-col justify-between relative overflow-hidden group border-b-8 border-b-blue-600/10"
+                    >
+                      <div className="absolute -top-4 -right-4 w-32 h-32 bg-blue-50/50 rounded-full blur-3xl group-hover:bg-blue-100/50 transition-colors" />
+                      <div className="absolute top-6 right-6 text-6xl opacity-20 group-hover:opacity-40 group-hover:scale-110 group-hover:-rotate-12 transition-all duration-500 pointer-events-none select-none">
+                        {offer.icon}
+                      </div>
+                      <div className="space-y-6 relative z-10">
+                        <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-700 rounded-[1.5rem] flex items-center justify-center text-white shadow-2xl shadow-blue-600/40 transform -rotate-3 group-hover:rotate-0 transition-transform">
+                          <Tag className="w-8 h-8" />
+                        </div>
+                        <div className="space-y-2">
+                          <div className="inline-flex items-center px-3 py-1 bg-blue-50 rounded-full">
+                            <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">{offer.category}</span>
+                          </div>
+                          <h4 className="text-2xl font-black text-gray-900 leading-tight tracking-tight group-hover:text-blue-600 transition-colors">
+                            {offer.title}
+                          </h4>
+                        </div>
+                        <p className="text-base text-gray-500 font-medium leading-relaxed pr-8">
+                          {offer.description}
+                        </p>
+                      </div>
+                      <div className="mt-12 pt-6 border-t border-dashed border-gray-200 flex items-center justify-between">
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-100">
+                          <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
+                          <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Verified</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-blue-600 font-black text-xs uppercase tracking-tighter group-hover:translate-x-1 transition-transform">
+                          Details
+                          <ChevronDown className="w-4 h-4 -rotate-90" />
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                  <div className="min-w-[10%] shrink-0" />
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {isApiModalOpen && (
           <motion.div

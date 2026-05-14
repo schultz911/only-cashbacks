@@ -55,4 +55,11 @@ export interface Recommendation {
     discount: string;
     cardBenefit: string;
   };
+  availableOffers?: {
+    id: string;
+    icon: string;
+    title: string;
+    description: string;
+    category: string;
+  }[];
 }
