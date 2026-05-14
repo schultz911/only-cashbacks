@@ -259,22 +259,35 @@ export default function App() {
       const info = history[0];
       const parsedAmount = parseFloat(amount) || 0;
       const parsedForeign = parseFloat(foreignAmount) || 0;
-      let effectiveAmount = parsedAmount;
-      if (isIntl && exchangeRates[baseCurrency]) {
-        effectiveAmount = parsedForeign / exchangeRates[baseCurrency];
-      } else if (isIntl) {
-        const mockRates: Record<string, number> = { 'USD': 0.012, 'EUR': 0.011, 'GBP': 0.0094, 'AED': 0.044 };
-        if (mockRates[baseCurrency]) effectiveAmount = parsedForeign / mockRates[baseCurrency];
+
+      let effectiveAmount = 0;
+      if (isIntl) {
+        if (exchangeRates[baseCurrency]) {
+          effectiveAmount = parsedForeign / exchangeRates[baseCurrency];
+        } else {
+          const mockRates: Record<string, number> = { 'USD': 0.012, 'EUR': 0.011, 'GBP': 0.0094, 'AED': 0.044 };
+          if (mockRates[baseCurrency]) effectiveAmount = parsedForeign / mockRates[baseCurrency];
+        }
+      } else {
+        effectiveAmount = parsedAmount;
       }
-      setRecommendation(getRecommendations(info, effectiveAmount, isOnline, isIntl, !isOnline && isScanToPay, exhaustedCards, offerUsage, kiwiNeonEarnRate));
+
+      if (effectiveAmount > 0) {
+        setRecommendation(getRecommendations(info, effectiveAmount, isOnline, isIntl, !isOnline && isScanToPay, exhaustedCards, offerUsage, kiwiNeonEarnRate));
+      } else {
+        setRecommendation(null);
+      }
     }
-  }, [exhaustedCards, offerUsage, amount, foreignAmount, isIntl, isOnline, isScanToPay, kiwiNeonEarnRate]);
+  }, [exhaustedCards, offerUsage, amount, foreignAmount, isIntl, isOnline, isScanToPay, kiwiNeonEarnRate, exchangeRates, baseCurrency]);
 
   const handleSearch = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const parsedAmount = parseFloat(amount) || 0;
     const parsedForeign = parseFloat(foreignAmount) || 0;
-    if (!query.trim() || parsedAmount <= 0) return;
+    if (!query.trim() || (isIntl ? parsedForeign <= 0 : parsedAmount <= 0)) {
+      setRecommendation(null);
+      return;
+    }
 
     let effectiveAmount = parsedAmount;
     if (isIntl && exchangeRates[baseCurrency]) {
@@ -569,21 +582,37 @@ export default function App() {
 
                         {recommendation.availableOffers && recommendation.availableOffers.length > 0 && (
                           <motion.button
-                            whileHover={{ scale: 1.02 }}
+                            initial={{ scale: 1 }}
+                            animate={{ scale: [1, 1.02, 1] }}
+                            transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                            whileHover={{ scale: 1.04 }}
                             whileTap={{ scale: 0.98 }}
                             onClick={() => setShowOffersOverlay(true)}
-                            className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-100 rounded-xl group relative overflow-hidden"
+                            className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-100 rounded-xl group relative overflow-hidden shadow-sm"
                           >
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-amber-500/20 animate-pulse">
-                                <Ticket className="w-5 h-5" />
+                              <div className="w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-amber-500/20">
+                                <Ticket className="w-5 h-5 animate-pulse" />
                               </div>
                               <div className="text-left">
                                 <div className="text-sm font-bold text-amber-900">Offers Available</div>
                                 <div className="text-xs text-amber-700 font-medium">{recommendation.availableOffers.length} exclusive deals found</div>
                               </div>
                             </div>
-                            <Sparkles className="w-5 h-5 text-amber-400 group-hover:rotate-12 transition-transform" />
+                            <motion.div
+                              animate={{
+                                opacity: [1, 0.4, 1],
+                                scale: [1, 1.2, 1],
+                                rotate: [0, 15, -15, 0]
+                              }}
+                              transition={{
+                                repeat: Infinity,
+                                duration: 1.5,
+                                ease: "easeInOut"
+                              }}
+                            >
+                              <Sparkles className="w-5 h-5 text-amber-400 group-hover:rotate-12 transition-transform" />
+                            </motion.div>
                           </motion.button>
                         )}
                       </div>
@@ -1049,14 +1078,14 @@ export default function App() {
                 {/* Glossy Header */}
                 <div className="p-8 pb-6 flex items-center justify-between sticky top-0 z-10">
                   <div className="space-y-1">
-                    <h3 className="text-3xl font-black text-gray-900 leading-none tracking-tight">Daily Deals</h3>
+                    <h3 className="text-3xl font-black text-gray-900 leading-none tracking-tight">Card Offers</h3>
                     <div className="flex items-center gap-2">
                       <div className="flex gap-0.5">
                         <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-bounce" />
                         <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce [animation-delay:0.2s]" />
                         <div className="w-1.5 h-1.5 rounded-full bg-blue-300 animate-bounce [animation-delay:0.4s]" />
                       </div>
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.25em] pl-1">Swipe across</p>
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.25em] pl-1">Drag or Swipe across</p>
                     </div>
                   </div>
                   <button
@@ -1067,46 +1096,52 @@ export default function App() {
                   </button>
                 </div>
 
-                <div className="flex-1 overflow-x-auto flex gap-6 scrollbar-hide snap-x snap-mandatory px-8 pb-12 pt-2">
-                  {recommendation.availableOffers.map((offer) => (
-                    <motion.div
-                      key={offer.id}
-                      whileHover={{ y: -8 }}
-                      className="min-w-[85%] md:min-w-[320px] min-h-[340px] bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-xl shadow-gray-200/40 snap-center flex flex-col justify-between relative overflow-hidden group border-b-8 border-b-blue-600/10"
-                    >
-                      <div className="absolute -top-4 -right-4 w-32 h-32 bg-blue-50/50 rounded-full blur-3xl group-hover:bg-blue-100/50 transition-colors" />
-                      <div className="absolute top-6 right-6 text-6xl opacity-20 group-hover:opacity-40 group-hover:scale-110 group-hover:-rotate-12 transition-all duration-500 pointer-events-none select-none">
-                        {offer.icon}
-                      </div>
-                      <div className="space-y-6 relative z-10">
-                        <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-700 rounded-[1.5rem] flex items-center justify-center text-white shadow-2xl shadow-blue-600/40 transform -rotate-3 group-hover:rotate-0 transition-transform">
-                          <Tag className="w-8 h-8" />
+                <div className="flex-1 overflow-hidden cursor-grab active:cursor-grabbing px-8 pb-12 pt-2">
+                  <motion.div
+                    drag="x"
+                    dragConstraints={{ right: 0, left: -(recommendation.availableOffers.length * 280) }} // Estimated constraints
+                    dragElastic={0.1}
+                    className="flex gap-6 h-full"
+                  >
+                    {recommendation.availableOffers.map((offer) => (
+                      <motion.div
+                        key={offer.id}
+                        whileHover={{ y: -8 }}
+                        className="min-w-[85%] md:min-w-[320px] min-h-[340px] bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-xl shadow-gray-200/40 snap-center flex flex-col justify-between relative overflow-hidden group border-b-8 border-b-blue-600/10 select-none"
+                      >
+                        <div className="absolute -top-4 -right-4 w-32 h-32 bg-blue-50/50 rounded-full blur-3xl group-hover:bg-blue-100/50 transition-colors" />
+                        <div className="absolute top-6 right-6 text-6xl opacity-20 group-hover:opacity-40 group-hover:scale-110 group-hover:-rotate-12 transition-all duration-500 pointer-events-none select-none">
+                          {offer.icon}
                         </div>
-                        <div className="space-y-2">
-                          <div className="inline-flex items-center px-3 py-1 bg-blue-50 rounded-full">
-                            <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">{offer.category}</span>
+                        <div className="space-y-6 relative z-10">
+                          <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-700 rounded-[1.5rem] flex items-center justify-center text-white shadow-2xl shadow-blue-600/40 transform -rotate-3 group-hover:rotate-0 transition-transform">
+                            <Tag className="w-8 h-8" />
                           </div>
-                          <h4 className="text-2xl font-black text-gray-900 leading-tight tracking-tight group-hover:text-blue-600 transition-colors">
-                            {offer.title}
-                          </h4>
+                          <div className="space-y-2">
+                            <div className="inline-flex items-center px-3 py-1 bg-blue-50 rounded-full">
+                              <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">{offer.category}</span>
+                            </div>
+                            <h4 className="text-2xl font-black text-gray-900 leading-tight tracking-tight group-hover:text-blue-600 transition-colors">
+                              {offer.title}
+                            </h4>
+                          </div>
+                          <p className="text-base text-gray-500 font-medium leading-relaxed pr-8">
+                            {offer.description}
+                          </p>
                         </div>
-                        <p className="text-base text-gray-500 font-medium leading-relaxed pr-8">
-                          {offer.description}
-                        </p>
-                      </div>
-                      <div className="mt-12 pt-6 border-t border-dashed border-gray-200 flex items-center justify-between">
-                        <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-100">
-                          <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
-                          <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Verified</span>
+                        <div className="mt-12 pt-6 border-t border-dashed border-gray-200 flex items-center justify-between">
+                          <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-100">
+                            <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
+                            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Verified</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-blue-600 font-black text-xs uppercase tracking-tighter group-hover:translate-x-1 transition-transform">
+                            Details
+                            <ChevronDown className="w-4 h-4 -rotate-90" />
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 text-blue-600 font-black text-xs uppercase tracking-tighter group-hover:translate-x-1 transition-transform">
-                          Details
-                          <ChevronDown className="w-4 h-4 -rotate-90" />
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                  <div className="min-w-[10%] shrink-0" />
+                      </motion.div>
+                    ))}
+                  </motion.div>
                 </div>
               </motion.div>
             </motion.div>

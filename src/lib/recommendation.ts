@@ -345,20 +345,30 @@ export function getRecommendations(
           onlineCap = 30000;
         } else if (card.id === 'kotak-811-infinity') {
           onlineRate = 5;
-          onlineCap = 10000;
+          onlineCap = 2000;
         }
 
+        const kotakCap = 100;
         const eligibleAmt = Math.min(amount, onlineCap);
         const overSpend = Math.max(0, amount - onlineCap);
-        const onlineCb = (eligibleAmt * onlineRate / 100) + (overSpend * card.baseRewardRate / 100);
+
+        let onlineCb = (eligibleAmt * onlineRate / 100);
+        if (card.id === 'kotak-811-infinity') {
+          onlineCb = Math.min(onlineCb, kotakCap);
+        }
+        onlineCb += (overSpend * card.baseRewardRate / 100);
+
         const totalCinepolisValue = cinepolisDiscount + onlineCb;
 
         if (totalCinepolisValue > cashbackAmount && !nameL.match(/bookmyshow|district/i)) {
           cashbackAmount = totalCinepolisValue;
-          if (!nameL.includes('cinepolis')) {
-            benefitText += ` (Better Deal: Swiggy Cinepolis with ₹${cinepolisDiscount.toFixed(0)} off)`;
+          const dealDetail = `Swiggy Cinepolis Coupon (₹${cinepolisDiscount.toFixed(0)} off)`;
+          if (benefitText.includes('Base Rewards')) {
+            benefitText = `${onlineRate}% Online + ${dealDetail}`;
+          } else if (!nameL.includes('cinepolis')) {
+            benefitText = `${benefitText} (Better Deal: ${dealDetail})`;
           } else {
-            benefitText += ` with Swiggy Cinepolis Coupon for ₹${cinepolisDiscount.toFixed(0)} off!`;
+            benefitText = `${benefitText} with ${dealDetail}!`;
           }
         }
       }
