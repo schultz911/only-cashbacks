@@ -404,7 +404,7 @@ export function getRecommendations(
     reason += " \n\n🛍️ Make sure to use your Swiggy Coupon for Ajio (Flat 20% off on min ₹999 spend) with whichever card you choose!";
   }
 
-  if ((catL.includes('food') || catL.includes('dining') || nameL.includes('swiggy') || nameL.includes('zomato')) && !nameL.includes('cinepolis')) {
+  if ((catL.includes('food') || catL.includes('dining') || nameL.includes('food') || nameL.includes('dining') || catL.includes('food delivery') || nameL.includes('delivery') || nameL.includes('swiggy') || nameL.includes('zomato')) && !nameL.includes('cinepolis')) {
     const swiggyOffers = [];
 
     const districtDiningUsed = offerUsage['kotak-811-infinity-Dining-District'] || 0;
