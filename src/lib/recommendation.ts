@@ -21,7 +21,7 @@ export function getRecommendations(
   const catL = merchant.category.toLowerCase();
   const platL = merchant.platform?.toLowerCase() || '';
 
-  const isGrocery = catL.includes('grocery') || nameL.includes('grocery') || nameL.includes('groceries') || catL.includes('food delivery') || nameL.includes('food') || catL.includes('convenience') || catL.includes('general') || catL.includes('household') || catL.includes('produce') || ['bigbasket', 'blinkit', 'instamart', 'zepto', 'instamart', 'dmart', 'reliance fresh', "nature's basket", 'spencers'].some(g => nameL.includes(g) || platL.includes(g) || catL.includes(g));
+  const isGrocery = catL.includes('grocery') || nameL.includes('grocery') || nameL.includes('groceries') || catL.includes('food delivery') || nameL.includes('delivery') || nameL.includes('food') || catL.includes('convenience') || catL.includes('general') || catL.includes('household') || catL.includes('produce') || ['bigbasket', 'blinkit', 'instamart', 'zepto', 'instamart', 'dmart', 'reliance fresh', "nature's basket", 'spencers'].some(g => nameL.includes(g) || platL.includes(g) || catL.includes(g));
 
   // Google Play special logic
   if (nameL.includes('google') || platL.includes('google')) {
