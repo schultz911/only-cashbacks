@@ -1,6 +1,6 @@
 # OnlyCashbacks - Make Your Credit Cards Pay
 
-OnlyCashbacks is a smart web application that helps you maximize credit card rewards by providing real-time recommendations on which card to use for your specific purchases. 
+OnlyCashbacks is a smart web application that helps you maximize credit card rewards by providing real-time recommendations on which card to use for your specific purchases.
 
 [View your app in AI Studio](https://ai.studio/apps/9dfa3f2d-5762-4049-a6c8-583bd3c24948)
 
@@ -26,17 +26,20 @@ OnlyCashbacks is a smart web application that helps you maximize credit card rew
 **Prerequisites:** Node.js (v18+)
 
 1. Install dependencies:
+
    ```bash
    npm install
    ```
 
 2. Environment Variables setup:
    Create a `.env` file in the root directory based on the `.env.example` file and add your keys (OpenRouter API key can also be configured within the UI):
-   ```
+
+   ```bash
    OPENROUTER_API_KEY=your_openrouter_api_key_here
    ```
 
 3. Start the development server:
+
    ```bash
    npm run dev
    ```
