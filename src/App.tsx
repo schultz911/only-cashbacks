@@ -918,31 +918,29 @@ export default function App() {
                 </div>
 
                 <div className="flex-1 overflow-y-auto flex flex-col gap-3 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent pb-10">
-                  {CARD_DATA.filter(c => !c.isDummy).map(c => {
-                    if (c.id === 'kiwi-neon') {
-                      let passes = 0;
-                      if (kiwiNeonEarnRate >= 3) passes += 1;
-                      if (kiwiNeonEarnRate >= 4) passes += 1;
-                      if (kiwiNeonEarnRate >= 5) passes += 1;
-                      return {
-                        ...c,
-                        benefits: c.benefits.map(b => b.type === 'lounge' ? { ...b, value: '1/milestone' } : b),
-                        kiwiPasses: passes
-                      } as any;
-                    }
-                    return c;
-                  }).filter(c => c.benefits.some(b => b.type === 'lounge' && b.category === loungeTab))
+                  {CARD_DATA.filter(c => !c.isDummy)
+                    .filter(c => c.benefits.some(b => b.type === 'lounge' && b.category === loungeTab))
                     .map((card: any) => {
                       const b = card.benefits.find((x: any) => x.type === 'lounge' && x.category === loungeTab)!;
                       const parsed = parseLoungeBenefit(b);
+                      
+                      let finalPasses = parsed.passesCount;
+                      let finalVerified = loungeMilestonesVerified[`${card.id}-${loungeTab}`] ?? parsed.isFree;
+
                       if (card.id === 'kiwi-neon') {
-                        parsed.passesCount = card.kiwiPasses;
+                        let passes = 0;
+                        if (kiwiNeonEarnRate >= 3) passes += 1;
+                        if (kiwiNeonEarnRate >= 4) passes += 1;
+                        if (kiwiNeonEarnRate >= 5) passes += 1;
+                        finalPasses = passes;
+                        finalVerified = passes > 0;
+                        parsed.passesCount = finalPasses;
                       }
+
                       const used = loungePassesUsed[`${card.id}-${loungeTab}`] || 0;
-                      const passesRemaining = Math.max(0, parsed.passesCount - used);
-                      const isExhausted = parsed.passesCount > 0 && passesRemaining === 0;
-                      const isVerified = card.id === 'kiwi-neon' ? (card.kiwiPasses > 0) : (loungeMilestonesVerified[`${card.id}-${loungeTab}`] ?? parsed.isFree);
-                      return { card, b, parsed, isExhausted, isVerified };
+                      const passesRemaining = Math.max(0, finalPasses - used);
+                      const isExhausted = finalPasses > 0 && passesRemaining === 0;
+                      return { card, b, parsed, isExhausted, isVerified: finalVerified };
                     })
                     .sort((a, b) => {
                       if (a.isExhausted && !b.isExhausted) return 1;
