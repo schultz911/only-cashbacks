@@ -950,12 +950,13 @@ export default function App() {
                       if (a.parsed.spend !== b.parsed.spend) return a.parsed.spend - b.parsed.spend;
                       return b.parsed.passesCount - a.parsed.passesCount;
                     })
-                    .map(({ card, parsed }, i) => (
+                    .map(({ card, parsed, isVerified }, i) => (
                       <LoungeTrackerItem
                         key={`${card.id}-${loungeTab}`}
                         card={card}
                         parsed={parsed}
                         category={loungeTab}
+                        isVerified={isVerified}
                         passesUsed={loungePassesUsed[`${card.id}-${loungeTab}`] || 0}
                         setPassesUsed={(updater: any) => setLoungePassesUsed(prev => {
                           const current = prev[`${card.id}-${loungeTab}`] || 0;
