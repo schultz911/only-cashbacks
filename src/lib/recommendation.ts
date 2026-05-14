@@ -82,7 +82,7 @@ export function getRecommendations(
     // Default Exclusions checking
     const exclusion = card.benefits.find(b =>
       b.type === 'exclusion' &&
-      (catL === b.category.toLowerCase() || nameL.includes(b.category.toLowerCase()) || platL === b.category.toLowerCase() || (isScanToPay && b.category.toLowerCase() === 'upi'))
+      (catL === b.category.toLowerCase() || nameL.includes(b.category.toLowerCase()) || platL === b.category.toLowerCase())
     );
 
     if (exclusion) {
@@ -127,13 +127,8 @@ export function getRecommendations(
         cashbackAmount = amount * card.baseRewardRate / 100;
         benefitText = '1.5% NeuCoins';
       }
-    } else if (card.id === 'hdfc-swiggy') {
-      if (isIntl) {
-        // Swiggy BLCK has no special rates internationally
-        cashbackAmount = 0;
-        isExcluded = true;
-        benefitText = 'Excluded (International)';
-      } else if (nameL.includes('swiggy') || nameL.includes('dineout') || platL.includes('swiggy') || platL.includes('dineout') || platL.includes('instamart')) {
+    } else if (card.id === 'hdfc-swiggy' && !isIntl) {
+      if (nameL.includes('swiggy') || nameL.includes('dineout') || platL.includes('swiggy') || platL.includes('dineout') || platL.includes('instamart')) {
         const eligible = Math.min(amount, 15000);
         cashbackAmount = (eligible * 0.10);
         benefitText = '10% Cashback';
@@ -247,40 +242,20 @@ export function getRecommendations(
           const eligibleSpend = Math.min(amount, limitAmt);
           const overSpend = Math.max(0, amount - limitAmt);
 
-          let calculatedDiscount = (eligibleSpend * rate / 100);
+          let calculatedCb = (eligibleSpend * rate / 100);
           if (usedBenefit.capPerTxn) {
-            calculatedDiscount = Math.min(calculatedDiscount, usedBenefit.capPerTxn);
+            calculatedCb = Math.min(calculatedCb, usedBenefit.capPerTxn);
           }
 
           const fallbackRate = usedBenefit.fallbackRate !== undefined ? usedBenefit.fallbackRate : card.baseRewardRate;
           const baseCb = (overSpend * fallbackRate / 100);
-
-          if (usedBenefit.type === 'offer') {
-            // For offers (like BMS 1+1, Zomato discount): get the discount value AND 5% cashback on the post-discount total
-            const postDiscountAmount = amount - calculatedDiscount;
-            const allSpendsBenefit = card.benefits.find(b => b.type === 'cashback' && (b.category.toLowerCase() === 'all spends' || b.category.toLowerCase() === 'all'));
-            const allSpendsRate = allSpendsBenefit?.percentValue || card.baseRewardRate;
-            const allSpendsCap = allSpendsBenefit?.capPerTxn;
-            let cardCashback = postDiscountAmount * allSpendsRate / 100;
-            if (allSpendsCap) cardCashback = Math.min(cardCashback, allSpendsCap);
-            cashbackAmount = calculatedDiscount + cardCashback + baseCb;
-            const capType = usedBenefit.type.charAt(0).toUpperCase() + usedBenefit.type.slice(1);
-            benefitText = `${usedBenefit.value} ${capType} + ${allSpendsRate}% on ₹${postDiscountAmount.toFixed(0)}`;
-          } else {
-            cashbackAmount = calculatedDiscount + baseCb;
-            const capType = usedBenefit.type.charAt(0).toUpperCase() + usedBenefit.type.slice(1);
-            benefitText = `${usedBenefit.value} ${capType}`;
-          }
+          cashbackAmount = calculatedCb + baseCb;
+          const capType = usedBenefit.type.charAt(0).toUpperCase() + usedBenefit.type.slice(1);
+          benefitText = `${usedBenefit.value} ${capType}`;
         }
       } else {
         cashbackAmount = (amount * card.baseRewardRate / 100);
         benefitText = `${card.baseRewardRate}% Base Rewards`;
-      }
-
-      // HSBC Live+ doesn't support UPI / Scan & Pay
-      if (isScanToPay && card.id === 'hsbc-live-plus') {
-        isExcluded = true;
-        benefitText = 'Not applicable for UPI / Scan & Pay';
       }
     }
 
@@ -333,12 +308,7 @@ export function getRecommendations(
 
   const validOptions = calculationResults
     .filter(s => !s.isExcluded && !(s.netValue <= 0 && s.card.baseRewardRate === 0 && s.card.benefits.length === 0))
-    .sort((a, b) => {
-      // If Kiwi is at base 2%, push it to the bottom as requested
-      if (a.card.id === 'kiwi-neon' && kiwiNeonEarnRate === 2) return 1;
-      if (b.card.id === 'kiwi-neon' && kiwiNeonEarnRate === 2) return -1;
-      return b.netValue - a.netValue;
-    });
+    .sort((a, b) => b.netValue - a.netValue);
 
   const bestResult = validOptions.length > 0 ? validOptions[0] : calculationResults.sort((a, b) => b.netValue - a.netValue)[0];
 
@@ -351,13 +321,13 @@ export function getRecommendations(
     reason = `Instead of making a direct purchase, buy from Tata Neu app using Tata Neu Infinity HDFC to get 10% NeuCoins.`;
   }
   else if (isScanToPay && (catL === 'other' || !nameL)) {
-    reason = `For general P2P or unknown merchants, use the below alternatives for better rewards.`;
+    reason = `For general P2P or unknown merchants, use CRED, Amazon, or Kotak 811 Scan & Pay for a better chance at rewards.`;
   }
   else reason = `Based on your amount, this yields the highest net returns for ${merchant.category.toLowerCase()} ${merchant.platform ? `on ${merchant.platform}🎉` : '🎉'}`;
 
   // Fallback advice if net values are low
   if (bestResult.netValue < amount * 0.01 && !isIntl) {
-    reason += " This merchant doesn't offer good card rewards! Consider using Scan & Pay.";
+    reason += " If this merchant doesn't offer good card rewards, consider using CRED, Amazon, or Kotak 811 Scan & Pay for better base rewards.";
   }
 
   if (nameL.includes('indigo')) {
@@ -406,35 +376,6 @@ export function getRecommendations(
     }
   }
 
-  let finalAlternatives = validOptions.slice(1, 4).map(s => ({ card: s.card, benefit: s.benefitText, netValue: s.netValue }));
-
-  if (isScanToPay) {
-    const scanPayAlternatives = [
-      { id: 'cred-pay', name: 'Cred Pay', bank: 'CRED', gradient: 'from-black to-gray-800', benefits: [] },
-      { id: 'amazon-pay', name: 'Amazon Pay', bank: 'Amazon', gradient: 'from-[#232f3e] to-[#37475a]', benefits: [] }
-    ];
-
-    // Add Kotak 811 to scan pay alternatives if it's not the best card
-    if (bestResult.card.id !== 'kotak-811-infinity') {
-      const kotak = calculationResults.find(r => r.card.id === 'kotak-811-infinity');
-      if (kotak) {
-        scanPayAlternatives.push({ id: kotak.card.id, name: kotak.card.name, bank: kotak.card.bank, gradient: kotak.card.gradient, benefits: [] } as any);
-      }
-    } else {
-      // If Kotak is best, add Kiwi as an alternative
-      const kiwi = calculationResults.find(r => r.card.id === 'kiwi-neon');
-      if (kiwi) {
-        scanPayAlternatives.push({ id: kiwi.card.id, name: kiwi.card.name, bank: kiwi.card.bank, gradient: kiwi.card.gradient, benefits: [] } as any);
-      }
-    }
-
-    finalAlternatives = scanPayAlternatives.map(alt => ({
-      card: alt as any,
-      benefit: 'Rewards vary',
-      netValue: 0
-    }));
-  }
-
   return {
     bestCard: bestResult.card,
     reason,
@@ -442,6 +383,6 @@ export function getRecommendations(
     netValue: bestResult.netValue,
     cashbackEarned: bestResult.cashbackEarned,
     feesPaid: bestResult.feesPaid,
-    alternatives: finalAlternatives
+    alternatives: validOptions.slice(1, 4).map(s => ({ card: s.card, benefit: s.benefitText, netValue: s.netValue }))
   };
 }
