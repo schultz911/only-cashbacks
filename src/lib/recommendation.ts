@@ -175,6 +175,9 @@ export function getRecommendations(
     } else if (card.id === 'kiwi-neon' && (isScanToPay || isOnline)) {
       cashbackAmount = amount * (kiwiNeonEarnRate / 100);
       benefitText = `${kiwiNeonEarnRate}% Cashback on ${isScanToPay ? 'Scan & Pay' : 'Online UPI'}`;
+    } else if (card.id === 'kotak-811-infinity' && isScanToPay) {
+      cashbackAmount = 0;
+      benefitText = 'Mystery Cashback on Scan & Pay';
     } else if (card.id === 'kotak-811-infinity' && !isScanToPay) {
       // Special logic for Kotak 811 offers + cashback
       const movieUsed = offerUsage['kotak-811-infinity-Movies-BMS'] || 0;

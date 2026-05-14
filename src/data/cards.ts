@@ -43,7 +43,7 @@ export const CARD_DATA: Card[] = [
     forexMarkup: 3.5,
     baseRewardRate: 1.5,
     benefits: [
-      { type: 'cashback', category: 'Dining', value: '10%', percentValue: 10, description: 'Cashback on food delivery, dining, and groceries on all online and offline merchants.', maxSpend: 10000, fallbackRate: 0 },
+      { type: 'cashback', category: 'Dining', value: '10%', percentValue: 10, description: 'Cashback on food delivery, dining, and groceries, online and offline.', maxSpend: 10000, fallbackRate: 0 },
       { type: 'lounge', category: 'Domestic', value: '1/qtr', description: 'Complimentary domestic lounge access.' },
       { type: 'exclusion', category: 'Fuel', value: '0%', description: 'Fuel' },
       { type: 'exclusion', category: 'Wallet', value: '0%', description: 'Wallet Loads' },
@@ -122,7 +122,7 @@ export const CARD_DATA: Card[] = [
       { type: 'cashback', category: 'All Spends', value: '5%', percentValue: 5, capPerTxn: 100, description: 'Cashback on online and offline spends. Forex-positive.', maxSpend: 10000 },
       { type: 'offer', category: 'Dining', value: 'District', percentValue: 20, capPerTxn: 750, minSpend: 2000, usageLimit: 1, description: '20% discount up to ₹750 on a min spend of ₹2,000 once a month.' },
       { type: 'offer', category: 'Movies', value: 'BMS', percentValue: 50, capPerTxn: 300, minSpend: 400, usageLimit: 1, description: 'Buy 1 Get 1 on movie tickets up to ₹300 on a min spend of ₹400 once a month.' },
-      { type: 'exclusion', category: 'UPI', value: '0%', description: 'UPI Payments' },
+      { type: 'upi', category: 'Scan & Pay', value: 'Mystery', percentValue: 0, description: 'Earn exclusive Mystery Cashback rewards on all Scan & Pay transactions via Kotak App.', isHidden: true },
       { type: 'exclusion', category: 'ATM', value: '0%', description: 'ATM Withdrawals' },
       { type: 'exclusion', category: 'Wallet', value: '0%', description: 'Wallet Loads' },
       { type: 'exclusion', category: 'Finance', value: '0%', description: 'Loan Repayments and EMI' },

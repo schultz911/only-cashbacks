@@ -601,7 +601,7 @@ export default function App() {
                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto text-gray-400">
                       <Search className="w-6 h-6" />
                     </div>
-                    <p className="text-gray-500 font-medium">Enter an item, merchant or merchant type, and amount to get recommendations.</p>
+                    <p className="text-gray-500 font-medium">Enter an item, merchant or merchant type, <br /> and amount to get recommendations.</p>
                   </div>
                 </div>
               )}

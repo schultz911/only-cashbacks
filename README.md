@@ -2,24 +2,32 @@
 
 OnlyCashbacks is a smart web application that helps you maximize credit card rewards by providing real-time recommendations on which card to use for your specific purchases.
 
-[View your app in AI Studio](https://ai.studio/apps/9dfa3f2d-5762-4049-a6c8-583bd3c24948)
-
 ## Features
 
-- **Smart Merchant Categorization**: Powered by OpenRouter AI to analyze and categorize your merchant queries (e.g., Swiggy, Amazon, Uber) to identify the best card pairing.
-- **Card Recommendations**: Get instant card recommendations optimized for the highest net value (cashback and rewards) based on your active cards.
-- **Lounge Tracker**: Track your complimentary lounge passes and spend-based milestones for domestic and international lounges.
-- **Smart Voucher Hacks**: Uncover hidden value by comparing card pairings with voucher portals.
-- **Multi-Currency & International Support**: Real-time exchange rate calculations to help you choose the best card with minimal forex markup.
-- **Online vs Offline (Scan & Pay)**: Adaptive recommendations based on whether the transaction is an online checkout or an offline Scan & Pay/UPI transfer.
-- **Cloud Sync**: Securely sync your card portfolio, milestones, and settings across devices using Firebase.
+- **Interactive Offers Overlay**: A premium, glassmorphic swipeable interface that highlights exclusive deals (BMS BOGO, Dining discounts, etc.) based on your current search.
+- **Hardened Recommendation Engine**: Advanced category-flag system (`isDining`, `isFoodDelivery`, `isMovie`, `isGrocery`) for precise merchant matching and high-value benefit prioritization.
+- **Smart Merchant Categorization**: Hybrid approach using local regex matching and OpenRouter AI to instantly identify and categorize complex merchant queries.
+- **Advanced Forex Precision**: Real-time exchange rate calculations including 18% GST on markup fees, ensuring 100% accuracy for international spend decisions.
+- **Lounge Tracker**: Comprehensive domestic and international lounge pass tracking with automated spend-milestone monitoring.
+- **Online vs Offline (Scan & Pay)**: Context-aware logic that adapts recommendations based on the transaction medium (Direct Online vs. UPI Scan & Pay).
+- **Voucher Portals**: Seamless integration with voucher platforms (Tata Neu, HDFC SmartBuy) to find hidden "reward-on-reward" hacks.
+- **Cloud Portfolio Sync**: Securely sync your cards, usage limits, and personalized settings across all devices using Firebase.
 
 ## Technology Stack
 
-- **Frontend**: React 19, Vite, Tailwind CSS 4, Motion, Lucide Icons.
-- **Backend**: Express (Node.js) to securely handle AI categorization routes.
-- **Database & Auth**: Firebase Authentication and Firestore.
-- **AI Integration**: OpenRouter SDK (`openrouter/auto`) for intelligent merchant matching.
+- **Frontend**: React 19, Vite, Tailwind CSS 4, Framer Motion (`motion/react`), Lucide Icons.
+- **Backend**: Express (Node.js) proxy for secure AI categorization.
+- **Database & Auth**: Firebase Authentication & Firestore.
+- **AI Integration**: OpenRouter SDK for intelligent LLM-driven merchant intent analysis.
+
+## Design Aesthetics
+
+OnlyCashbacks is built with a focus on **Premium Visual Excellence**:
+
+- **Glassmorphic UI**: High-fidelity overlays using backdrop blurs and subtle gradients.
+- **Fluid Animations**: Smooth transitions and micro-interactions powered by Framer Motion.
+- **Mobile-First Design**: Optimized for on-the-go decision making with swipeable carousels and haptic-like responses.
+- **Modern Typography**: Utilizing "Plus Jakarta Sans" for a clean, professional fintech feel.
 
 ## Run Locally
 
