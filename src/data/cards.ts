@@ -121,7 +121,7 @@ export const CARD_DATA: Card[] = [
     benefits: [
       { type: 'cashback', category: 'All Spends', value: '5%', percentValue: 5, capPerTxn: 100, description: 'Cashback on online and offline spends. Forex-positive.', maxSpend: 10000 },
       { type: 'offer', category: 'Dining', value: 'District', percentValue: 20, capPerTxn: 750, minSpend: 2000, usageLimit: 1, description: '20% discount up to ₹750 on a min spend of ₹2,000 once a month.' },
-      { type: 'offer', category: 'Movies', value: 'BookMyShow', percentValue: 50, capPerTxn: 300, minSpend: 400, usageLimit: 1, description: 'Buy 1 Get 1 on movie tickets up to ₹300 on a min spend of ₹400 once a month.' },
+      { type: 'offer', category: 'Movies', value: 'BMS', percentValue: 50, capPerTxn: 300, minSpend: 400, usageLimit: 1, description: 'Buy 1 Get 1 on movie tickets up to ₹300 on a min spend of ₹400 once a month.' },
       { type: 'exclusion', category: 'UPI', value: '0%', description: 'UPI Payments' },
       { type: 'exclusion', category: 'ATM', value: '0%', description: 'ATM Withdrawals' },
       { type: 'exclusion', category: 'Wallet', value: '0%', description: 'Wallet Loads' },
@@ -219,7 +219,7 @@ export const CARD_DATA: Card[] = [
     forexMarkup: 3.5,
     baseRewardRate: 0,
     benefits: [
-      { type: 'offer', category: 'Movies', value: 'BookMyShow', percentValue: 25, usageLimit: 1, description: '25% cashback points up to ₹250 on tickets per calendar month.', maxSpend: 1000 },
+      { type: 'offer', category: 'Movies', value: 'BMS', percentValue: 25, usageLimit: 1, description: '25% cashback points up to ₹250 on tickets per calendar month.', maxSpend: 1000 },
       { type: 'offer', category: 'Food', value: 'Swiggy', percentValue: 5, usageLimit: 1, description: '5% cashback points up to ₹150 per calendar month.', maxSpend: 3000 },
       { type: 'cashback', category: 'Online', value: '1%', percentValue: 1, description: 'Cashback points on all eligible online spends.', maxSpend: 75000 },
       { type: 'lounge', category: 'Domestic', value: '2/qtr', description: 'Generate voucher on the SmartBuy portal on quarterly spends of 10k.' }
