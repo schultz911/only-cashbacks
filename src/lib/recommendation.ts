@@ -127,8 +127,13 @@ export function getRecommendations(
         cashbackAmount = amount * card.baseRewardRate / 100;
         benefitText = '1.5% NeuCoins';
       }
-    } else if (card.id === 'hdfc-swiggy' && !isIntl) {
-      if (nameL.includes('swiggy') || nameL.includes('dineout') || platL.includes('swiggy') || platL.includes('dineout') || platL.includes('instamart')) {
+    } else if (card.id === 'hdfc-swiggy') {
+      if (isIntl) {
+        // Swiggy BLCK has no special rates internationally
+        cashbackAmount = 0;
+        isExcluded = true;
+        benefitText = 'Excluded (International)';
+      } else if (nameL.includes('swiggy') || nameL.includes('dineout') || platL.includes('swiggy') || platL.includes('dineout') || platL.includes('instamart')) {
         const eligible = Math.min(amount, 15000);
         cashbackAmount = (eligible * 0.10);
         benefitText = '10% Cashback';
@@ -242,20 +247,40 @@ export function getRecommendations(
           const eligibleSpend = Math.min(amount, limitAmt);
           const overSpend = Math.max(0, amount - limitAmt);
 
-          let calculatedCb = (eligibleSpend * rate / 100);
+          let calculatedDiscount = (eligibleSpend * rate / 100);
           if (usedBenefit.capPerTxn) {
-            calculatedCb = Math.min(calculatedCb, usedBenefit.capPerTxn);
+            calculatedDiscount = Math.min(calculatedDiscount, usedBenefit.capPerTxn);
           }
 
           const fallbackRate = usedBenefit.fallbackRate !== undefined ? usedBenefit.fallbackRate : card.baseRewardRate;
           const baseCb = (overSpend * fallbackRate / 100);
-          cashbackAmount = calculatedCb + baseCb;
-          const capType = usedBenefit.type.charAt(0).toUpperCase() + usedBenefit.type.slice(1);
-          benefitText = `${usedBenefit.value} ${capType}`;
+
+          if (usedBenefit.type === 'offer') {
+            // For offers (like BMS 1+1, Zomato discount): get the discount value AND 5% cashback on the post-discount total
+            const postDiscountAmount = amount - calculatedDiscount;
+            const allSpendsBenefit = card.benefits.find(b => b.type === 'cashback' && (b.category.toLowerCase() === 'all spends' || b.category.toLowerCase() === 'all'));
+            const allSpendsRate = allSpendsBenefit?.percentValue || card.baseRewardRate;
+            const allSpendsCap = allSpendsBenefit?.capPerTxn;
+            let cardCashback = postDiscountAmount * allSpendsRate / 100;
+            if (allSpendsCap) cardCashback = Math.min(cardCashback, allSpendsCap);
+            cashbackAmount = calculatedDiscount + cardCashback + baseCb;
+            const capType = usedBenefit.type.charAt(0).toUpperCase() + usedBenefit.type.slice(1);
+            benefitText = `${usedBenefit.value} ${capType} + ${allSpendsRate}% on ₹${postDiscountAmount.toFixed(0)}`;
+          } else {
+            cashbackAmount = calculatedDiscount + baseCb;
+            const capType = usedBenefit.type.charAt(0).toUpperCase() + usedBenefit.type.slice(1);
+            benefitText = `${usedBenefit.value} ${capType}`;
+          }
         }
       } else {
         cashbackAmount = (amount * card.baseRewardRate / 100);
         benefitText = `${card.baseRewardRate}% Base Rewards`;
+      }
+
+      // HSBC Live+ doesn't support UPI / Scan & Pay
+      if (isScanToPay && card.id === 'hsbc-live-plus') {
+        isExcluded = true;
+        benefitText = 'Not applicable for UPI / Scan & Pay';
       }
     }
 

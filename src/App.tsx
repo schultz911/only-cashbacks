@@ -207,9 +207,12 @@ export default function App() {
 
   const handleLogin = async () => {
     try {
+      googleProvider.setCustomParameters({ prompt: 'select_account' });
       await signInWithPopup(auth, googleProvider);
-    } catch (error) {
-      console.error('Login error:', error);
+    } catch (error: any) {
+      if (error.code !== 'auth/popup-closed-by-user') {
+        console.error('Login error:', error);
+      }
     }
   };
 
@@ -431,7 +434,7 @@ export default function App() {
                     </button>
                   </div>
 
-                  {!isOnline && (
+                  {!isOnline && !isIntl && (
                     <motion.button
                       type="button"
                       initial={{ opacity: 0, scale: 0.95 }}
@@ -547,15 +550,18 @@ export default function App() {
 
                   {recommendation.alternatives.length > 0 && (
                     <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm mt-6">
-                      <h4 className="text-sm uppercase font-bold text-gray-400 mb-4 tracking-wider">Top Alternatives</h4>
+                      <h4 className="text-sm uppercase font-bold text-gray-400 mb-4 tracking-wider">{isScanToPay ? 'Scan & Pay Alternatives' : 'Top Alternatives'}</h4>
                       <div className="grid grid-cols-1 landscape:grid-cols-2 md:grid-cols-3 gap-4">
-                        {recommendation.alternatives.map((alt) => (
-                          <div key={alt.card.id} className="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                            <div className="font-semibold text-gray-800 mb-1 truncate">{alt.card.name}</div>
-                            <div className="text-xs text-gray-500 mb-2 truncate" title={alt.benefit}>{alt.benefit}</div>
-                            <div className="text-sm text-blue-600 font-bold bg-blue-100/50 inline-block px-2 py-1 rounded">Net: ₹{alt.netValue.toFixed(0)}</div>
-                          </div>
-                        ))}
+                        {recommendation.alternatives.map((alt) => {
+                          const displayName = isScanToPay && alt.card.id === 'kotak-811-infinity' ? '811 Scan & Pay' : alt.card.name;
+                          return (
+                            <div key={alt.card.id} className="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                              <div className="font-semibold text-gray-800 mb-1 truncate">{displayName}</div>
+                              <div className="text-xs text-gray-500 mb-2 truncate" title={alt.benefit}>{alt.benefit}</div>
+                              {!isScanToPay && <div className="text-sm text-blue-600 font-bold bg-blue-100/50 inline-block px-2 py-1 rounded">Net: ₹{alt.netValue.toFixed(0)}</div>}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
@@ -689,14 +695,14 @@ export default function App() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-white/40 backdrop-blur-md"
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-md"
             onClick={() => setSelectedCardForDetails(null)}
           >
             <motion.div
               layoutId={`card-${selectedCardForDetails.source}-${selectedCardForDetails.card.id}`}
               onClick={(e) => e.stopPropagation()}
               className={cn(
-                "rounded-3xl p-6 max-w-md w-full relative flex flex-col text-white max-h-[85vh] bg-gradient-to-br",
+                "rounded-3xl p-6 max-w-md w-full relative flex flex-col text-white max-h-[85vh] bg-gradient-to-br overflow-y-auto",
                 selectedCardForDetails.card.gradient || "from-gray-700 to-gray-900"
               )}
             >
@@ -785,66 +791,82 @@ export default function App() {
                 )}
               </div>
 
-              {/* Kiwi Neon Slider */}
-              {selectedCardForDetails.card.id === 'kiwi-neon' && (
-                <div className="mt-6 pt-6 border-t border-white/10 relative z-10 space-y-6">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <span className="text-xs uppercase font-black tracking-widest text-white/40">Loyalty Program</span>
-                      <h4 className="text-lg font-black text-white leading-tight">Current Milestone</h4>
+              {/* Kiwi Neon Milestone Selector */}
+              {selectedCardForDetails.card.id === 'kiwi-neon' && (() => {
+                const milestones = [
+                  { rate: 2, label: '2%', spend: '₹25k', reward: '₹500' },
+                  { rate: 3, label: '3%', spend: '₹50k', reward: '₹1,500' },
+                  { rate: 4, label: '4%', spend: '₹1L', reward: '₹4,000' },
+                  { rate: 5, label: '5%', spend: '₹1.5L+', reward: '₹7,500' },
+                ];
+                const activeMilestone = milestones.find(m => m.rate === kiwiNeonEarnRate)!;
+                return (
+                  <div className="mt-6 pt-5 border-t border-white/10 relative z-10 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-[9px] uppercase font-black tracking-widest text-white/30 mb-0.5">Loyalty Program</div>
+                        <div className="text-base font-black text-white">Current Milestone</div>
+                      </div>
+                      <motion.div
+                        key={kiwiNeonEarnRate}
+                        initial={{ scale: 0.92, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ duration: 0.2 }}
+                        className={cn(
+                          "px-3 py-1.5 rounded-xl border text-right",
+                          kiwiNeonEarnRate === 2
+                            ? "bg-white/5 border-white/10"
+                            : "bg-emerald-500/20 border-emerald-400/30 shadow-[0_0_20px_rgba(52,211,153,0.12)]"
+                        )}
+                      >
+                        <div className="text-[9px] font-bold uppercase tracking-wider text-white/40">Net Reward</div>
+                        <div className={cn(
+                          "text-sm font-black",
+                          kiwiNeonEarnRate === 2 ? "text-white/40" : "text-emerald-300"
+                        )}>{activeMilestone.reward}</div>
+                      </motion.div>
                     </div>
-                    <div className={cn(
-                      "px-3 py-1.5 rounded-xl border backdrop-blur-md transition-all duration-300 flex flex-col items-end",
-                      kiwiNeonEarnRate === 2 ? "bg-white/5 border-white/10 opacity-50" : "bg-emerald-500/20 border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.2)]"
-                    )}>
-                      <span className="text-[10px] font-bold uppercase tracking-tighter text-white/60 leading-none">Net Reward</span>
-                      <span className="text-sm font-black text-white">₹{kiwiNeonEarnRate === 2 ? '500' : kiwiNeonEarnRate === 3 ? '1,500' : kiwiNeonEarnRate === 4 ? '4,000' : '7,500'}</span>
-                    </div>
-                  </div>
 
-                  <div className="relative px-2">
-                    {/* Amount Labels Above */}
-                    <div className="flex justify-between mb-4">
-                      {['25k', '50k', '100k', '150k+'].map((amount, idx) => (
-                        <div key={amount} className={cn(
-                          "flex flex-col items-center transition-all duration-300",
-                          kiwiNeonEarnRate === (idx + 2) ? "scale-110" : "opacity-40 scale-90"
-                        )}>
-                          <span className="text-[11px] font-black text-white tracking-tight">₹{amount}</span>
-                          {kiwiNeonEarnRate === (idx + 2) && <motion.div layoutId="slider-dot" className="w-1 h-1 bg-white rounded-full mt-1" />}
-                        </div>
+                    <div className="grid grid-cols-4 gap-1.5 p-1.5 bg-black/25 rounded-2xl">
+                      {milestones.map((m) => (
+                        <button
+                          key={m.rate}
+                          onClick={() => setKiwiNeonEarnRate(m.rate)}
+                          className="relative flex flex-col items-center py-2.5 px-1 rounded-xl transition-all duration-200 overflow-hidden focus:outline-none"
+                        >
+                          {kiwiNeonEarnRate === m.rate && (
+                            <motion.div
+                              layoutId="milestone-active-bg"
+                              className="absolute inset-0 rounded-xl bg-white/15 ring-1 ring-white/20"
+                              transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                            />
+                          )}
+                          <span className={cn(
+                            "text-xs font-black relative z-10 transition-all duration-200",
+                            kiwiNeonEarnRate === m.rate ? "text-white" : "text-white/35"
+                          )}>{m.label}</span>
+                          <span className={cn(
+                            "text-[9px] font-semibold relative z-10 mt-0.5 transition-all duration-200",
+                            kiwiNeonEarnRate === m.rate ? "text-white/60" : "text-white/20"
+                          )}>{m.spend}</span>
+                        </button>
                       ))}
                     </div>
 
-                    <input
-                      type="range"
-                      min="2"
-                      max="5"
-                      step="1"
-                      value={kiwiNeonEarnRate}
-                      onChange={(e) => setKiwiNeonEarnRate(parseInt(e.target.value, 10))}
-                      className="w-full h-2 bg-white/10 rounded-full appearance-none cursor-pointer accent-white hover:bg-white/20 transition-all"
-                    />
-
-                    {/* Percentage Labels Below */}
-                    <div className="flex justify-between mt-3 text-[10px] font-black text-white/40 tracking-widest px-0.5">
-                      {['2%', '3%', '4%', '5%'].map((pct, idx) => (
-                        <span key={pct} className={cn(
-                          "transition-colors duration-300",
-                          kiwiNeonEarnRate === (idx + 2) && "text-white"
-                        )}>{pct}</span>
-                      ))}
-                    </div>
+                    {kiwiNeonEarnRate === 2 && (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="flex items-center gap-2 px-3 py-2 bg-amber-500/10 border border-amber-500/15 rounded-xl"
+                      >
+                        <AlertCircle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                        <span className="text-[10px] font-semibold text-amber-200/60 tracking-tight">Base tier — select milestone to activate</span>
+                      </motion.div>
+                    )}
                   </div>
-                  
-                  {kiwiNeonEarnRate === 2 && (
-                    <div className="flex items-center gap-2 px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-xl">
-                      <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
-                      <span className="text-[10px] font-bold text-amber-200/80 uppercase tracking-tight">Base Tier: Not currently accelerated</span>
-                    </div>
-                  )}
-                </div>
-              )}
+                );
+              })()}
+
 
               {/* Max Spends Toggle */}
               <div className="mt-auto pt-4 border-t border-white/10 relative z-10 flex items-center justify-between">
@@ -939,7 +961,9 @@ export default function App() {
                       const used = loungePassesUsed[`${card.id}-${loungeTab}`] || 0;
                       const passesRemaining = Math.max(0, parsed.passesCount - used);
                       const isExhausted = parsed.passesCount > 0 && passesRemaining === 0;
-                      const isVerified = loungeMilestonesVerified[`${card.id}-${loungeTab}`] ?? parsed.isFree;
+                      const isVerified = card.id === 'kiwi-neon'
+                        ? kiwiNeonEarnRate >= 3
+                        : (loungeMilestonesVerified[`${card.id}-${loungeTab}`] ?? parsed.isFree);
                       return { card, b, parsed, isExhausted, isVerified };
                     })
                     .sort((a, b) => {
@@ -962,7 +986,7 @@ export default function App() {
                           const next = typeof updater === 'function' ? updater(current) : updater;
                           return { ...prev, [`${card.id}-${loungeTab}`]: next };
                         })}
-                        isVerified={card.id === 'kiwi-neon' ? true : (loungeMilestonesVerified[`${card.id}-${loungeTab}`] ?? parsed.isFree)}
+                        isVerified={card.id === 'kiwi-neon' ? kiwiNeonEarnRate >= 3 : (loungeMilestonesVerified[`${card.id}-${loungeTab}`] ?? parsed.isFree)}
                         setIsVerified={(val: boolean) => setLoungeMilestonesVerified(prev => ({ ...prev, [`${card.id}-${loungeTab}`]: val }))}
                       />
                     ))
