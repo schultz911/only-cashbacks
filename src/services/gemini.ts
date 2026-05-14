@@ -14,7 +14,7 @@ const EXHAUSTIVE_MERCHANT_MAPPINGS = [
   // Quick Commerce & Grocery
   { pattern: /zepto/i, category: "Grocery", isOnline: true, isP2P: false, platform: "Zepto" },
   { pattern: /big ?basket|jio ?mart|nature.?s basket|supermart|amazon fresh|dunzo|insta ?mart|getir|flink|jokr/i, category: "Grocery", isOnline: true, isP2P: false },
-  { pattern: /d ?mart|star ?bazaar|spencers|more|supermarket|grocery|kirana|provisions|convenience|general|household|produce/i, category: "Grocery", isOnline: false, isP2P: false },
+  { pattern: /d ?mart|star ?bazaar|spencers|more|supermarket|grocery|groceries|kirana|provisions|convenience|general|household|produce/i, category: "Grocery", isOnline: false, isP2P: false },
 
   // D2C Food, Beverage & Meat
   { pattern: /licious|whole truth|slurrp farm|happilo|rage|country delight|sleepy owl/i, category: "Grocery", isOnline: true, isP2P: false },
