@@ -69,7 +69,7 @@ export const CARD_DATA: Card[] = [
     baseRewardRate: 1.5,
     benefits: [
       { type: 'cashback', category: 'Tata Neu App', value: '10%', percentValue: 10, description: 'NeuCoins on spends within the Tata Neu app on partner brands, pharma, shopping, and travel. (NeuPass Legend Tier)', minSpend: 67 },
-      { type: 'cashback', category: 'Groceries', value: '10%', percentValue: 10, capPerTxn: 15000, description: 'NeuCoins on grocery spends within the Tata Neu app on BigBasket.', maxSpend: 40000, minSpend: 67, isHidden: true },
+      { type: 'cashback', category: 'Groceries', value: '10%', percentValue: 10, capPerTxn: 1500, description: 'NeuCoins on grocery spends within the Tata Neu app on BigBasket.', maxSpend: 40000, minSpend: 67, isHidden: true },
       { type: 'cashback', category: 'Utilities', value: '5%', percentValue: 5, description: 'NeuCoins on utility bill payments on the Tata Neu app.', maxSpend: 40000, minSpend: 67 },
       { type: 'cashback', category: 'Telecom', value: '5%', percentValue: 5, description: 'NeuCoins on telecom and internet payments on the Tata Neu app.', maxSpend: 40000, minSpend: 67, isHidden: true },
       { type: 'cashback', category: 'Offline (Tata Partner Brands)', value: '5%', percentValue: 5, description: 'NeuCoins on spends on Tata partner brands in offline stores like Croma, Westside, Zudio, IHCL, Bigbasket.', minSpend: 67 },
@@ -121,7 +121,7 @@ export const CARD_DATA: Card[] = [
     forexMarkup: 2,
     baseRewardRate: 0,
     benefits: [
-      { type: 'cashback', category: 'All Spends', value: '5%', percentValue: 5, capPerTxn: 2000, description: 'Cashback on online and offline spends. Forex-positive.', maxSpend: 10000 },
+      { type: 'cashback', category: 'All Spends', value: '5%', percentValue: 5, capPerTxn: 100, description: 'Cashback on online and offline spends. Forex-positive.', maxSpend: 10000 },
       { type: 'offer', category: 'Dining', value: 'Zomato', percentValue: 20, capPerTxn: 750, minSpend: 2000, usageLimit: 1, description: '20% discount on Zomato Dining up to Rs. 750 once a month on min spend of Rs. 2,000.' },
       { type: 'offer', category: 'Movies', value: 'BookMyShow', percentValue: 50, capPerTxn: 300, minSpend: 400, usageLimit: 1, description: '1+1 on movie tickets booked through BookMyShow up to Rs. 300 once a month on min spend of Rs. 400.' },
       { type: 'exclusion', category: 'UPI', value: '0%', description: 'UPI Payments' },

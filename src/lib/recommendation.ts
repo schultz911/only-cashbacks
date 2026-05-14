@@ -326,13 +326,13 @@ export function getRecommendations(
     reason = `Instead of making a direct purchase, buy from Tata Neu app using Tata Neu Infinity HDFC to get 10% NeuCoins.`;
   }
   else if (isScanToPay && (catL === 'other' || !nameL)) {
-    reason = `For general P2P or unknown merchants, use CRED, Amazon, or Kotak 811 Scan & Pay for a better chance at rewards.`;
+    reason = `For general P2P or unknown merchants, use the below alternatives for better rewards.`;
   }
   else reason = `Based on your amount, this yields the highest net returns for ${merchant.category.toLowerCase()} ${merchant.platform ? `on ${merchant.platform}🎉` : '🎉'}`;
 
   // Fallback advice if net values are low
   if (bestResult.netValue < amount * 0.01 && !isIntl) {
-    reason += " If this merchant doesn't offer good card rewards, consider using CRED, Amazon, or Kotak 811 Scan & Pay for better base rewards.";
+    reason += " This merchant doesn't offer good card rewards! Consider using Scan & Pay.";
   }
 
   if (nameL.includes('indigo')) {
