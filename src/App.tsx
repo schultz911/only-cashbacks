@@ -923,7 +923,7 @@ export default function App() {
                     .map((card: any) => {
                       const b = card.benefits.find((x: any) => x.type === 'lounge' && x.category === loungeTab)!;
                       const parsed = parseLoungeBenefit(b);
-                      
+
                       let finalPasses = parsed.passesCount;
                       let finalVerified = loungeMilestonesVerified[`${card.id}-${loungeTab}`] ?? parsed.isFree;
 
@@ -963,7 +963,6 @@ export default function App() {
                           const next = typeof updater === 'function' ? updater(current) : updater;
                           return { ...prev, [`${card.id}-${loungeTab}`]: next };
                         })}
-                        isVerified={loungeMilestonesVerified[`${card.id}-${loungeTab}`] ?? parsed.isFree}
                         setIsVerified={(val: boolean) => setLoungeMilestonesVerified(prev => ({ ...prev, [`${card.id}-${loungeTab}`]: val }))}
                       />
                     ))
