@@ -44,7 +44,6 @@ export const CARD_DATA: Card[] = [
     baseRewardRate: 1.5,
     benefits: [
       { type: 'cashback', category: 'Dining', value: '10%', percentValue: 10, description: '10% Cashback on food delivery, dining, and groceries.', maxSpend: 10000, fallbackRate: 0 },
-      { type: 'cashback', category: 'Gaming', value: '1.5%', percentValue: 1.5, description: '1.5% Base Rewards on gaming spends.' },
       { type: 'lounge', category: 'Domestic', value: '1/qtr', description: 'Complimentary domestic lounge access.' },
       { type: 'exclusion', category: 'Fuel', value: '0%', description: 'Fuel' },
       { type: 'exclusion', category: 'Wallet', value: '0%', description: 'Wallet Loads' },
@@ -121,7 +120,6 @@ export const CARD_DATA: Card[] = [
     baseRewardRate: 0,
     benefits: [
       { type: 'cashback', category: 'All Spends', value: '5%', percentValue: 5, capPerTxn: 100, description: 'Cashback on online and offline spends. Forex-positive.', maxSpend: 10000 },
-      { type: 'cashback', category: 'Gaming', value: '5%', percentValue: 5, capPerTxn: 100, description: '5% Cashback on gaming spends up to ₹100 per transaction.' },
       { type: 'offer', category: 'Dining', value: 'District', percentValue: 20, capPerTxn: 750, minSpend: 2000, usageLimit: 1, description: '20% discount up to ₹750 on a min spend of ₹2,000 once a month.' },
       { type: 'offer', category: 'Movies', value: 'BMS', percentValue: 50, capPerTxn: 300, minSpend: 400, usageLimit: 1, description: 'Buy 1 Get 1 on movie tickets up to ₹300 on a min spend of ₹400 once a month.' },
       { type: 'upi', category: 'Scan & Pay', value: 'Mystery', percentValue: 0.03, description: 'Earn exclusive Mystery Cashback rewards on all Scan & Pay transactions via Kotak App.', isHidden: true },
