@@ -66,6 +66,14 @@ export function getRecommendations(
       }
     }
 
+    if (isIntl) {
+      const allowedIntlCards = ['kotak-811-infinity', 'sbi-cashback', 'niyo-dcb'];
+      if (!allowedIntlCards.includes(card.id)) {
+        isExcluded = true;
+        benefitText = "Not optimized for International spend";
+      }
+    }
+
     const defaultExclusions = ['fuel', 'wallet', 'rent', 'housing', 'gambling', 'gaming', 'toll', 'finance', 'school', 'education', 'jewellery', 'insurance', 'railway', 'government', 'tax'];
 
     if (card.type === 'Credit' || card.type === 'Debit') {
@@ -183,7 +191,10 @@ export function getRecommendations(
       const movieUsed = offerUsage['kotak-811-infinity-Movies-BMS'] || 0;
       const diningUsed = offerUsage['kotak-811-infinity-Dining-District'] || 0;
 
-      if (isMovie && movieUsed < 1) {
+      if (isIntl) {
+        cashbackAmount = Math.min(amount * 0.05, 100);
+        benefitText = '5% Cashback';
+      } else if (isMovie && movieUsed < 1) {
         discountAmount = Math.min(amount * 0.5, 300);
         const remaining = amount - discountAmount;
         cashbackAmount = discountAmount + Math.min(remaining * 0.05, 100);
@@ -246,7 +257,7 @@ export function getRecommendations(
         const pLower = `${benefit.category} ${benefit.value} ${benefit.description || ''}`.toLowerCase();
         if (platL && pLower.includes(platL)) matchScore = 100 + (benefit.percentValue || 0);
         else if (pLower.includes(catL) && catL !== 'other') matchScore = 50 + (benefit.percentValue || 0);
-        else if (card.id === 'hsbc-live-plus' && (isGrocery || isFoodDelivery || isDining)) {
+        else if (card.id === 'hsbc-live-plus' && !isIntl && (isGrocery || isFoodDelivery || isDining)) {
           if (pLower.includes('dining') || pLower.includes('grocery') || pLower.includes('groceries') || pLower.includes('food')) matchScore = 60;
         }
         else if ((isFoodDelivery || isDining) && (pLower.includes('swiggy') || pLower.includes('district') || pLower.includes('dining'))) {
@@ -441,14 +452,19 @@ export function getRecommendations(
     availableOffers.push({ id: 's-ajio', icon: '🛍️', title: 'oneBLCK Ajio', description: 'Flat 20% off on Ajio', category: 'Ajio' });
   }
 
+  const tiedCards = validOptions
+    .filter(o => Math.abs(o.netValue - bestResult.netValue) < 0.01)
+    .map(o => o.card);
+
   return {
     bestCard: bestResult.card,
+    tiedCards: tiedCards.length > 1 ? tiedCards : undefined,
     reason,
     expectedBenefit: bestResult.benefitText,
     netValue: bestResult.netValue,
     cashbackEarned: bestResult.cashbackEarned,
     feesPaid: bestResult.feesPaid,
-    alternatives: validOptions.slice(1, 4).map(s => ({ card: s.card, benefit: s.benefitText, netValue: s.netValue })),
+    alternatives: validOptions.slice(tiedCards.length, tiedCards.length + 3).map(s => ({ card: s.card, benefit: s.benefitText, netValue: s.netValue })),
     availableOffers
   };
 }

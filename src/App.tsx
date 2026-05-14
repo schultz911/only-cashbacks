@@ -509,21 +509,45 @@ export default function App() {
                   className="space-y-6"
                 >
                   <div className="flex items-center justify-between pl-4 border-l-4 border-blue-600">
-                    <h3 className="font-bold text-xl text-gray-900">
-                      Recommendation
-                    </h3>
+                    <div className="flex items-center gap-3">
+                      <h3 className="font-bold text-xl text-gray-900">
+                        Recommendation
+                      </h3>
+                      {recommendation.tiedCards && recommendation.tiedCards.length > 1 && (
+                        <div className="flex items-center gap-1.5 px-3 py-1 bg-amber-50 border border-amber-100 rounded-full animate-bounce">
+                          <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                          <span className="text-[10px] font-black text-amber-700 uppercase tracking-wider">
+                            {recommendation.tiedCards.length === 2 ? "It's a Tie!" : `${recommendation.tiedCards.length}-Way Tie!`}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 landscape:grid-cols-2 lg:grid-cols-2 gap-6">
                     <div className="space-y-4">
-                      <CardItem
-                        layoutId={`card-rec-${recommendation.bestCard.id}`}
-                        card={recommendation.bestCard}
-                        isRecommendation
-                        benefitText={recommendation.expectedBenefit}
-                        onClick={() => setSelectedCardForDetails({ card: recommendation.bestCard, source: 'rec' })}
-                        isExhausted={exhaustedCards[recommendation.bestCard.id]}
-                      />
+                      {recommendation.tiedCards ? (
+                        recommendation.tiedCards.map((card) => (
+                          <CardItem
+                            key={card.id}
+                            layoutId={`card-rec-${card.id}`}
+                            card={card}
+                            isRecommendation
+                            benefitText={recommendation.expectedBenefit}
+                            onClick={() => setSelectedCardForDetails({ card, source: 'rec' })}
+                            isExhausted={exhaustedCards[card.id]}
+                          />
+                        ))
+                      ) : (
+                        <CardItem
+                          layoutId={`card-rec-${recommendation.bestCard.id}`}
+                          card={recommendation.bestCard}
+                          isRecommendation
+                          benefitText={recommendation.expectedBenefit}
+                          onClick={() => setSelectedCardForDetails({ card: recommendation.bestCard, source: 'rec' })}
+                          isExhausted={exhaustedCards[recommendation.bestCard.id]}
+                        />
+                      )}
                     </div>
 
                     <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm space-y-5 flex flex-col justify-between">
