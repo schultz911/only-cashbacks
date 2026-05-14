@@ -443,43 +443,39 @@ export function getRecommendations(
 
   if (isMovie) {
     if ((offerUsage['kotak-811-infinity-Movies-BMS'] || 0) < 1) {
-      availableOffers.push({ id: 'k-bms', icon: '🎬', title: 'Kotak 811 BMS', description: 'Buy 1 Get 1 Ticket up to ₹300', category: 'Movie' });
+      availableOffers.push({ id: 'k-bms', icon: '🎬', title: 'Kotak 811', description: 'Buy 1 Get 1 Ticket up to ₹300', category: 'BMS' });
     }
     if ((offerUsage['axis-myzone-Movies-District'] || 0) < 1) {
-      availableOffers.push({ id: 'a-district', icon: '🍿', title: 'Axis District', description: 'Buy 1 Get 1 Ticket up to ₹200', category: 'Movie' });
+      availableOffers.push({ id: 'a-district', icon: '🍿', title: 'Axis MyZone', description: 'Buy 1 Get 1 Ticket up to ₹200', category: 'District' });
     }
     if ((offerUsage['hdfc-imperia-Movies-BMS'] || 0) < 1) {
-      availableOffers.push({ id: 'i-bms', icon: '🎟️', title: 'HDFC Imperia BMS', description: '25% points up to ₹250', category: 'Movie' });
+      availableOffers.push({ id: 'i-bms', icon: '🎟️', title: 'HDFC Imperia', description: '25% points up to ₹250', category: 'BMS' });
     }
     if (!nameL.match(/bookmyshow|bms|district/i)) {
-      availableOffers.push({ id: 's-cine', icon: '🎥', title: 'oneBLCK Cinepolis', description: '25% off on Cinepolis tickets', category: 'Movie' });
+      availableOffers.push({ id: 's-cine', icon: '🎥', title: 'Swiggy oneBLCK', description: '25% off up to ₹75', category: 'Cinepolis' });
     }
   }
 
   if (isDining) {
     if ((offerUsage['kotak-811-infinity-Dining-District'] || 0) < 1) {
-      availableOffers.push({ id: 'k-dist', icon: '🍽️', title: 'Kotak District', description: '20% off up to ₹750 via District', category: 'Dining' });
+      availableOffers.push({ id: 'k-dist', icon: '🍽️', title: 'Kotak 811', description: '20% off up to ₹750', category: 'District' });
     }
     if ((offerUsage['axis-myzone-Dining-EazyDiner'] || 0) < 1) {
-      availableOffers.push({ id: 'a-eazy', icon: '🥂', title: 'Axis EazyDiner', description: '15% off via EazyDiner', category: 'Dining' });
+      availableOffers.push({ id: 'a-eazy', icon: '🥂', title: 'Axis MyZone', description: '15% off up to ₹500', category: 'EazyDiner' });
     }
-    availableOffers.push({ id: 'h-swig-d', icon: '🥘', title: 'HDFC Swiggy', description: '10% cashback on Dining', category: 'Dining' });
-    availableOffers.push({ id: 'hs-live-d', icon: '🍷', title: 'HSBC Live+', description: '10% cashback on Dining', category: 'Dining' });
   }
 
   if (isFoodDelivery) {
     if ((offerUsage['axis-myzone-Food-Swiggy'] || 0) < 2) {
-      availableOffers.push({ id: 'a-swig', icon: '🍔', title: 'Axis Swiggy', description: 'Flat ₹120 off (AXIS120)', category: 'Food' });
+      availableOffers.push({ id: 'a-swig', icon: '🍔', title: 'Axis MyZone', description: 'Flat ₹120 off (AXIS120)', category: 'Swiggy' });
     }
     if ((offerUsage['hdfc-imperia-Food-Swiggy'] || 0) < 1) {
-      availableOffers.push({ id: 'i-swig', icon: '🍕', title: 'HDFC Imperia', description: '5% cashback up to ₹150', category: 'Food' });
+      availableOffers.push({ id: 'i-swig', icon: '🍕', title: 'HDFC Imperia', description: '5% cashback up to ₹150', category: 'Swiggy' });
     }
-    availableOffers.push({ id: 'h-swig-f', icon: '🍱', title: 'HDFC Swiggy', description: '10% cashback on Food', category: 'Food' });
-    availableOffers.push({ id: 'hs-live-f', icon: '🍛', title: 'HSBC Live+', description: '10% cashback on Food', category: 'Food' });
   }
 
   if ((nameL.includes('ajio') || platL.includes('ajio') || catL.includes('apparel')) && amount >= 999) {
-    availableOffers.push({ id: 's-ajio', icon: '🛍️', title: 'oneBLCK Ajio', description: 'Flat 20% off on Ajio', category: 'Ajio' });
+    availableOffers.push({ id: 's-ajio', icon: '🛍️', title: 'Swiggy oneBLCK', description: 'Flat 20% off on select styles', category: 'Ajio' });
   }
 
   const tiedCards = validOptions
