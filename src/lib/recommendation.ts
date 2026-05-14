@@ -20,6 +20,8 @@ export function getRecommendations(
   const catL = merchant.category.toLowerCase();
   const platL = merchant.platform?.toLowerCase() || '';
 
+  const isGrocery = catL.includes('grocery') || nameL.includes('grocery') || ['bigbasket', 'blinkit', 'instamart', 'zepto', 'swiggy instamart', 'dmart', 'reliance fresh', "nature's basket", 'spencers'].some(g => nameL.includes(g) || platL.includes(g) || catL.includes(g));
+
   // Google Play special logic
   if (nameL.includes('google play') || platL.includes('google play')) {
     const sbiCard = CARD_DATA.find(c => c.id === 'sbi-cashback')!;
@@ -27,35 +29,54 @@ export function getRecommendations(
     return {
       bestCard: sbiCard,
       reason: isExhausted 
-         ? "Using Amazon Gift Card via SBI Cashback. (Accelerated limit reached, earning base rate)"
-         : "For Google Play, always buy an Amazon gift card with the SBI Cashback card and load using Amazon's Rewards Gold offer of 5% on Google Play recharges.",
-      expectedBenefit: isExhausted ? "1% + 5% Amazon Rewards" : "5% via SBI CB + 5% Amazon Rewards Gold",
-      netValue: isExhausted ? amount * 0.06 : amount * 0.10,
-      cashbackEarned: isExhausted ? amount * 0.06 : amount * 0.10,
+         ? "Using Amazon Gift Card via SBI Cashback. (Accelerated limit reached, earning base rewards)"
+         : "For Google Play, always buy an Amazon Gift Card with the SBI Cashback card and load using Amazon's Rewards Gold offer of 5% on Google Play recharges.",
+      expectedBenefit: isExhausted ? "5% Amazon Rewards Gold" : "5% Cashback + 5% Amazon Rewards Gold",
+      netValue: (isExhausted ? 0 : Math.min(amount, 40000) * 0.05) + (amount * 0.05),
+      cashbackEarned: (isExhausted ? 0 : Math.min(amount, 40000) * 0.05) + (amount * 0.05),
       feesPaid: 0,
       alternatives: []
     };
   }
 
   // Tata Neu merchants
-  const tataNeuMerchants = ['croma', 'westside', 'zudio', 'ihcl', 'bigbasket', '1mg', 'tata cliq', 'air india', 'qmin', 'cult', 'tata play', 'titan', 'tanishq'];
+  const tataNeuMerchants = ['croma', 'westside', 'zudio', 'ihcl', 'bigbasket', '1mg', 'cliq', 'air india', 'air india express', 'qmin', 'cult', 'tata play', 'titan', 'tanishq', 'mia', 'fastrack', 'caratlane', 'helios', 'zoya'];
   const isTataNeuAppMerchant = tataNeuMerchants.some(tm => nameL.includes(tm) || catL.includes(tm) || platL.includes(tm));
-
-  // Swiggy BLCK allowed online categories (5% CB list)
-  const swiggyAllowed = [
-    'apparels', 'pharmacies', 'pet stores', 'personal care',
-    'ola', 'zoom', 'uber', 'reliance retail', 'vijay sales', 'croma',
-    'paytm travel', 'easemytrip', 'ixigo', 'yatra', 'ibibo',
-    'amazon', 'flipkart', 'nykaa', 'cleartrip', 'ajio',
-    'netflix', 'hotstar', 'bookmyshow', 'meesho'
-  ];
-  const isSwiggyAllowed = swiggyAllowed.some(tm => nameL.includes(tm) || catL.includes(tm) || platL.includes(tm));
 
   const calculationResults = CARD_DATA.map(card => {
     let cashbackAmount = 0;
-    let benefitText = 'Base rewards';
+    let benefitText = 'Base Rewards';
     let isExcluded = false;
     let discountAmount = 0;
+
+    const defaultExclusions = ['fuel', 'wallet', 'rent', 'housing', 'gambling', 'gaming', 'toll', 'finance', 'school', 'education', 'jewellery', 'insurance', 'railway', 'government', 'tax'];
+
+    if (card.type === 'Credit' || card.type === 'Debit') {
+       const isExcludedCat = defaultExclusions.find(ex => catL.includes(ex) || nameL.includes(ex) || platL.includes(ex));
+       if (isExcludedCat) {
+           isExcluded = true;
+           benefitText = `Excluded category (${isExcludedCat})`;
+           
+           if (isExcludedCat === 'gaming' && !catL.includes('gambling') && !nameL.includes('gambling')) {
+               if (card.id === 'hsbc-live-plus' || card.id === 'kotak-811-infinity') {
+                   isExcluded = false;
+               }
+           }
+           if (card.id === 'hdfc-tata-neu-infinity') {
+               if (catL.includes('utility') || isExcludedCat === 'toll' || 
+                   (isExcludedCat === 'jewellery') ||
+                   (isExcludedCat === 'insurance')) {
+                   isExcluded = false;
+               }
+           }
+           if (card.id === 'kotak-811-infinity' && isExcludedCat === 'fuel') {
+               isExcluded = false;
+           }
+           if (card.id === 'one-card' && isExcludedCat === 'fuel') {
+               isExcluded = false; // it will hit the 5% benefit up to 50 Rs logic
+           }
+       }
+    }
 
     // Default Exclusions checking
     const exclusion = card.benefits.find(b => 
@@ -65,45 +86,84 @@ export function getRecommendations(
 
     if (exclusion) {
       isExcluded = true;
-      benefitText = 'Excluded from rewards';
+      benefitText = 'Excluded from earning rewards';
     } else if (exhaustedCards[card.id]) {
       cashbackAmount = amount * (card.baseRewardRate / 100);
-      benefitText = `Limit Reached - Base rate (${card.baseRewardRate}%)`;
-    } 
-    // Handle specific card logic statically for complex rules
-    else if (card.id === 'hdfc-swiggy') {
-      if (nameL.includes('swiggy') || nameL.includes('dineout') || platL.includes('swiggy')) {
-        cashbackAmount = Math.min(amount * 0.10, 1500);
-        benefitText = '10% Cashback on Swiggy/Dineout';
+      benefitText = `Monthly limit reached. Earning (${card.baseRewardRate}% base rewards.)`;
+    } else if (card.id === 'hdfc-tata-neu-infinity' && !isIntl) {
+      if (isGrocery && isTataNeuAppMerchant && isOnline) {
+         const eligibleSpend = Math.min(amount, 15000);
+         cashbackAmount = (eligibleSpend * 0.035) + (amount * card.baseRewardRate / 100) + (amount * 0.05);
+         benefitText = '10% NeuCoins on BigBasket via Tata Neu app';
+      } else if (!isGrocery && isTataNeuAppMerchant && isOnline) {
+           cashbackAmount = (amount * 0.035) + (amount * card.baseRewardRate / 100) + (amount * 0.05);
+           benefitText = '10% NeuCoins via Tata neu app';
+         } else if (!isGrocery && isTataNeuAppMerchant && !isOnline) { {
+           cashbackAmount = (amount * 0.035) + (amount * card.baseRewardRate / 100);
+           benefitText = '5% NeuCoins in offline stores';
+         }   
+      } else if ((nameL.includes('grocery') || nameL.includes('groceries')) && isOnline) { {
+         const eligibleSpend = Math.min(amount, 15000);
+         cashbackAmount = (eligibleSpend * 0.035) + (amount * card.baseRewardRate / 100) + (amount * 0.05);
+         benefitText = '10% NeuCoins on BigBasket via Tata Neu app';
+         }
+      } else if ((nameL.includes('grocery') || nameL.includes('groceries')) && !isOnline) { {
+         cashbackAmount = amount * card.baseRewardRate / 100;
+         benefitText = '1.5% NeuCoins';
+         }
+      }
+      else if (catL.includes('utility') || catL.includes('utilities') ||catL.includes('telecom') || catL.includes('internet') || catL.includes('bill') || catL.includes('bills') ||platL.includes('tata play')) {
+         const eligibleSpend = Math.min(amount, 40000);
+         cashbackAmount = (eligibleSpend * 0.035) + (eligibleSpend * card.baseRewardRate / 100);
+         benefitText = '5% NeuCoins via Tata Neu App';
+      } else if (!isOnline) {
+         cashbackAmount = amount * card.baseRewardRate / 100;
+         benefitText = '1.5% NeuCoins';
+      } else {
+         cashbackAmount = amount * card.baseRewardRate / 100;
+         benefitText = '1.5% NeuCoins';
+      }
+    } else if (card.id === 'hdfc-swiggy' && !isIntl) {
+      if (nameL.includes('swiggy') || nameL.includes('dineout') || platL.includes('swiggy') || platL.includes('dineout') || platL.includes('instamart')) {
+        const eligible = Math.min(amount, 15000);
+        cashbackAmount = (eligible * 0.10);
+        benefitText = '10% Cashback';
       } else if (isOnline && (nameL.includes('nykaa') || platL.includes('nykaa'))) {
-        cashbackAmount = Math.min(amount * 0.05, 1500); // 5% base on Nykaa
-        const maxNykaaDiscount = amount >= 1000 ? Math.min(amount * 0.05, 100) : 0;
-        discountAmount = maxNykaaDiscount;
-        benefitText = maxNykaaDiscount > 0 ? `5% Cashback + ₹${maxNykaaDiscount.toFixed(0)} Instant Discount` : '5% Cashback';
+        const eligible = Math.min(amount, 30000);
+        const over = Math.max(0, amount - 30000);
+        cashbackAmount = (eligible * 0.05) + (over * 0.01);
+        discountAmount = amount * 0.05;
+        benefitText = `5% Cashback + 5% Instant Discount`;
         cashbackAmount += discountAmount;
       } else if (isOnline && (nameL.includes('cleartrip') || platL.includes('cleartrip'))) {
-        cashbackAmount = Math.min(amount * 0.05, 1500); // 5% cb
+        const eligible = Math.min(amount, 30000);
+        const over = Math.max(0, amount - 30000);
+        cashbackAmount = (eligible * 0.05) + (over * 0.01);
         const isHotel = nameL.includes('hotel') || catL.includes('hotel');
         const ctDisc = isHotel ? 0.20 : 0.0635;
         discountAmount = amount * ctDisc;
         cashbackAmount += discountAmount;
-        benefitText = `5% CB + ${(ctDisc * 100).toFixed(2)}% Instant Discount (Code: CTSWHDFC)`;
-      } else if (isOnline && isSwiggyAllowed) {
-        cashbackAmount = Math.min(amount * 0.05, 1500);
-        benefitText = '5% Cashback (Selected Online Merchant)';
+        benefitText = `5% Cashback + ${(ctDisc * 100).toFixed(2)}% Instant Discount (Code: CTSWHDFC)`;
+      } else if (isOnline && !catL.includes('utility') && !nameL.includes('utility')) {
+        const eligible = Math.min(amount, 30000);
+        const over = Math.max(0, amount - 30000);
+        cashbackAmount = (eligible * 0.05) + (over * 0.01);
+        benefitText = '5% Cashback';
       } else {
         cashbackAmount = amount * 0.01;
-        benefitText = '1% Base Cashback';
+        benefitText = '1% Base Rewards';
       }
-    }
-    else if (card.id === 'kiwi-neon' && isScanToPay) {
+    } else if (card.id === 'kiwi-neon' && isScanToPay) {
       cashbackAmount = amount * 0.05;
-      benefitText = '5% Rewards on UPI Scan & Pay';
-    }
-    // General processing for others
-    else {
+      benefitText = '5% Cashback on Scan & Pay';
+    } else {
       let matchedBenefitValue = -1;
       let usedBenefit = null;
+
+      const moviePlatforms = ['bookmyshow', 'district', 'pvr', 'inox', 'cinepolis', 'paytm'];
+      const diningPlatforms = ['swiggy', 'zomato', 'eazydiner', 'dineout', 'district'];
+      const searchedMoviePlat = moviePlatforms.find(p => nameL.includes(p) || (platL && platL.includes(p)));
+      const searchedDiningPlat = diningPlatforms.find(p => nameL.includes(p) || (platL && platL.includes(p)));
 
       for (const benefit of card.benefits) {
          let matchScore = -1;
@@ -111,28 +171,56 @@ export function getRecommendations(
          const usageKey = `${card.id}-${benefit.category}-${benefit.value}`;
          const usedCount = offerUsage[usageKey] || 0;
          if (benefit.usageLimit && usedCount >= benefit.usageLimit) {
-            continue; // Skip this benefit if monthly limit is exhausted
+            continue; 
          }
 
-         if (isIntl) {
-            if (benefit.type === 'forex' || benefit.category.toLowerCase() === 'all' || benefit.description.toLowerCase().includes('forex-positive')) {
-               matchScore = 200 + (benefit.percentValue || 0);
-            }
-         } else {
-            const pLower = benefit.category.toLowerCase();
-            if (platL && pLower === platL) matchScore = 100 + (benefit.percentValue || 0);
-            else if (pLower === catL) matchScore = 50 + (benefit.percentValue || 0);
-            // HSBC Live+ Food/Grocery/Dining matching
-            else if (card.id === 'hsbc-live-plus' && (nameL.includes('food') || catL.includes('food') || nameL.includes('restaurant') || catL.includes('restaurant'))) {
-               if (pLower === 'dining') matchScore = 60;
-            }
-            else if (isOnline && pLower === 'online') matchScore = 20 + (benefit.percentValue || 0);
-            else if (isScanToPay && pLower === 'upi scan') matchScore = 30 + (benefit.percentValue || 0);
-            else if (benefit.type === 'offer' && (benefit.description.toLowerCase().includes(nameL) || (platL && benefit.description.toLowerCase().includes(platL)))) {
-              matchScore = 80;
-            }
-            else if (pLower === 'all' || pLower === 'other') matchScore = benefit.percentValue || 0;
+         if (benefit.type === 'offer') {
+             const descL = benefit.description.toLowerCase();
+             const valLower = benefit.value.toLowerCase();
+             const isMovieOffer = benefit.category.toLowerCase().includes('movie') || descL.includes('movie') || descL.includes('ticket');
+             const isDiningOffer = benefit.category.toLowerCase().includes('dining') || benefit.category.toLowerCase().includes('swiggy') || benefit.category.toLowerCase().includes('zomato');
+             
+             let skip = false;
+             const specificPlatforms = ['bookmyshow', 'district', 'swiggy', 'zomato', 'dineout', 'eazydiner', 'nykaa', 'cleartrip'];
+             
+             for (const plat of specificPlatforms) {
+                 if (descL.includes(plat) || valLower.includes(plat)) {
+                     if (!nameL.includes(plat) && !(platL && platL.includes(plat))) {
+                         skip = true;
+                         
+                         if (isMovieOffer && (catL.includes('movie') || nameL.includes('movie')) && !nameL.match(/cinepolis|pvr|inox|bookmyshow|district/i)) {
+                             if (!searchedMoviePlat) skip = false;
+                         }
+                         if (isDiningOffer && (catL.includes('dining') || nameL.includes('dining')) && !nameL.match(/swiggy|zomato|eazydiner|dineout|district/i)) {
+                             if (!searchedDiningPlat) skip = false;
+                         }
+                     }
+                     break;
+                 }
+             }
+
+             if (skip) continue;
          }
+
+         const pLower = benefit.category.toLowerCase();
+         if (platL && pLower === platL) matchScore = 100 + (benefit.percentValue || 0);
+         else if (pLower === catL) matchScore = 50 + (benefit.percentValue || 0);
+         else if (card.id === 'hsbc-live-plus' && (isGrocery || nameL.includes('food') || catL.includes('food') || nameL.includes('restaurant') || catL.includes('restaurant') || nameL.includes('dining'))) {
+            if (pLower.includes('dining') || pLower.includes('grocery')) matchScore = 60;
+         }
+         else if ((nameL.includes('food') || catL.includes('food') || nameL.includes('dining') || catL.includes('dining')) && (pLower === 'swiggy' || pLower === 'zomato' || pLower === 'dining')) {
+            matchScore = 70;
+         }
+         else if ((nameL.includes('movie') || catL.includes('movie') || nameL.includes('bookmyshow') || nameL.includes('district') || nameL.includes('pvr') || nameL.includes('inox') || nameL.includes('cinepolis') || nameL.includes('entertainment')) && (pLower === 'movies' || pLower === 'entertainment' || benefit.description.toLowerCase().includes('movie'))) {
+            matchScore = 70;
+         }
+         else if (isOnline && pLower === 'online') matchScore = 20 + (benefit.percentValue || 0);
+         else if (!isOnline && pLower === 'offline') matchScore = 20 + (benefit.percentValue || 0);
+         else if (isScanToPay && pLower === 'upi scan') matchScore = 30 + (benefit.percentValue || 0);
+         else if (benefit.type === 'offer' && (benefit.description.toLowerCase().includes(nameL) || (platL && benefit.description.toLowerCase().includes(platL)))) {
+           matchScore = 80;
+         }
+         else if (pLower === 'all' || pLower === 'other') matchScore = benefit.percentValue || 0;
 
          if (matchScore > matchedBenefitValue) {
             matchedBenefitValue = matchScore;
@@ -157,57 +245,50 @@ export function getRecommendations(
         benefitText = `${usedBenefit.value} ${capType}`;
       } else {
         cashbackAmount = (amount * card.baseRewardRate / 100);
-        benefitText = `Base reward rate (${card.baseRewardRate}%)`;
+        benefitText = `${card.baseRewardRate}% Base Rewards`;
       }
+    }
       
-      if (!isExcluded && (catL.includes('movie') || nameL.match(/movie|cinepolis|pvr|inox|bookmyshow/i))) {
-         const cinepolisDiscount = Math.min(amount * 0.25, 75);
-         let onlineRate = card.baseRewardRate;
-         if (card.id === 'sbi-cashback') onlineRate = 5;
-         if (card.id === 'hdfc-swiggy') onlineRate = 5;
-         const onlineCb = (amount * onlineRate) / 100;
-         const totalCinepolisValue = cinepolisDiscount + onlineCb;
-         
-         if (totalCinepolisValue > cashbackAmount) {
-            cashbackAmount = totalCinepolisValue;
-            if (!nameL.includes('cinepolis')) {
-               benefitText = `Switch to Cinepolis via Swiggy (Coupon + ${onlineRate}% CB)`;
-            } else {
-               benefitText = `Swiggy Cinepolis Coupon (₹${cinepolisDiscount.toFixed(0)} off) + ${onlineRate}% CB`;
+    // Apply Universal Offers (Coupons from Swiggy One apply regardless of card limits if not excluded)
+    if (!isExcluded && !exhaustedCards[card.id] && !isIntl) {
+        if (catL.includes('movie') || nameL.match(/movie|cinepolis|pvr|inox|bookmyshow/i)) {
+           const cinepolisDiscount = Math.min(amount * 0.25, 75);
+           let onlineRate = card.baseRewardRate;
+           let onlineCap = amount;
+           if (card.id === 'sbi-cashback') {
+               onlineRate = 5;
+               onlineCap = 40000;
+           }
+           if (card.id === 'hdfc-swiggy') {
+               onlineRate = 5;
+               onlineCap = 30000;
+           }
+           const eligibleAmt = Math.min(amount, onlineCap);
+           const overSpend = Math.max(0, amount - onlineCap);
+           const onlineCb = (eligibleAmt * onlineRate / 100) + (overSpend * card.baseRewardRate / 100);
+           const totalCinepolisValue = cinepolisDiscount + onlineCb;
+           
+           if (totalCinepolisValue > cashbackAmount && !nameL.includes('bookmyshow') && !nameL.includes('district')) {
+              cashbackAmount = totalCinepolisValue;
+              if (!nameL.includes('cinepolis')) {
+                 benefitText += ` (Better Deal: Swiggy Cinepolis with ₹${cinepolisDiscount.toFixed(0)} off)`;
+              } else {
+                 benefitText += ` with Swiggy Cinepolis Coupon for ₹${cinepolisDiscount.toFixed(0)} off!`;
+              }
             }
-         }
-      }
+        }
 
-      if (!isExcluded && (catL.includes('ajio') || nameL.includes('ajio')) && amount >= 999) {
-         const ajioDisc = amount * 0.20;
-         cashbackAmount += ajioDisc;
-         benefitText += ` + Swiggy Coupon (20% off)`;
-      }
+        if ((catL.includes('ajio') || nameL.includes('ajio')) && amount >= 999) {
+           const ajioDisc = amount * 0.20;
+           cashbackAmount += ajioDisc;
+           benefitText += ` with Swiggy One Coupon (20% off)`;
+        }
     }
 
     // Forex loading
     const loadedForexMarkup = card.forexMarkup * 1.18;
     const forexFee = isIntl ? (amount * loadedForexMarkup / 100) : 0;
     
-    // Tata Neu check
-    if (card.id === 'hdfc-tata-neu-infinity' && !isExcluded && !isIntl) {
-      if (isTataNeuAppMerchant) {
-         if (platL.includes('tata neu')) {
-           cashbackAmount = amount * 0.10;
-           benefitText = '10% Tata NeuCoins (5% Card + 5% NeuPass)';
-         } else {
-           cashbackAmount = amount * 0.05;
-           benefitText = '5% Base (10% NeuCoins if purchased via Tata Neu App)';
-         }
-      } else if (catL.includes('utility') || catL.includes('bill')) {
-         cashbackAmount = amount * 0.05;
-         benefitText = '5% on Utility Payments via Tata Neu App';
-      } else if (!isOnline) {
-         cashbackAmount = amount * 0.015; // offline doesn't get 5% neupass!
-         benefitText = '1.5% Base (10% if Neu App or 5% if Online)';
-      }
-    }
-
     const netValue = isExcluded ? -forexFee : (cashbackAmount - forexFee);
 
     return {
@@ -246,16 +327,43 @@ export function getRecommendations(
   if (catL.includes('movie') || nameL.match(/movie|cinepolis|pvr|inox|bookmyshow|district/i)) {
      const movieOffers = [];
      const bmsUsed = offerUsage['kotak-811-infinity-Movies-BookMyShow'] || 0;
-     if (bmsUsed < 1) movieOffers.push("\n🔹 Kotak 811 BookMyShow 1+1");
+     if (!nameL.match(/cinepolis|pvr|inox|district/i)) {
+         if (bmsUsed < 1) movieOffers.push("\n🔹 Kotak 811 BookMyShow 1+1");
+         const imperiaUsed = offerUsage['hdfc-imperia-Movies-25%'] || 0;
+         if (imperiaUsed < 1) movieOffers.push("\n🔹 HDFC Imperia BookMyShow 25%");
+     }
      const districtUsed = offerUsage['axis-myzone-Movies-District'] || 0;
-     if (districtUsed < 1) movieOffers.push("\n🔹 Axis MyZone District 1+1");
-     movieOffers.push("\n🔹 Swiggy x Cinepolis (25% up to ₹75)\n🔹 Club Cinepolis Points");
+     if (districtUsed < 1 && !nameL.match(/cinepolis|pvr|inox|bookmyshow/i)) movieOffers.push("\n🔹 Axis MyZone District 1+1");
+     
+     if (!nameL.match(/bookmyshow|district/i)) {
+         movieOffers.push("\n🔹 Swiggy Cinepolis (25% up to ₹75)\n🔹 Club Cinepolis Points");
+     }
      
      reason += ` \n\n🎬 Available Movie Offers: ${movieOffers.join(" ")}`;
   }
 
   if (nameL.includes('ajio') || platL.includes('ajio') || catL.includes('ajio')) {
      reason += " \n\n🛍️ Make sure to use your Swiggy Coupon for Ajio (Flat 20% off on min ₹999 spend) with whichever card you choose!";
+  }
+
+  if ((catL.includes('food') || catL.includes('dining') || nameL.includes('swiggy') || nameL.includes('zomato')) && !nameL.includes('cinepolis')) {
+     const swiggyOffers = [];
+
+     const districtDiningUsed = offerUsage['kotak-811-infinity-Dining-District'] || 0;
+     if (districtDiningUsed < 1) {
+         if (nameL.includes('district') || nameL.includes('dining') || catL.includes('dining')) {
+             swiggyOffers.push("\n🔹 Kotak 811 Infinity District Dining 15%");
+         }
+     }
+
+     const myZoneSwiggyUsed = offerUsage['axis-myzone-Swiggy-Flat ₹120'] || 0;
+     if (myZoneSwiggyUsed < 2) swiggyOffers.push("\n🔹 Axis MyZone Flat ₹120 off");
+     const imperiaSwiggyUsed = offerUsage['hdfc-imperia-Swiggy-5%'] || 0;
+     if (imperiaSwiggyUsed < 3000) swiggyOffers.push("\n🔹 HDFC Imperia 5% up to ₹150");
+     
+     if (swiggyOffers.length > 0) {
+         reason += ` \n\n🍔 Available Dining Offers: ${swiggyOffers.join(" ")}`;
+     }
   }
 
   return {

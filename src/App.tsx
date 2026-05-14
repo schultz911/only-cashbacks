@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
-import { Search, History, Crown, Info, Landmark, Plane, Coffee, ShoppingBag, Loader2, Sparkles, Globe, Wallet, QrCode, X, ChevronDown, Check, UserCircle, LogOut } from 'lucide-react';
+import { Search, History, Crown, Info, Landmark, Plane, Coffee, ShoppingBag, Loader2, Sparkles, Globe, Wallet, QrCode, X, ChevronDown, Check, UserCircle, LogOut, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { categorizeMerchant } from './services/gemini';
 import { getRecommendations } from './lib/recommendation';
@@ -32,7 +32,7 @@ const CustomSelect = ({ value, onChange, options, placeholder, className, dropdo
   }, []);
 
   return (
-    <div ref={selectRef} className={`relative ${className}`}>
+    <div ref={selectRef} className={`relative ${className}`} style={{ zIndex: isOpen ? 500 : 10 }}>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
@@ -49,7 +49,7 @@ const CustomSelect = ({ value, onChange, options, placeholder, className, dropdo
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -5, scale: 0.98 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className={`absolute z-50 bg-white/80 backdrop-blur-xl border border-gray-100/80 shadow-2xl rounded-2xl mt-2 overflow-hidden ring-1 ring-black/5 ${dropdownClassName}`}
+            className={`absolute z-[500] bg-white/80 backdrop-blur-xl border border-gray-100/80 shadow-2xl rounded-2xl mt-2 overflow-hidden ring-1 ring-black/5 ${dropdownClassName}`}
           >
             <div className="max-h-64 overflow-y-auto p-1.5 scrollbar-thin scrollbar-thumb-gray-200 space-y-0.5">
               {options.map((option: any) => (
@@ -104,8 +104,8 @@ const parseLoungeBenefit = (b: { value: string, description: string }) => {
 
 export default function App() {
   const [query, setQuery] = useState('');
-  const [amount, setAmount] = useState<number>(10000);
-  const [foreignAmount, setForeignAmount] = useState<number>(150);
+  const [amount, setAmount] = useState<string>('10000');
+  const [foreignAmount, setForeignAmount] = useState<string>('150');
   const [baseCurrency, setBaseCurrency] = useState('USD');
   const [exchangeRates, setExchangeRates] = useState<Record<string, number>>({});
   
@@ -125,6 +125,9 @@ export default function App() {
   const [loungePassesUsed, setLoungePassesUsed] = useState<Record<string, number>>({});
   const [loungeMilestonesVerified, setLoungeMilestonesVerified] = useState<Record<string, boolean>>({});
   const [offerUsage, setOfferUsage] = useState<Record<string, number>>({});
+  const [openRouterApiKey, setOpenRouterApiKey] = useState('');
+  const [isApiModalOpen, setIsApiModalOpen] = useState(false);
+  const [tempApiKey, setTempApiKey] = useState('');
 
   const [user, setUser] = useState<User | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
@@ -139,11 +142,18 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (user && !isAuthLoading && !skipSyncRef.current && !openRouterApiKey) {
+      // Just flag they need it, could auto open but let them click badge
+    }
+  }, [user, isAuthLoading, openRouterApiKey]);
+
+  useEffect(() => {
     if (!user) {
       setExhaustedCards({});
       setLoungePassesUsed({});
       setLoungeMilestonesVerified({});
       setOfferUsage({});
+      setOpenRouterApiKey('');
       return;
     }
 
@@ -156,6 +166,7 @@ export default function App() {
         setLoungePassesUsed(data.loungePassesUsed || {});
         setLoungeMilestonesVerified(data.loungeMilestonesVerified || {});
         setOfferUsage(data.offerUsage || {});
+        setOpenRouterApiKey(data.openRouterApiKey || '');
         setTimeout(() => { skipSyncRef.current = false; }, 100);
       }
     }, (error) => {
@@ -177,6 +188,7 @@ export default function App() {
           loungePassesUsed,
           loungeMilestonesVerified,
           offerUsage,
+          openRouterApiKey,
           updatedAt: Date.now()
         }, { merge: true });
       } catch (error) {
@@ -184,7 +196,7 @@ export default function App() {
       }
     };
     saveData();
-  }, [exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, user, isAuthLoading]);
+  }, [exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, openRouterApiKey, user, isAuthLoading]);
 
   const handleLogin = async () => {
     try {
@@ -206,7 +218,7 @@ export default function App() {
     'Maximize': 'Kotak 811 Infinity Metal',
     'Amazon': 'SBI Cashback',
     'Blinkit': 'SBI Cashback',
-    'Cred': 'Kotak 811 Infinity Metal or SBI Cashback',
+    'Cred': 'SBI Cashback',
     'OneCard': 'IDIB OneCard',
     'Kiwi': 'YES Kiwi Neon',
     'Tata Neu': 'HDFC Tata Neu Infinity'
@@ -226,12 +238,14 @@ export default function App() {
   useEffect(() => {
     if (history.length > 0) {
       const info = history[0];
-      let effectiveAmount = amount;
+      const parsedAmount = parseFloat(amount) || 0;
+      const parsedForeign = parseFloat(foreignAmount) || 0;
+      let effectiveAmount = parsedAmount;
       if (isIntl && exchangeRates[baseCurrency]) {
-        effectiveAmount = foreignAmount / exchangeRates[baseCurrency];
+        effectiveAmount = parsedForeign / exchangeRates[baseCurrency];
       } else if (isIntl) {
         const mockRates: Record<string, number> = { 'USD': 0.012, 'EUR': 0.011, 'GBP': 0.0094, 'AED': 0.044 };
-        if (mockRates[baseCurrency]) effectiveAmount = foreignAmount / mockRates[baseCurrency];
+        if (mockRates[baseCurrency]) effectiveAmount = parsedForeign / mockRates[baseCurrency];
       }
       setRecommendation(getRecommendations(info, effectiveAmount, isOnline, isIntl, !isOnline && isScanToPay, exhaustedCards, offerUsage));
     }
@@ -239,19 +253,21 @@ export default function App() {
 
   const handleSearch = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!query.trim() || amount <= 0) return;
+    const parsedAmount = parseFloat(amount) || 0;
+    const parsedForeign = parseFloat(foreignAmount) || 0;
+    if (!query.trim() || parsedAmount <= 0) return;
 
-    let effectiveAmount = amount;
+    let effectiveAmount = parsedAmount;
     if (isIntl && exchangeRates[baseCurrency]) {
-      effectiveAmount = foreignAmount / exchangeRates[baseCurrency];
+      effectiveAmount = parsedForeign / exchangeRates[baseCurrency];
     } else if (isIntl) {
       const mockRates: Record<string, number> = { 'USD': 0.012, 'EUR': 0.011, 'GBP': 0.0094, 'AED': 0.044 };
-      if (mockRates[baseCurrency]) effectiveAmount = foreignAmount / mockRates[baseCurrency];
+      if (mockRates[baseCurrency]) effectiveAmount = parsedForeign / mockRates[baseCurrency];
     }
 
     setLoading(true);
     try {
-      const info = await categorizeMerchant(query);
+      const info = await categorizeMerchant(query, openRouterApiKey);
       const rec = getRecommendations(info, effectiveAmount, isOnline, isIntl, !isOnline && isScanToPay, exhaustedCards, offerUsage);
       setRecommendation(rec);
       setHistory(prev => [info, ...prev.slice(0, 4)]);
@@ -265,7 +281,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#F5F5F7] text-[#1D1D1F] font-sans selection:bg-blue-100 pb-12">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100 px-6 py-4">
+      <header className="sticky top-0 z-[100] bg-white/80 backdrop-blur-md border-b border-gray-100 px-6 py-4">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-2">
             <div className="w-10 h-10 md:w-12 md:h-12 shrink-0 bg-[#0095f6] rounded-full flex items-center justify-center shadow-md relative overflow-hidden">
@@ -289,6 +305,16 @@ export default function App() {
             </div>
           ) : user ? (
             <div className="flex items-center gap-3">
+              {(!openRouterApiKey) && (
+                <div className="relative group flex items-center">
+                  <button onClick={() => {setTempApiKey(openRouterApiKey); setIsApiModalOpen(true);}} className="flex items-center justify-center bg-amber-100 text-amber-700 p-2 rounded-full hover:bg-amber-200 transition-colors shadow-sm">
+                    <AlertCircle className="w-5 h-5" />
+                  </button>
+                  <div className="absolute top-full right-0 mt-2 w-52 bg-gray-900 text-white text-xs rounded-lg p-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-xl">
+                    API not set. Live verification is unavailable. Using local database. Click to set.
+                  </div>
+                </div>
+              )}
               <div className="hidden sm:flex flex-col items-end">
                 <span className="text-sm font-bold text-gray-900">{user.displayName}</span>
                 <span className="text-[10px] uppercase font-bold tracking-widest text-green-600">Synced</span>
@@ -328,7 +354,7 @@ export default function App() {
       <main className="max-w-6xl mx-auto px-6 pt-8">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
           {/* Left Column - Input */}
-          <div className="md:col-span-5 lg:col-span-4 lg:landscape:col-span-5 xl:col-span-5 space-y-8 md:sticky md:top-24">
+          <div className="md:col-span-5 lg:col-span-4 lg:landscape:col-span-5 xl:col-span-5 space-y-8 md:sticky md:top-24 relative z-50">
             <section className="space-y-4">
               <div className="space-y-1">
                 <h2 className="text-2xl font-bold tracking-tight">Where are you spending?</h2>
@@ -347,9 +373,9 @@ export default function App() {
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
                 </div>
 
-                <div className="flex gap-2 relative">
+                <div className="flex gap-2 relative z-[100]">
                    {isIntl && (
-                       <div className="absolute left-1 top-1/2 -translate-y-1/2 flex items-center pr-3 border-r border-gray-200 border-dashed">
+                       <div className="absolute left-1 top-1/2 -translate-y-1/2 flex items-center pr-3 border-r border-gray-200 border-dashed z-50">
                          <CustomSelect 
                            value={baseCurrency}
                            onChange={setBaseCurrency}
@@ -361,9 +387,13 @@ export default function App() {
                    )}
                    {!isIntl && <span className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500 font-bold">₹</span>}
                    <input
-                     type="number"
+                     type="text"
+                     inputMode="decimal"
                      value={isIntl ? foreignAmount : amount}
-                     onChange={(e) => isIntl ? setForeignAmount(Number(e.target.value)) : setAmount(Number(e.target.value))}
+                     onChange={(e) => {
+                       const val = e.target.value.replace(/[^0-9.]/g, '');
+                       isIntl ? setForeignAmount(val) : setAmount(val);
+                     }}
                      className={cn("w-full bg-white border border-gray-200 rounded-2xl py-4 pr-24 shadow-sm focus:ring-2 ring-blue-500 transition-all outline-none font-bold text-lg", isIntl ? "pl-[120px]" : "pl-10")}
                    />
                    <button 
@@ -415,7 +445,7 @@ export default function App() {
             <section className="space-y-4 hidden md:block">
               <div className="space-y-1">
                 <h2 className="text-xl font-bold tracking-tight">Voucher Portals</h2>
-                <p className="text-gray-500 text-xs">Verify your portal to check card pairing.</p>
+                <p className="text-gray-500 text-xs">Select your portal to check card pairing.</p>
               </div>
               <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col gap-4 min-h-[180px]">
                 <div className="relative bg-gray-50 rounded-xl border border-gray-200 focus-within:ring-2 focus-within:ring-blue-500 hover:bg-gray-100 transition-colors">
@@ -529,7 +559,7 @@ export default function App() {
                       <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto text-gray-400">
                          <Search className="w-6 h-6" />
                       </div>
-                      <p className="text-gray-500 font-medium">Enter a merchant or merchant type, and amount to get recommendations.</p>
+                      <p className="text-gray-500 font-medium">Enter an item, merchant or merchant type, and amount to get recommendations.</p>
                    </div>
                 </div>
               )}
@@ -540,7 +570,7 @@ export default function App() {
               <section className="space-y-4 md:hidden">
                 <div className="space-y-1">
                   <h2 className="text-xl font-bold tracking-tight">Voucher Portals</h2>
-                  <p className="text-gray-500 text-xs">Verify your portal to check card pairing.</p>
+                  <p className="text-gray-500 text-xs">Select your portal to check card pairing.</p>
                 </div>
                 <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col gap-4 min-h-[180px]">
                   <div className="relative bg-gray-50 rounded-xl border border-gray-200 focus-within:ring-2 focus-within:ring-blue-500 hover:bg-gray-100 transition-colors">
@@ -624,7 +654,7 @@ export default function App() {
            <ul className="text-xs space-y-2 text-gray-700">
               <li className="flex justify-between items-center bg-gray-50 p-2 rounded-lg">
                 <span className="font-semibold">Kiwi Neon</span>
-                <span className="text-gray-500">Scan & Pay points</span>
+                <span className="text-gray-500">Kiwis</span>
               </li>
               <li className="flex justify-between items-center bg-gray-50 p-2 rounded-lg">
                 <span className="font-semibold">Tata Neu</span>
@@ -633,6 +663,10 @@ export default function App() {
               <li className="flex justify-between items-center bg-gray-50 p-2 rounded-lg">
                 <span className="font-semibold">Amazon Pay</span>
                 <span className="text-gray-500">Wallet balance</span>
+              </li>
+              <li className="flex justify-between items-center bg-gray-50 p-2 rounded-lg">
+                <span className="font-semibold">Imperia Debit</span>
+                <span className="text-gray-500">Cashback points</span>
               </li>
               <li className="flex justify-between items-center bg-gray-50 p-2 rounded-lg">
                 <span className="font-semibold">OneCard</span>
@@ -651,15 +685,15 @@ export default function App() {
             className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-white/40 backdrop-blur-md"
             onClick={() => setSelectedCardForDetails(null)}
           >
-            <motion.div
+              <motion.div
               layoutId={`card-${selectedCardForDetails.source}-${selectedCardForDetails.card.id}`}
               onClick={(e) => e.stopPropagation()}
               className={cn(
                 "rounded-3xl p-6 max-w-md w-full relative flex flex-col text-white max-h-[85vh] bg-gradient-to-br",
                 selectedCardForDetails.card.gradient || "from-gray-700 to-gray-900"
               )}
-              style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)' }}
             >
+              <div className="absolute inset-0 rounded-3xl shadow-2xl shadow-black/40 pointer-events-none" />
               <button 
                 onClick={() => setSelectedCardForDetails(null)} 
                 className="absolute right-4 top-4 p-2 bg-black/20 rounded-full hover:bg-black/40 transition-colors z-20 backdrop-blur-md"
@@ -860,6 +894,62 @@ export default function App() {
               </div>
             </motion.div>
           </>
+        )}
+
+        {isApiModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.95 }}
+              className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl relative"
+            >
+              <button onClick={() => setIsApiModalOpen(false)} className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500">
+                <X className="w-5 h-5" />
+              </button>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Configure API Key</h2>
+              <p className="text-sm text-gray-500 mb-6 font-medium">
+                Live verification requires an OpenRouter API key. Without it, the app relies on a local database.<br/>
+                <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-700 underline underline-offset-2">Create a free OpenRouter API key here</a>.
+              </p>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Your OpenRouter API Key</label>
+                  <input
+                    type="password"
+                    value={tempApiKey}
+                    onChange={(e) => setTempApiKey(e.target.value)}
+                    placeholder="sk-or-v1-..."
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 ring-blue-500 transition-all font-mono text-sm"
+                  />
+                </div>
+                
+                <div className="flex gap-3 pt-4">
+                  <button
+                    onClick={() => setIsApiModalOpen(false)}
+                    className="flex-1 px-4 py-3 rounded-xl border border-gray-200 font-bold text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      setOpenRouterApiKey(tempApiKey);
+                      setIsApiModalOpen(false);
+                    }}
+                    className="flex-1 px-4 py-3 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors"
+                  >
+                    Save Key
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
 

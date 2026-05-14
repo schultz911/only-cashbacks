@@ -117,7 +117,7 @@ function categorizeLocal(merchantName: string): MerchantInfo | null {
   return null;
 }
 
-export async function categorizeMerchant(merchantName: string): Promise<MerchantInfo> {
+export async function categorizeMerchant(merchantName: string, apiKey?: string): Promise<MerchantInfo> {
   if (!merchantName) throw new Error("Merchant name is required");
 
   // First attempt local string/regex resolution to minimize API usages
@@ -130,7 +130,7 @@ export async function categorizeMerchant(merchantName: string): Promise<Merchant
     const response = await fetch("/api/categorize", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ merchantName })
+      body: JSON.stringify({ merchantName, apiKey })
     });
 
     if (!response.ok) {

@@ -15,10 +15,10 @@ async function startServer() {
   // API Route for categorization
   app.post("/api/categorize", async (req, res) => {
     try {
-      const { merchantName } = req.body;
+      const { merchantName, apiKey } = req.body;
       
       const openrouter = new OpenRouter({
-        apiKey: process.env.OPENROUTER_API_KEY,
+        apiKey: apiKey || process.env.OPENROUTER_API_KEY,
       });
 
       const response = await openrouter.chat.send({

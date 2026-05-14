@@ -19,8 +19,9 @@ service cloud.firestore {
       let validLoungePassesUsed = !('loungePassesUsed' in data) || data.loungePassesUsed is map;
       let validLoungeMilestonesVerified = !('loungeMilestonesVerified' in data) || data.loungeMilestonesVerified is map;
       let validOfferUsage = !('offerUsage' in data) || data.offerUsage is map;
+      let validApiKey = !('openRouterApiKey' in data) || data.openRouterApiKey is string;
       
-      return validUserId && validExhaustedCards && validLoungePassesUsed && validLoungeMilestonesVerified && validOfferUsage;
+      return validUserId && validExhaustedCards && validLoungePassesUsed && validLoungeMilestonesVerified && validOfferUsage && validApiKey;
     }
 
     match /users/{userId} {
