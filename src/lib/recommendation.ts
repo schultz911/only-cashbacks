@@ -82,7 +82,7 @@ export function getRecommendations(
     // Default Exclusions checking
     const exclusion = card.benefits.find(b =>
       b.type === 'exclusion' &&
-      (catL === b.category.toLowerCase() || nameL.includes(b.category.toLowerCase()) || platL === b.category.toLowerCase())
+      (catL === b.category.toLowerCase() || nameL.includes(b.category.toLowerCase()) || platL === b.category.toLowerCase() || (isScanToPay && b.category.toLowerCase() === 'upi'))
     );
 
     if (exclusion) {
@@ -308,7 +308,12 @@ export function getRecommendations(
 
   const validOptions = calculationResults
     .filter(s => !s.isExcluded && !(s.netValue <= 0 && s.card.baseRewardRate === 0 && s.card.benefits.length === 0))
-    .sort((a, b) => b.netValue - a.netValue);
+    .sort((a, b) => {
+      // If Kiwi is at base 2%, push it to the bottom as requested
+      if (a.card.id === 'kiwi-neon' && kiwiNeonEarnRate === 2) return 1;
+      if (b.card.id === 'kiwi-neon' && kiwiNeonEarnRate === 2) return -1;
+      return b.netValue - a.netValue;
+    });
 
   const bestResult = validOptions.length > 0 ? validOptions[0] : calculationResults.sort((a, b) => b.netValue - a.netValue)[0];
 
@@ -376,6 +381,35 @@ export function getRecommendations(
     }
   }
 
+  let finalAlternatives = validOptions.slice(1, 4).map(s => ({ card: s.card, benefit: s.benefitText, netValue: s.netValue }));
+
+  if (isScanToPay) {
+    const scanPayAlternatives = [
+      { id: 'cred-pay', name: 'Cred Pay', bank: 'CRED', gradient: 'from-black to-gray-800', benefits: [] },
+      { id: 'amazon-pay', name: 'Amazon Pay', bank: 'Amazon', gradient: 'from-[#232f3e] to-[#37475a]', benefits: [] }
+    ];
+
+    // Add Kotak 811 to scan pay alternatives if it's not the best card
+    if (bestResult.card.id !== 'kotak-811-infinity') {
+      const kotak = calculationResults.find(r => r.card.id === 'kotak-811-infinity');
+      if (kotak) {
+        scanPayAlternatives.push({ id: kotak.card.id, name: kotak.card.name, bank: kotak.card.bank, gradient: kotak.card.gradient, benefits: [] } as any);
+      }
+    } else {
+      // If Kotak is best, add Kiwi as an alternative
+      const kiwi = calculationResults.find(r => r.card.id === 'kiwi-neon');
+      if (kiwi) {
+        scanPayAlternatives.push({ id: kiwi.card.id, name: kiwi.card.name, bank: kiwi.card.bank, gradient: kiwi.card.gradient, benefits: [] } as any);
+      }
+    }
+
+    finalAlternatives = scanPayAlternatives.map(alt => ({
+      card: alt as any,
+      benefit: 'Rewards vary',
+      netValue: 0
+    }));
+  }
+
   return {
     bestCard: bestResult.card,
     reason,
@@ -383,6 +417,6 @@ export function getRecommendations(
     netValue: bestResult.netValue,
     cashbackEarned: bestResult.cashbackEarned,
     feesPaid: bestResult.feesPaid,
-    alternatives: validOptions.slice(1, 4).map(s => ({ card: s.card, benefit: s.benefitText, netValue: s.netValue }))
+    alternatives: finalAlternatives
   };
 }

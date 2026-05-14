@@ -99,6 +99,10 @@ const parseLoungeBenefit = (b: { value: string, description: string }) => {
     passesCount = parseInt(numMatch[1], 10);
   }
 
+  if (descLocal.includes('milestone')) {
+    passesStr = '1 / Milestone';
+  }
+
   return { spend, isFree, passesStr, passesCount, description: b.description };
 };
 
@@ -783,28 +787,62 @@ export default function App() {
 
               {/* Kiwi Neon Slider */}
               {selectedCardForDetails.card.id === 'kiwi-neon' && (
-                <div className="mt-4 pt-4 border-t border-white/10 relative z-10">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-bold block leading-none">Milestone Rate ({kiwiNeonEarnRate}%)</span>
-                    <span className="text-xs font-black bg-white/20 px-2 py-0.5 rounded shadow-sm text-white">
-                      Earned: ₹{kiwiNeonEarnRate === 2 ? '500' : kiwiNeonEarnRate === 3 ? '1,500' : kiwiNeonEarnRate === 4 ? '4,000' : '7,500'}
-                    </span>
+                <div className="mt-6 pt-6 border-t border-white/10 relative z-10 space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <span className="text-xs uppercase font-black tracking-widest text-white/40">Loyalty Program</span>
+                      <h4 className="text-lg font-black text-white leading-tight">Current Milestone</h4>
+                    </div>
+                    <div className={cn(
+                      "px-3 py-1.5 rounded-xl border backdrop-blur-md transition-all duration-300 flex flex-col items-end",
+                      kiwiNeonEarnRate === 2 ? "bg-white/5 border-white/10 opacity-50" : "bg-emerald-500/20 border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.2)]"
+                    )}>
+                      <span className="text-[10px] font-bold uppercase tracking-tighter text-white/60 leading-none">Net Reward</span>
+                      <span className="text-sm font-black text-white">₹{kiwiNeonEarnRate === 2 ? '500' : kiwiNeonEarnRate === 3 ? '1,500' : kiwiNeonEarnRate === 4 ? '4,000' : '7,500'}</span>
+                    </div>
                   </div>
-                  <input
-                    type="range"
-                    min="2"
-                    max="5"
-                    step="1"
-                    value={kiwiNeonEarnRate}
-                    onChange={(e) => setKiwiNeonEarnRate(parseInt(e.target.value, 10))}
-                    className="w-full h-1.5 bg-black/20 rounded-lg appearance-none cursor-pointer accent-white"
-                  />
-                  <div className="flex justify-between text-[10px] text-white/70 font-bold mt-1.5 px-0.5">
-                    <span>25k (2%)</span>
-                    <span>50k (3%)</span>
-                    <span>100k (4%)</span>
-                    <span>150k+ (5%)</span>
+
+                  <div className="relative px-2">
+                    {/* Amount Labels Above */}
+                    <div className="flex justify-between mb-4">
+                      {['25k', '50k', '100k', '150k+'].map((amount, idx) => (
+                        <div key={amount} className={cn(
+                          "flex flex-col items-center transition-all duration-300",
+                          kiwiNeonEarnRate === (idx + 2) ? "scale-110" : "opacity-40 scale-90"
+                        )}>
+                          <span className="text-[11px] font-black text-white tracking-tight">₹{amount}</span>
+                          {kiwiNeonEarnRate === (idx + 2) && <motion.div layoutId="slider-dot" className="w-1 h-1 bg-white rounded-full mt-1" />}
+                        </div>
+                      ))}
+                    </div>
+
+                    <input
+                      type="range"
+                      min="2"
+                      max="5"
+                      step="1"
+                      value={kiwiNeonEarnRate}
+                      onChange={(e) => setKiwiNeonEarnRate(parseInt(e.target.value, 10))}
+                      className="w-full h-2 bg-white/10 rounded-full appearance-none cursor-pointer accent-white hover:bg-white/20 transition-all"
+                    />
+
+                    {/* Percentage Labels Below */}
+                    <div className="flex justify-between mt-3 text-[10px] font-black text-white/40 tracking-widest px-0.5">
+                      {['2%', '3%', '4%', '5%'].map((pct, idx) => (
+                        <span key={pct} className={cn(
+                          "transition-colors duration-300",
+                          kiwiNeonEarnRate === (idx + 2) && "text-white"
+                        )}>{pct}</span>
+                      ))}
+                    </div>
                   </div>
+                  
+                  {kiwiNeonEarnRate === 2 && (
+                    <div className="flex items-center gap-2 px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+                      <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
+                      <span className="text-[10px] font-bold text-amber-200/80 uppercase tracking-tight">Base Tier: Not currently accelerated</span>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -924,7 +962,7 @@ export default function App() {
                           const next = typeof updater === 'function' ? updater(current) : updater;
                           return { ...prev, [`${card.id}-${loungeTab}`]: next };
                         })}
-                        isVerified={loungeMilestonesVerified[`${card.id}-${loungeTab}`] ?? parsed.isFree}
+                        isVerified={card.id === 'kiwi-neon' ? true : (loungeMilestonesVerified[`${card.id}-${loungeTab}`] ?? parsed.isFree)}
                         setIsVerified={(val: boolean) => setLoungeMilestonesVerified(prev => ({ ...prev, [`${card.id}-${loungeTab}`]: val }))}
                       />
                     ))
