@@ -21,7 +21,7 @@ export function getRecommendations(
   const catL = merchant.category.toLowerCase();
   const platL = merchant.platform?.toLowerCase() || '';
 
-  const isGrocery = catL.includes('grocery') || nameL.includes('grocery') || catL.includes('food') || nameL.includes('food') || catL.includes('groceries') || nameL.includes('groceries') || ['bigbasket', 'blinkit', 'instamart', 'zepto', 'instamart', 'dmart', 'reliance fresh', "nature's basket", 'spencers'].some(g => nameL.includes(g) || platL.includes(g) || catL.includes(g));
+  const isGrocery = catL.includes('grocery') || nameL.includes('grocery') || nameL.includes('groceries') || catL.includes('food delivery') || nameL.includes('food') || catL.includes('convenience') || catL.includes('general') || catL.includes('household') || catL.includes('produce') || ['bigbasket', 'blinkit', 'instamart', 'zepto', 'instamart', 'dmart', 'reliance fresh', "nature's basket", 'spencers'].some(g => nameL.includes(g) || platL.includes(g) || catL.includes(g));
 
   // Google Play special logic
   if (nameL.includes('google') || platL.includes('google')) {
@@ -114,9 +114,9 @@ export function getRecommendations(
       } else if (!isGrocery && isTataNeuAppMerchant && !isOnline) {
         {
           cashbackAmount = (amount * 0.035) + (amount * card.baseRewardRate / 100);
-          benefitText = '5% NeuCoins in offline stores';
+          benefitText = '5% NeuCoins in Offline Stores';
         }
-      } else if ((nameL.includes('grocery') || nameL.includes('groceries')) && isOnline) {
+      } else if (isGrocery && isOnline) {
         {
           const eligibleSpend = Math.min(amount, 15000);
           cashbackAmount = (eligibleSpend * 0.035) + (amount * card.baseRewardRate / 100) + (amount * 0.05);
@@ -128,7 +128,7 @@ export function getRecommendations(
           benefitText = '1.5% NeuCoins';
         }
       }
-      else if (catL.includes('utility') || catL.includes('utilities') || catL.includes('telecom') || catL.includes('internet') || catL.includes('bill') || catL.includes('bills') || platL.includes('tata play')) {
+      else if (catL.includes('utility') || catL.includes('utilities') || catL.includes('telecom') || catL.includes('internet') || catL.includes('bill') || catL.includes('bills') || catL.includes('toll') || platL.includes('tata play') || (platL.includes('fastag'))) {
         const eligibleSpend = Math.min(amount, 40000);
         cashbackAmount = (eligibleSpend * 0.035) + (eligibleSpend * card.baseRewardRate / 100);
         benefitText = '5% NeuCoins via Tata Neu App';
