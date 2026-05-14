@@ -18,7 +18,7 @@ export const CARD_DATA: Card[] = [
     baseRewardRate: 0,
     benefits: [
       { type: 'cashback', category: 'Swiggy', value: '10%', percentValue: 10, description: 'Cashback on food delivery, dining, and grocery spends on Swiggy.', minSpend: 249, maxSpend: 15000, fallbackRate: 0 },
-      { type: 'cashback', category: 'Online', value: '5%', percentValue: 5, description: 'Cashback on online shopping. Additional instant discounts on Nykaa and Cleartrip.', minSpend: 100, maxSpend: 30000 },
+      { type: 'cashback', category: 'Online', value: '5%', percentValue: 5, description: '5% cashback on online shopping. Plus 5% off on Nykaa and up to 20% off on Cleartrip (Code: CTSWHDFC).', minSpend: 100, maxSpend: 30000 },
       { type: 'cashback', category: 'All Spends', value: '1%', percentValue: 1, description: 'Cashback on all eligible domestic transactions.', maxSpend: 100000, isHidden: true },
       { type: 'exclusion', category: 'Gift Card', value: '0%', description: 'Gift Cards' },
       { type: 'exclusion', category: 'Gaming', value: '0%', description: 'Gaming' },
@@ -164,8 +164,8 @@ export const CARD_DATA: Card[] = [
     forexMarkup: 1.0,
     baseRewardRate: 0,
     benefits: [
-      { type: 'cashback', category: 'Fuel', value: '5%', percentValue: 5, capPerTxn: 50, description: 'Reward points up to Rs. 50 and surcharge reversal on fuel transactions.' },
-      { type: 'offer', category: 'Around Me', value: 'Offers', percentValue: 5, capPerTxn: 50, description: '5% reward points up to Rs. 50 on hyper-local offers.' }
+      { type: 'cashback', category: 'Fuel', value: '5%', percentValue: 5, capPerTxn: 50, description: 'Reward points up to ₹50 and surcharge reversal on fuel transactions.' },
+      { type: 'offer', category: 'Around Me', value: '5%', percentValue: 5, capPerTxn: 50, description: 'Reward points up to ₹50 on hyper-local offers.' }
     ]
   },
   {
@@ -179,9 +179,9 @@ export const CARD_DATA: Card[] = [
     forexMarkup: 0.0,
     baseRewardRate: 0,
     benefits: [
-      { type: 'forex', category: 'Forex', value: '0% Fees', percentValue: 0, description: 'Zero Forex Markup.' },
-      { type: 'offer', category: 'International ATM', value: '100% Back', description: 'Niyo points on one international ATM withdrawal per quarter.' },
-      { type: 'lounge', category: 'International', value: '1/qtr', description: 'Generate voucher on the Niyo app after international spends of 75k.' }
+      { type: 'forex', category: 'Forex', value: '0%', percentValue: 0, description: 'No forex fees on international spends.' },
+      { type: 'offer', category: 'International ATM', value: '100%', description: 'Niyo points back on one international ATM withdrawal per quarter.' },
+      { type: 'lounge', category: 'International', value: '1/qtr', description: 'Generate voucher on the Niyo app after international spends of ₹75k.' }
     ]
   },
   {
@@ -195,9 +195,19 @@ export const CARD_DATA: Card[] = [
     forexMarkup: 3.5,
     baseRewardRate: 0,
     benefits: [
-      { type: 'offer', category: 'Swiggy', value: 'Flat ₹120', percentValue: 40, maxSpend: 300, capPerTxn: 120, usageLimit: 2, description: 'Instant discount on Swiggy food delivery twice a month.' },
-      { type: 'offer', category: 'Movies', value: 'District', percentValue: 50, capPerTxn: 200, usageLimit: 1, description: '1+1 on movie tickets booked through District up to Rs. 200 once a month.' },
-      { type: 'lounge', category: 'Domestic', value: '1/qtr', description: 'Activated on quartely spends of 50k.' }
+      { type: 'offer', category: 'Swiggy', value: 'Flat ₹120', percentValue: 24, minSpend: 500, capPerTxn: 120, usageLimit: 2, description: 'Flat ₹120 off on Swiggy food orders over ₹500 (Code: AXIS120).' },
+      { type: 'offer', category: 'Movies', value: '1+1', percentValue: 50, capPerTxn: 200, usageLimit: 1, description: 'Buy 1 Get 1 free on movie tickets via District up to ₹200 (Code: AXIS200).' },
+      { type: 'offer', category: 'Fashion', value: 'Ajio', percentValue: 33, minSpend: 2999, capPerTxn: 1000, usageLimit: 1, description: 'Up to ₹1,000 off on Ajio orders over ₹2,999 (Code: AJIOAXISMZ).' },
+      { type: 'offer', category: 'Dining', value: '15%', percentValue: 15, minSpend: 2500, capPerTxn: 500, usageLimit: 1, description: '15% discount on EazyDiner up to ₹500 on min bill of ₹2,500.' },
+      { type: 'exclusion', category: 'Rent', value: '0%', description: 'Rent' },
+      { type: 'exclusion', category: 'Wallet', value: '0%', description: 'Wallet Loads' },
+      { type: 'exclusion', category: 'Fuel', value: '0%', description: 'Fuel' },
+      { type: 'exclusion', category: 'Insurance', value: '0%', description: 'Insurance' },
+      { type: 'exclusion', category: 'Utilities', value: '0%', description: 'Utilities' },
+      { type: 'exclusion', category: 'Jewellery', value: '0%', description: 'Jewellery' },
+      { type: 'exclusion', category: 'Education', value: '0%', description: 'Education' },
+      { type: 'exclusion', category: 'Government', value: '0%', description: 'Government Transactions' },
+      { type: 'lounge', category: 'Domestic', value: '1/qtr', description: 'Activated on quarterly spends of ₹50k.' }
     ]
   },
   {
@@ -211,8 +221,8 @@ export const CARD_DATA: Card[] = [
     forexMarkup: 3.5,
     baseRewardRate: 0,
     benefits: [
-      { type: 'offer', category: 'Movies', value: '25%', percentValue: 25, usageLimit: 1, description: 'Cashback points up to 250 on tickets booked through BookMyShow per calendar month.', maxSpend: 1000 },
-      { type: 'offer', category: 'Swiggy', value: '5%', percentValue: 5, description: 'Cashback points up to 150 on spends in the Swiggy app per calendar month.', maxSpend: 3000 },
+      { type: 'offer', category: 'Movies', value: '25%', percentValue: 25, usageLimit: 1, description: 'Cashback points up to ₹250 on tickets booked through BookMyShow per calendar month.', maxSpend: 1000 },
+      { type: 'offer', category: 'Swiggy', value: '5%', percentValue: 5, description: 'Cashback points up to ₹150 on spends in the Swiggy app per calendar month.', maxSpend: 3000 },
       { type: 'cashback', category: 'Online', value: '1%', percentValue: 1, description: 'Cashback points on all online spends to be redeemed through the HDFC Banking app.', maxSpend: 75000 },
       { type: 'lounge', category: 'Domestic', value: '2/qtr', description: 'Generate voucher on the SmartBuy portal on quarterly spends of 10k.' }
     ]

@@ -219,7 +219,7 @@ export function getRecommendations(
           const isDiningOffer = benefit.category.toLowerCase().includes('dining') || benefit.category.toLowerCase().includes('swiggy') || benefit.category.toLowerCase().includes('zomato');
 
           let skip = false;
-          const specificPlatforms = ['bookmyshow', 'district', 'swiggy', 'zomato', 'dineout', 'eazydiner', 'nykaa', 'cleartrip'];
+          const specificPlatforms = ['bookmyshow', 'district', 'swiggy', 'zomato', 'dineout', 'eazydiner', 'nykaa', 'cleartrip', 'ajio'];
 
           for (const plat of specificPlatforms) {
             if (descL.includes(plat) || valLower.includes(plat)) {
@@ -251,6 +251,12 @@ export function getRecommendations(
         }
         else if ((nameL.includes('movie') || catL.includes('movie') || nameL.includes('bookmyshow') || nameL.includes('district') || nameL.includes('pvr') || nameL.includes('inox') || nameL.includes('cinepolis') || nameL.includes('entertainment')) && (pLower === 'movies' || pLower === 'entertainment' || benefit.description.toLowerCase().includes('movie'))) {
           matchScore = 70;
+        }
+        else if (card.id === 'axis-myzone' && (nameL.includes('ajio') || platL.includes('ajio'))) {
+          if (pLower.includes('fashion') || pLower.includes('ajio')) matchScore = 95;
+        }
+        else if (card.id === 'axis-myzone' && (nameL.includes('eazydiner') || platL.includes('eazydiner'))) {
+          if (pLower.includes('dining') || pLower.includes('eazydiner')) matchScore = 95;
         }
         else if (isOnline && (pLower === 'online' || pLower === 'online upi')) matchScore = 20 + (benefit.percentValue || 0);
         else if (!isOnline && pLower === 'offline') matchScore = 20 + (benefit.percentValue || 0);
@@ -285,7 +291,15 @@ export function getRecommendations(
           const baseCb = (overSpend * fallbackRate / 100);
           cashbackAmount = calculatedCb + baseCb;
           const capType = usedBenefit.type.charAt(0).toUpperCase() + usedBenefit.type.slice(1);
-          benefitText = `${usedBenefit.value} ${capType}`;
+          if (card.id === 'axis-myzone') {
+            if (usedBenefit.category === 'Swiggy') benefitText = `Flat ₹120 Off (Code: AXIS120)`;
+            else if (usedBenefit.category === 'Movies') benefitText = `1+1 via District (Code: AXIS200)`;
+            else if (usedBenefit.category === 'Fashion') benefitText = `Up to ₹1,000 Off (Code: AJIOAXISMZ)`;
+            else if (usedBenefit.category === 'Dining') benefitText = `${rate}% Off via EazyDiner`;
+            else benefitText = `${usedBenefit.value} ${capType}`;
+          } else {
+            benefitText = `${usedBenefit.value} ${capType}`;
+          }
         }
       } else {
         cashbackAmount = (amount * card.baseRewardRate / 100);
