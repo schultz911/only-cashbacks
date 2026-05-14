@@ -103,11 +103,11 @@ function categorizeLocal(merchantName: string): MerchantInfo | null {
   if (norm.includes('hospital') || norm.includes('clinic') || norm.includes('dr.') || norm.includes('doctor')) {
     return { name: merchantName, category: "Health", isOnline: false, isP2P: false };
   }
-  if (norm.includes('delivery') || norm.includes('courier') || norm.includes('logistics')) {
+  if (norm.includes('courier') || norm.includes('logistics') || norm.includes('urban company') || norm.includes('uber')) {
     return { name: merchantName, category: "Services", isOnline: true, isP2P: false };
   }
-  if (norm.includes('swiggy') || norm.includes('zomato') || norm.includes('food') || norm.includes('restaurant')) {
-    return { name: merchantName, category: "Food Delivery", isOnline: true, isP2P: false };
+  if (norm.includes('swiggy') || norm.includes('zomato') || norm.includes('food') || norm.includes('delivery') || norm.includes('restaurant')) {
+    return { name: merchantName, category: "Dining", isOnline: true, isP2P: false };
   }
   if (norm.includes('paytm') || norm.includes('phonepe') || norm.includes('gpay') || norm.includes('bharatpe') || norm.includes('razorpay') || norm.includes('payu')) {
     return { name: merchantName, category: "Finance", isOnline: true, isP2P: false };

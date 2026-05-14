@@ -21,9 +21,9 @@ export function getRecommendations(
   const catL = merchant.category.toLowerCase();
   const platL = merchant.platform?.toLowerCase() || '';
 
-  const isGrocery = catL.includes('grocery') || nameL.includes('grocery') || nameL.includes('groceries') || ['bigbasket', 'blinkit', 'instamart', 'zepto', 'dmart', 'reliance fresh', "nature's basket", 'spencers'].some(g => nameL.includes(g) || platL.includes(g) || catL.includes(g));
-  const isFoodDelivery = catL.includes('food delivery') || nameL.includes('delivery') || nameL.includes('food') || ['swiggy', 'zomato', 'toing', 'bistro', 'box8', 'eatsure', 'freshmenu', 'eatclub', 'uber eats'].some(d => nameL.includes(d) || platL.includes(d) || catL.includes(d));
-  const isDining = catL.includes('dining') || nameL.includes('dining') || nameL.includes('restaurant') || ['dineout', 'eazydiner', 'zomato', 'district', 'eatery', 'pub', 'microbrewery', 'cafe'].some(r => nameL.includes(r) || platL.includes(r) || catL.includes(r));
+  const isGrocery = catL.includes('grocery') || nameL.includes('grocery') || nameL.includes('grocer') || nameL.includes('groce') || nameL.includes('bigbasket') || nameL.includes('blinkit') || nameL.includes('zepto') || nameL.includes('instamart') || ['bigbasket', 'blinkit', 'zepto', 'instamart', 'swiggy instamart', 'dunzo', 'jiomart'].some(g => nameL.includes(g) || platL.includes(g) || catL.includes(g));
+  const isFoodDelivery = catL.includes('food delivery') || nameL.includes('delivery') || nameL.includes('food') || nameL.includes('swig') || nameL.includes('zomat') || ['swiggy', 'zomato', 'toing', 'bistro', 'box8', 'eatsure', 'freshmenu', 'eatclub', 'uber eats'].some(d => nameL.includes(d) || platL.includes(d) || catL.includes(d));
+  const isDining = catL.includes('dining') || nameL.includes('dine') || nameL.includes('restaurant') || nameL.includes('eatery') || nameL.includes('cafe') || nameL.includes('district') || nameL.includes('zomato') || nameL.includes('swiggy');
   const isMovie = catL.includes('movie') || nameL.includes('movie') || ['bookmyshow', 'bms', 'pvr', 'inox', 'cinepolis', 'theatre', 'cinema', 'district'].some(m => nameL.includes(m) || platL.includes(m) || catL.includes(m));
 
   // Google Play special logic
@@ -120,33 +120,43 @@ export function getRecommendations(
       cashbackAmount = amount * (card.baseRewardRate / 100);
       benefitText = `Monthly limit reached. Earning (${card.baseRewardRate}% base rewards.)`;
     } else if (card.id === 'hdfc-tata-neu-infinity' && !isIntl) {
-      if ((isGrocery || isFoodDelivery) && isTataNeuAppMerchant && isOnline) {
+      // Priority 1: Specific Tata Neu app merchants (BigBasket, Qmin, Croma, etc.)
+      if (isTataNeuAppMerchant && isOnline) {
+        if (isGrocery) {
+          const eligibleSpend = Math.min(amount, 15000);
+          cashbackAmount = (eligibleSpend * 0.035) + (amount * card.baseRewardRate / 100) + (amount * 0.05);
+          benefitText = '10% NeuCoins on BigBasket via Tata Neu';
+        } else if (isFoodDelivery) {
+          const eligibleSpend = Math.min(amount, 15000);
+          cashbackAmount = (eligibleSpend * 0.035) + (amount * card.baseRewardRate / 100) + (amount * 0.05);
+          benefitText = '10% NeuCoins on Qmin via Tata Neu';
+        } else {
+          cashbackAmount = (amount * 0.035) + (amount * card.baseRewardRate / 100) + (amount * 0.05);
+          benefitText = '10% NeuCoins via Tata Neu';
+        }
+      } else if (isTataNeuAppMerchant && !isOnline) {
+        cashbackAmount = (amount * 0.035) + (amount * card.baseRewardRate / 100);
+        benefitText = '5% NeuCoins in Offline Stores';
+        // Priority 2: Generic food/grocery searches (suggest routing through Tata Neu app)
+      } else if ((isGrocery || isFoodDelivery) && isOnline) {
         const eligibleSpend = Math.min(amount, 15000);
         cashbackAmount = (eligibleSpend * 0.035) + (amount * card.baseRewardRate / 100) + (amount * 0.05);
-        if (isGrocery) {
-          benefitText = '10% NeuCoins on BigBasket via Tata Neu';
-        } else {
-          benefitText = '10% NeuCoins on Qmin via Tata Neu';
-        }
-      } else if (!(isGrocery || isFoodDelivery) && isTataNeuAppMerchant && isOnline) {
-        cashbackAmount = (amount * 0.035) + (amount * card.baseRewardRate / 100) + (amount * 0.05);
-        benefitText = '10% NeuCoins via Tata Neu';
+        benefitText = isGrocery
+          ? '10% NeuCoins — Buy via BigBasket on Tata Neu'
+          : '10% NeuCoins — Order via Tata Neu';
+        // Priority 3: Tata partner category merchants (fashion, electronics, etc.)
       } else if (isTataNeuPartnerMerchant && isOnline) {
         cashbackAmount = (amount * 0.035) + (amount * card.baseRewardRate / 100) + (amount * 0.05);
         benefitText = '10% NeuCoins via Tata Neu';
       } else if (isTataNeuPartnerMerchant && !isOnline) {
         cashbackAmount = (amount * 0.035) + (amount * card.baseRewardRate / 100);
         benefitText = '5% NeuCoins in Offline Stores';
-      } else if (!(isGrocery || isFoodDelivery) && isTataNeuAppMerchant && !isOnline) {
-        cashbackAmount = (amount * 0.035) + (amount * card.baseRewardRate / 100);
-        benefitText = '5% NeuCoins in Offline Stores';
+        // Priority 4: Utilities & bill payments
       } else if (catL.includes('utilities') || nameL.includes('internet') || nameL.includes('bill') || nameL.includes('bills') || nameL.includes('toll') || nameL.includes('tata play') || nameL.includes('fastag')) {
         const eligibleSpend = Math.min(amount, 40000);
         cashbackAmount = (eligibleSpend * 0.035) + (eligibleSpend * card.baseRewardRate / 100);
         benefitText = '5% NeuCoins via Tata Neu';
-      } else if (!isOnline) {
-        cashbackAmount = amount * card.baseRewardRate / 100;
-        benefitText = '1.5% NeuCoins';
+        // Fallback: Base rewards
       } else {
         cashbackAmount = amount * card.baseRewardRate / 100;
         benefitText = '1.5% NeuCoins';
@@ -188,7 +198,7 @@ export function getRecommendations(
       cashbackAmount = amount * (kiwiNeonEarnRate / 100);
       benefitText = `${kiwiNeonEarnRate}% Cashback on ${isScanToPay ? 'Scan & Pay' : 'Online UPI'}`;
     } else if (card.id === 'kotak-811-infinity' && isScanToPay) {
-      cashbackAmount = 0;
+      cashbackAmount = 3;
       benefitText = 'Mystery Cashback on Scan & Pay';
     } else if (card.id === 'kotak-811-infinity' && !isScanToPay) {
       // Special logic for Kotak 811 offers + cashback
