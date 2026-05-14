@@ -44,7 +44,7 @@ export interface MerchantInfo {
 
 export interface Recommendation {
   bestCard: Card;
-  tiedCards?: Card[];
+  tiedCards?: { card: Card; benefit: string }[];
   reason: string;
   expectedBenefit: string;
   netValue: number;

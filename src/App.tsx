@@ -540,13 +540,13 @@ export default function App() {
                   <div className="grid grid-cols-1 landscape:grid-cols-2 lg:grid-cols-2 gap-6">
                     <div className="space-y-4">
                       {recommendation.tiedCards ? (
-                        recommendation.tiedCards.map((card) => (
+                        recommendation.tiedCards.map(({ card, benefit }) => (
                           <CardItem
                             key={card.id}
                             layoutId={`card-rec-${card.id}`}
                             card={card}
                             isRecommendation
-                            benefitText={recommendation.expectedBenefit}
+                            benefitText={benefit}
                             onClick={() => setSelectedCardForDetails({ card, source: 'rec' })}
                             isExhausted={exhaustedCards[card.id]}
                           />

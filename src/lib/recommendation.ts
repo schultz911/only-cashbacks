@@ -74,7 +74,7 @@ export function getRecommendations(
       }
     }
 
-    const defaultExclusions = ['fuel', 'wallet', 'rent', 'housing', 'gambling', 'gaming', 'toll', 'finance', 'school', 'education', 'jewellery', 'insurance', 'railway', 'government', 'tax'];
+    const defaultExclusions = ['fuel', 'wallet', 'rent', 'housing', 'gambling', 'gaming', 'toll', 'finance', 'school', 'education', 'jewellery', 'insurance', 'railway', 'government', 'tax', 'utility', 'bills', 'bill', 'telecom', 'internet'];
 
     if (card.type === 'Credit' || card.type === 'Debit') {
       const isExcludedCat = defaultExclusions.find(ex => catL.includes(ex) || nameL.includes(ex) || platL.includes(ex));
@@ -474,7 +474,7 @@ export function getRecommendations(
 
   const tiedCards = validOptions
     .filter(o => Math.abs(o.netValue - bestResult.netValue) < 0.01)
-    .map(o => o.card);
+    .map(o => ({ card: o.card, benefit: o.benefitText }));
 
   return {
     bestCard: bestResult.card,
