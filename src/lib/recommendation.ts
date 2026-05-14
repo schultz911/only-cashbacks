@@ -21,7 +21,7 @@ export function getRecommendations(
   const catL = merchant.category.toLowerCase();
   const platL = merchant.platform?.toLowerCase() || '';
 
-  const isGrocery = catL.includes('grocery') || nameL.includes('grocery') || nameL.includes('groceries') || catL.includes('food delivery') || nameL.includes('delivery') || nameL.includes('food') || catL.includes('convenience') || catL.includes('general') || catL.includes('household') || catL.includes('produce') || ['bigbasket', 'blinkit', 'instamart', 'zepto', 'instamart', 'dmart', 'reliance fresh', "nature's basket", 'spencers'].some(g => nameL.includes(g) || platL.includes(g) || catL.includes(g));
+  const isGrocery = catL.includes('grocery') || nameL.includes('grocery') || nameL.includes('groceries') || catL.includes('food delivery') || nameL.includes('delivery') || nameL.includes('food') || ['bigbasket', 'blinkit', 'instamart', 'zepto', 'instamart', 'dmart', 'reliance fresh', "nature's basket", 'spencers'].some(g => nameL.includes(g) || platL.includes(g) || catL.includes(g));
 
   // Google Play special logic
   if (nameL.includes('google') || platL.includes('google')) {
@@ -180,12 +180,12 @@ export function getRecommendations(
       const movieUsed = offerUsage['kotak-811-infinity-Movies-BookMyShow'] || 0;
       const diningUsed = offerUsage['kotak-811-infinity-Dining-District'] || 0;
 
-      if ((catL.includes('movie') || nameL.includes('bookmyshow')) && movieUsed < 1) {
+      if ((catL.includes('movie') || nameL.includes('movie') || nameL.includes('bookmyshow')) && movieUsed < 1) {
         discountAmount = Math.min(amount * 0.5, 300);
         const remaining = amount - discountAmount;
         cashbackAmount = discountAmount + Math.min(remaining * 0.05, 100);
         benefitText = '50% BMS Discount + 5% Cashback';
-      } else if ((catL.includes('dining') || nameL.includes('district')) && diningUsed < 1) {
+      } else if ((catL.includes('dining') || nameL.includes('dining') || nameL.includes('district')) && diningUsed < 1) {
         discountAmount = Math.min(amount * 0.15, 500); // Assuming 15% up to 500 for District
         const remaining = amount - discountAmount;
         cashbackAmount = discountAmount + Math.min(remaining * 0.05, 100);

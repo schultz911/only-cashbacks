@@ -7,13 +7,14 @@ import { MerchantInfo } from "../types";
 
 const EXHAUSTIVE_MERCHANT_MAPPINGS = [
   // Swiggy & Zomato Ecosystem
-  { pattern: /swiggy|instamart|dineout/i, category: "Food Delivery", isOnline: true, isP2P: false, platform: "Swiggy" },
-  { pattern: /zomato|blinkit/i, category: "Food Delivery", isOnline: true, isP2P: false, platform: "Zomato" },
-  
+  { pattern: /swiggy|toing|dineout/i, category: "Food Delivery", isOnline: true, isP2P: false, platform: "Swiggy" },
+  { pattern: /zomato|bistro|blinkit/i, category: "Food Delivery", isOnline: true, isP2P: false, platform: "Zomato" },
+  { pattern: /zepto ?cafe|eatsure|freshmenu|box8|eatclub|uber eats/i, category: "Food Delivery", isOnline: true, isP2P: false },
+
   // Quick Commerce & Grocery
   { pattern: /zepto/i, category: "Grocery", isOnline: true, isP2P: false, platform: "Zepto" },
-  { pattern: /bigbasket|jio ?mart|nature.?s basket|flipkart supermart|amazon fresh|dunzo|instacart|getir|flink|jokr/i, category: "Grocery", isOnline: true, isP2P: false },
-  { pattern: /dmart|star bazaar|spencers|more retail|supermarket|grocery|kirana|provisions/i, category: "Grocery", isOnline: false, isP2P: false },
+  { pattern: /bigbasket|jio ?mart|nature.?s basket|flipkart supermart|amazon fresh|dunzo|instamart|getir|flink|jokr/i, category: "Grocery", isOnline: true, isP2P: false },
+  { pattern: /dmart|star bazaar|spencers|more retail|supermarket|grocery|kirana|provisions|convenience|general|household|produce/i, category: "Grocery", isOnline: false, isP2P: false },
 
   // D2C Food, Beverage & Meat
   { pattern: /licious|the whole truth|slurrp farm|happilo|rage coffee|country delight|sleepy owl/i, category: "Grocery", isOnline: true, isP2P: false },
@@ -25,7 +26,7 @@ const EXHAUSTIVE_MERCHANT_MAPPINGS = [
   { pattern: /nykaa|nykaa fashion/i, category: "E-commerce", isOnline: true, isP2P: false, platform: "Nykaa" },
   { pattern: /ajio/i, category: "E-commerce", isOnline: true, isP2P: false, platform: "Ajio" },
   { pattern: /meesho|snapdeal|tata cliq|paytm mall|indiamart|shop101|glowroad|trell/i, category: "E-commerce", isOnline: true, isP2P: false },
-  
+
   // D2C Beauty & Personal Care
   { pattern: /mamaearth|sugar cosmetics|plum goodness|minimalist|wow skin science|mcaffeine|dot & key|juicy chemistry|earth rhythm|the moms co|beardo|bombay shaving|innovist|house of em5|nua/i, category: "Beauty", isOnline: true, isP2P: false },
 
@@ -40,10 +41,10 @@ const EXHAUSTIVE_MERCHANT_MAPPINGS = [
   { pattern: /croma|reliance digital|vijay sales|lotus electronics|global electronics/i, category: "Shopping", isOnline: false, isP2P: false },
   { pattern: /boat|noise|candes|samsung|lg electronics|voltas|godrej|intex|samtel|simmtronics|sterlite|foxconn|wistron/i, category: "Shopping", isOnline: true, isP2P: false },
   { pattern: /reliance trends|reliance/i, category: "Shopping", isOnline: false, isP2P: false },
-  
+
   // Pharmacies, Diagnostics & Health
   { pattern: /apollo|pharmeasy|1mg|medplus|netmeds|flipkart health|truemeds|medibuddy|healthians|dr lal pathlabs|practo|healthkart/i, category: "Health", isOnline: true, isP2P: false },
-  
+
   // Travel, Hotels & Transport
   { pattern: /cleartrip|makemytrip|mmt|yatra|goibibo|ixigo|agoda|booking\.com|booking|easemytrip|airbnb/i, category: "Travel", isOnline: true, isP2P: false },
   { pattern: /redbus|irctc|indian railway|abhibus|ticketgoose/i, category: "Travel", isOnline: true, isP2P: false },
@@ -75,7 +76,7 @@ const EXHAUSTIVE_MERCHANT_MAPPINGS = [
   { pattern: /fastag|nhai/i, category: "Utilities", isOnline: true, isP2P: false },
   { pattern: /act|act fibernet|jio fiber|airtel xstream/i, category: "Utilities", isOnline: true, isP2P: false },
   { pattern: /bescom|mahavitaran|mseb|adani electricity|tata power|cesc|electricity|power|jio|airtel|vi|vodafone|bsnl|mtnl|recharge|bill pay|telecom|dth|sun direct|tata play|tata sky|dish tv/i, category: "Utilities", isOnline: true, isP2P: false },
-  
+
   // Fintech & Payments
   { pattern: /cred|cred\.club|phonepe|paytm|bajaj finserv|money view|airtel thanks|monefy|scripbox|kuvera|groww|siply|goodbudget/i, category: "Utilities", isOnline: true, isP2P: false },
 
@@ -134,7 +135,7 @@ export async function categorizeMerchant(merchantName: string, apiKey?: string):
     });
 
     if (!response.ok) {
-       throw new Error(`Server returned ${response.status}`);
+      throw new Error(`Server returned ${response.status}`);
     }
 
     const result = await response.json();
