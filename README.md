@@ -1,64 +1,85 @@
-# OnlyCashbacks - Make Your Credit Cards Pay
+# OnlyCashbacks — Make Your Credit Cards Pay
 
-OnlyCashbacks is a smart web application that helps you maximize credit card rewards by providing real-time recommendations on which card to use for your specific purchases.
+**OnlyCashbacks** is a **_fully open-source_** personal rewards co-pilot. It uses AI to instantly tell you which credit card in your wallet will give you the most value for every purchase you make.
 
-## Features
+## 📋 Table of Contents
 
-- **Interactive Offers Overlay**: A premium, glassmorphic swipeable interface that highlights exclusive deals (BMS BOGO, Dining discounts, etc.) based on your current search.
-- **Hardened Recommendation Engine**: Advanced category-flag system (`isDining`, `isFoodDelivery`, `isMovie`, `isGrocery`) for precise merchant matching and high-value benefit prioritization.
-- **Smart Merchant Categorization**: Hybrid approach using local regex matching and OpenRouter AI to instantly identify and categorize complex merchant queries.
-- **Advanced Forex Precision**: Real-time exchange rate calculations including 18% GST on markup fees, ensuring 100% accuracy for international spend decisions.
-- **Lounge Tracker**: Comprehensive domestic and international lounge pass tracking with automated spend-milestone monitoring.
-- **Online vs Offline (Scan & Pay)**: Context-aware logic that adapts recommendations based on the transaction medium (Direct Online vs. UPI Scan & Pay).
-- **Voucher Portals**: Seamless integration with voucher platforms (Tata Neu, HDFC SmartBuy) to find hidden "reward-on-reward" strategies.
-- **Cloud Portfolio Sync**: Securely sync your cards, usage limits, and personalized settings across all devices using Firebase.
+- [🚀 Key Features](#-key-features)
+- [🎨 Premium Experience](#-premium-experience)
+- [💖 Privacy-First](#-privacy-first)
+- [🛠️ How it Works](#️-how-it-works)
+- [🗺️ Roadmap & To-Dos](#️-roadmap--to-dos)
+- [💻 Setup for Developers](#-setup-for-developers)
 
-## Technology Stack
+---
 
-- **Frontend**: React 19, Vite, Tailwind CSS 4, Framer Motion (`motion/react`), Lucide Icons.
-- **Backend**: Express (Node.js) proxy for secure AI categorization.
-- **Database & Auth**: Firebase Authentication & Firestore.
-- **AI Integration**: OpenRouter SDK for intelligent LLM-driven merchant intent analysis.
+## 🚀 Key Features
 
-## Design Aesthetics
+- **🧠 AI Merchant Search**: Just type a merchant name (e.g., "Swiggy", "Amazon", "Uber"). Our AI identifies the category and tells you which card to pull out.
+- **📂 AI? Or ABye!**: If you don't like AI, no worries. I have built a thorough and comprehensive merchant database, you can search and find the best card for your needs.
+- **✈️ Offline-First**: Once you load the app, you don't need internet to use it. Helps when you're traveling or in areas with no internet.
+- **💰 Real Net Value**: We don't just show cashback %. We calculate the true net value by subtracting fees and taxes (like GST on Forex) so you see the real profit.
+- **🌍 Forex Precision**: Traveling abroad? Get real-time exchange rate calculations to see if your card's rewards outweigh its forex markup.
+- **🛫 Lounge Tracker**: Keep tabs on your lounge passes. Automatically tracks your domestic and international visits based on your card's spend milestones.
+- **🎟️ Voucher Strategies**: Discover "reward-on-reward" opportunities. The app tells you when buying a voucher via portals like Tata Neu or SBI Amazon pays more than a direct swipe.
+- **📱 Portfolio Sync**: Your cards, limits, and lounge usage stay synced across all your devices securely via your Google account.
+- **🔒 Privacy First**: You're in control. Manually trigger cloud syncs, work in offline mode, or wipe all your data instantly from the profile menu.
 
-OnlyCashbacks is built with a focus on **Premium Visual Excellence**:
+> [!IMPORTANT]
+> **This app doesn't use AI by default.**
+> If you want to use AI you need to add an OpenRouter API key by clicking on the information symbol in the header.
 
-- **Glassmorphic UI**: High-fidelity overlays using backdrop blurs and subtle gradients.
-- **Fluid Animations**: Smooth transitions and micro-interactions powered by Framer Motion.
-- **Mobile-First Design**: Optimized for on-the-go decision making with swipeable carousels and haptic-like responses.
-- **Modern Typography**: Utilizing "Plus Jakarta Sans" for a clean, professional fintech feel.
+---
 
-## Run Locally
+## 🎨 Premium Experience
 
-**Prerequisites:** Node.js (v18+)
+Built for a **premium, glassmorphic feel**, OnlyCashbacks offers:
 
-1. Install dependencies:
+- **Swipeable Offer Cards**: A beautiful, gesture-based interface for browsing exclusive card deals.
+- **Fluid Animations**: Smooth transitions and micro-interactions that make the app feel alive.
+- **Adaptive UI**: Optimized for both quick swipes on mobile and detailed tracking on desktop.
 
-   ```bash
-   npm install
-   ```
+---
 
-2. Environment Variables setup:
-   Create a `.env` file in the root directory based on the `.env.example` file and add your keys (OpenRouter API key can also be configured within the UI):
+You shouldn't need to add your personal, financial details or spending habits to get the best deals.
 
-   ```bash
-   OPENROUTER_API_KEY=your_openrouter_api_key_here
-   ```
+**This app collects nothing**
+**_AT ALL_**
+### ZERO!
 
-3. Start the development server:
+## 💖 Privacy-First
 
-   ```bash
-   npm run dev
-   ```
+- **No Data Hoarding**: We only store save states for you to track your offer usage.
+- **Manual Sync**: Your data stays in your browser until you hit the "Sync" button. It never pings the cloud in the background unless you log in, and you can delete all your data anytime.
+- **No Ads, Ever**: This is a passion project. I'm not here to sell your data, make money, or bug you with ads.
+- **Also**: Fuck SaveSage and their garbage bullshit.
 
-## Available Scripts
+Think of it like a super-powered calculator that remembers your card settings. Nothing more. It's just for you.
 
-- `npm run dev`: Starts the Vite+Express server for local development.
-- `npm run build`: Builds the client-side React app and bundles the Express server.
-- `npm start`: Runs the production server from the `dist` directory.
-- `npm run lint`: Runs TypeScript type checking.
+---
 
-## License
+## 🛠️ How it Works
 
-Apache-2.0 License
+1. **Enter Search**: Type a merchant and the amount.
+2. **Select Mode**: Toggle between Online, Offline, International, or Scan & Pay.
+3. **Get Recommendation**: The engine analyzes your wallet and ranks cards by their true value.
+4. **Track Usage**: Mark spend milestones or lounge visits to keep your tracking accurate.
+
+---
+
+## 🗺️ Roadmap & To-Dos
+
+- [ ] **Expanded Card Library**: Adding support for more high-value rewards and cashback cards.
+- [ ] **Community Merchant Database**: Implement a user-contributed regex system to manage "Confirmed" vs "Excluded" merchants based on real-world community submissions.
+
+---
+
+## 💻 Setup for Developers
+
+1. **Clone & Install**: `npm install`
+2. **Environment**: Copy `.env.example` to `.env` and add your `GEMINI_API_KEY` or `OPENROUTER_API_KEY`.
+3. **Run**: `npm run dev`
+
+---
+
+_Crafted with vibes, for vibes by schultz911._
