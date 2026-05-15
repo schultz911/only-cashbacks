@@ -14,8 +14,10 @@ async function startServer() {
 
   // API Route for categorization
   app.post("/api/categorize", async (req, res) => {
+    console.log("--- Categorization Request Received ---");
     try {
       const { merchantName, apiKey } = req.body;
+      console.log(`Merchant: "${merchantName}", API Key provided: ${!!apiKey}`);
 
       // Input Validation
       if (typeof merchantName !== 'string' || merchantName.trim().length === 0 || merchantName.length > 100) {
@@ -27,17 +29,19 @@ async function startServer() {
       }
 
       const authKey = apiKey || process.env.OPENROUTER_API_KEY;
+      if (!authKey) {
+        console.error("No OpenRouter API key found in request or environment.");
+        return res.status(401).json({ error: "No API key configured." });
+      }
 
-      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${authKey}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer": "https://github.com/schultz911/only-cashbacks",
-          "X-Title": "OnlyCashbacks"
-        },
-        body: JSON.stringify({
-          model: "openrouter/auto",
+      console.log("Calling OpenRouter API via SDK...");
+      const openrouter = new OpenRouter({
+        apiKey: authKey,
+      });
+
+      const response = await (openrouter.chat.send as any)({
+        chatRequest: {
+          model: "google/gemini-2.0-flash-lite-001",
           temperature: 0,
           response_format: { type: "json_object" },
           messages: [
@@ -49,7 +53,7 @@ Determine if it is online or offline.
 Also flag if it seems to be a personal P2P UPI payment (like paying a friend, a person's name) versus a business/merchant.
 IMPORTANT PLATFORM MATCHING:
 - If it is part of the Tata ecosystem (e.g. Croma, Westside, Zudio, BigBasket, 1mg, Qmin, IHCL, Tata Cliq, Taj), set 'platform' exactly to "Tata Brands".
-- If it is a Swiggy property (Swiggy, Instamart, Dineout), set 'platform' to "Swiggy".
+- If it is part of the Swiggy ecosystem (Swiggy, Instamart, Dineout), set 'platform' to "Swiggy".
 - Otherwise, if it's a known platform (Amazon, Flipkart, Cleartrip, Nykaa, etc.), put that in 'platform'.
 
 Output strictly a JSON object matching this TypeScript interface:
@@ -65,20 +69,17 @@ Output strictly a JSON object matching this TypeScript interface:
               role: "user",
               content: merchantName
             }
-          ],
-          session_id: "only-cashbacks-categorization"
-        })
+          ]
+        },
+        session_id: "only-cashbacks-categorization"
       });
 
-      if (!response.ok) {
-        throw new Error(`OpenRouter API returned ${response.status}`);
-      }
-
-      const data = await response.json();
-      const result = JSON.parse(data.choices[0]?.message?.content || "{}");
+      console.log("OpenRouter Response Received Successfully.");
+      const content = (response as any).choices?.[0]?.message?.content || (response as any).content || "{}";
+      const result = JSON.parse(content);
       res.json(result);
     } catch (error) {
-      console.error("OpenRouter API Error:", error);
+      console.error("Server-side Categorization Error:", error);
       res.status(500).json({ error: "Failed to categorize merchant" });
     }
   });
