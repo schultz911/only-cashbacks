@@ -33,6 +33,8 @@ export function getRecommendations(
   const isFoodDelivery = catL.includes('food delivery') || nameL.includes('delivery') || nameL.includes('food') || nameL.includes('swig') || nameL.includes('zomat') || ['swiggy', 'zomato', 'toing', 'bistro', 'box8', 'eatsure', 'freshmenu', 'eatclub', 'uber eats'].some(d => nameL.includes(d) || platL.includes(d) || catL.includes(d));
   const isDining = catL.includes('dining') || nameL.includes('dine') || nameL.includes('restaurant') || nameL.includes('eatery') || nameL.includes('cafe') || nameL.includes('district') || nameL.includes('zomato') || nameL.includes('swiggy');
   const isMovie = catL.includes('movie') || nameL.includes('movie') || ['bookmyshow', 'bms', 'pvr', 'inox', 'cinepolis', 'theatre', 'cinema', 'district'].some(m => nameL.includes(m) || platL.includes(m) || catL.includes(m));
+  const searchedMoviePlat = MOVIE_PLATFORMS.find(p => nameL.includes(p) || (platL && platL.includes(p)));
+  const searchedDiningPlat = DINING_PLATFORMS.find(p => nameL.includes(p) || (platL && platL.includes(p)));
 
   // Google Play special logic
   if (nameL.includes('google') || platL.includes('google')) {
@@ -253,8 +255,6 @@ export function getRecommendations(
       if (isExcluded) {
         // Skip benefit matching for excluded cards
       } else {
-        const searchedMoviePlat = MOVIE_PLATFORMS.find(p => nameL.includes(p) || (platL && platL.includes(p)));
-        const searchedDiningPlat = DINING_PLATFORMS.find(p => nameL.includes(p) || (platL && platL.includes(p)));
 
         for (const benefit of card.benefits) {
           if (benefit.type === 'exclusion' || benefit.type === 'lounge' || (benefit.type as any) === 'milestone') continue;
