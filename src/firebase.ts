@@ -36,8 +36,11 @@ export interface FirestoreErrorInfo {
 }
 
 export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  const isPermissionError = errorMessage.toLowerCase().includes('permission') || errorMessage.toLowerCase().includes('insufficient');
+
   const errInfo: FirestoreErrorInfo = {
-    error: error instanceof Error ? error.message : String(error),
+    error: errorMessage,
     authInfo: {
       userId: auth.currentUser?.uid,
       email: auth.currentUser?.email,
@@ -52,6 +55,15 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
     operationType,
     path
   };
+
+  if (isPermissionError) {
+    console.error('PRO-TIP: This looks like a Firestore Permission error. Make sure your rules are deployed to the correct database in Firebase Console!');
+  }
+
   console.error('Firestore Error: ', JSON.stringify(errInfo));
-  throw new Error(JSON.stringify(errInfo));
+  
+  // We throw a more descriptive error object
+  const finalError = new Error(errorMessage);
+  (finalError as any).firestoreInfo = errInfo;
+  throw finalError;
 }

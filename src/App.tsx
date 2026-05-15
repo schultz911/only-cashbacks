@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
-import { Search, History, Plane, Loader2, Sparkles, Globe, Wallet, QrCode, X, ChevronDown, Check, UserCircle, LogOut, AlertCircle, Ticket, Tag, CreditCard, Info } from 'lucide-react';
+import { Search, History, Plane, Loader2, Sparkles, Globe, Wallet, QrCode, X, ChevronDown, Check, UserCircle, LogOut, AlertCircle, Ticket, Tag, CreditCard, Info, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { categorizeMerchant } from './services/gemini';
 import { getRecommendations } from './lib/recommendation';
@@ -136,6 +136,9 @@ export default function App() {
   const skipSyncRef = useRef(false);
 
   const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -172,38 +175,66 @@ export default function App() {
           setKiwiNeonEarnRate(data.kiwiNeonEarnRate || 2);
           setTimeout(() => { skipSyncRef.current = false; }, 100);
         }
-      } catch (error) {
-        handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
+      } catch (error: any) {
+        setSyncError(error.message || 'Failed to sync with cloud');
+        try {
+          handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
+        } catch (e) {
+          // Prevent re-throw from crashing the app
+          console.warn('Sync failed, continuing with local state.');
+        }
       } finally {
         setIsDataLoaded(true);
       }
     };
-    
+
     loadData();
   }, [user]);
 
-  useEffect(() => {
-    if (!user || isAuthLoading || !isDataLoaded || skipSyncRef.current) return;
-
-    const saveData = async () => {
+  const saveData = async () => {
+    if (!user) return;
+    setIsSyncing(true);
+    try {
+      const docRef = doc(db, 'users', user.uid);
+      await setDoc(docRef, {
+        userId: user.uid,
+        exhaustedCards,
+        loungePassesUsed,
+        loungeMilestonesVerified,
+        offerUsage,
+        openRouterApiKey,
+        kiwiNeonEarnRate,
+        updatedAt: Date.now()
+      }, { merge: true });
+      setSyncError(null);
+      setIsDirty(false);
+    } catch (error: any) {
+      setSyncError(error.message || 'Failed to save to cloud');
       try {
-        const docRef = doc(db, 'users', user.uid);
-        await setDoc(docRef, {
-          userId: user.uid,
-          exhaustedCards,
-          loungePassesUsed,
-          loungeMilestonesVerified,
-          offerUsage,
-          openRouterApiKey,
-          kiwiNeonEarnRate,
-          updatedAt: Date.now()
-        }, { merge: true });
-      } catch (error) {
         handleFirestoreError(error, OperationType.WRITE, `users/${user.uid}`);
+      } catch (e) {
+        console.warn('Save failed, state is local only.');
       }
-    };
-    saveData();
-  }, [exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, openRouterApiKey, kiwiNeonEarnRate, user, isAuthLoading]);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isDataLoaded && !skipSyncRef.current) {
+      setIsDirty(true);
+    }
+  }, [exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, openRouterApiKey, kiwiNeonEarnRate]);
+
+  useEffect(() => {
+    if (!user || isAuthLoading || !isDataLoaded || skipSyncRef.current || !isDirty || isSyncing) return;
+
+    const timer = setTimeout(() => {
+      saveData();
+    }, 2000); // Auto-save after 2 seconds of inactivity
+
+    return () => clearTimeout(timer);
+  }, [isDirty, user, isAuthLoading, isDataLoaded]);
 
   const handleLogin = async () => {
     try {
@@ -357,7 +388,25 @@ export default function App() {
               )}
               <div className="hidden sm:flex flex-col items-end">
                 <span className="text-sm font-bold text-gray-900">{user.displayName}</span>
-                <span className="text-[10px] uppercase font-bold tracking-widest text-green-600">Synced</span>
+                <button 
+                  onClick={() => !isSyncing && saveData()}
+                  disabled={isSyncing}
+                  className={cn(
+                    "flex items-center gap-1 text-[10px] uppercase font-bold tracking-widest transition-all hover:opacity-80 disabled:opacity-50",
+                    syncError ? "text-amber-600" : isDirty ? "text-blue-600" : "text-green-600"
+                  )}
+                >
+                  {isSyncing ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : syncError ? (
+                    <RefreshCw className="w-3 h-3" />
+                  ) : isDirty ? (
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />
+                  ) : (
+                    <Check className="w-3 h-3" />
+                  )}
+                  {isSyncing ? 'Syncing...' : syncError ? 'Sync Now' : isDirty ? 'Pending Save' : 'Synced'}
+                </button>
               </div>
               <button
                 onClick={handleLogout}
