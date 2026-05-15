@@ -11,7 +11,8 @@ const ALLOWED_UPI_CARDS = ['kiwi-neon', 'amazon-pay-upi', 'cred-pay-upi', 'kotak
 const ALLOWED_INTL_CARDS = ['kotak-811-infinity', 'sbi-cashback', 'niyo-dcb'];
 const DEFAULT_EXCLUSIONS = ['fuel', 'wallet', 'rent', 'housing', 'gambling', 'gaming', 'tolls', 'toll', 'finance', 'school', 'education', 'jewellery', 'insurance', 'railway', 'rail', 'government', 'tax', 'utilities', 'utility', 'bills', 'bill', 'telecom', 'internet', 'atm', 'cash', 'charity', 'donation'];
 const MOVIE_PLATFORMS = ['bookmyshow', 'bms', 'paytm insider', 'townscript', 'mera event', 'pvr', 'inox', 'cinepolis', 'movie', 'cinema', 'theatre', 'district'];
-const DINING_PLATFORMS = ['swiggy', 'toing', 'dineout', 'zomato', 'bistro', 'blinkit', 'zepto cafe', 'eatsure', 'fresh menu', 'box8', 'eat club', 'uber eats', 'domino', 'pizza hut', 'magicpin', 'starbucks', 'mcdonald', 'kfc', 'burger king', 'haldiram', 'bikanervala', 'cafe', 'restaurant', 'diner', 'eatery', 'pub', 'bar', 'coffee', 'district'];
+const DINING_PLATFORMS = ['dineout', 'eazydiner', 'district', 'magicpin', 'cafe', 'restaurant', 'diner', 'eatery', 'pub', 'bar', 'coffee'];
+const FOOD_PLATFORMS = ['swiggy', 'zomato', 'toing', 'bistro', 'eatsure', 'fresh menu', 'box8', 'eat club', 'uber eats', 'domino', 'pizza hut', 'starbucks', 'mcdonald', 'kfc', 'burger king', 'haldiram', 'bikanervala'];
 const SPECIFIC_PLATFORMS = ['bookmyshow', 'district', 'swiggy', 'zomato', 'dineout', 'eazydiner', 'nykaa', 'cleartrip', 'ajio', 'amazon', 'flipkart'];
 
 export function getRecommendations(
@@ -30,9 +31,9 @@ export function getRecommendations(
   const platL = merchant.platform?.toLowerCase() || '';
 
   const isGrocery = catL.includes('grocery') || nameL.includes('grocery') || nameL.includes('grocer') || nameL.includes('groce') || nameL.includes('bigbasket') || nameL.includes('blinkit') || nameL.includes('zepto') || nameL.includes('instamart') || ['bigbasket', 'blinkit', 'zepto', 'instamart', 'swiggy instamart', 'dunzo', 'jiomart'].some(g => nameL.includes(g) || platL.includes(g) || catL.includes(g));
-  const isFoodDelivery = catL.includes('food delivery') || nameL.includes('delivery') || nameL.includes('food') || nameL.includes('swig') || nameL.includes('zomat') || ['swiggy', 'zomato', 'toing', 'bistro', 'box8', 'eatsure', 'freshmenu', 'eatclub', 'uber eats'].some(d => nameL.includes(d) || platL.includes(d) || catL.includes(d));
-  const isDining = catL.includes('dining') || nameL.includes('dine') || nameL.includes('restaurant') || nameL.includes('eatery') || nameL.includes('cafe') || nameL.includes('district') || nameL.includes('zomato') || nameL.includes('swiggy');
-  const isMovie = catL.includes('movie') || nameL.includes('movie') || ['bookmyshow', 'bms', 'pvr', 'inox', 'cinepolis', 'theatre', 'cinema', 'district'].some(m => nameL.includes(m) || platL.includes(m) || catL.includes(m));
+  const isFoodDelivery = (catL.includes('food delivery') || nameL.includes('delivery') || nameL.includes('food') || nameL.includes('swig') || nameL.includes('zomat') || FOOD_PLATFORMS.some(d => nameL.includes(d) || platL.includes(d) || catL.includes(d))) && !nameL.includes('dineout') && !nameL.includes('district') && !nameL.includes('eazydiner');
+  const isDining = catL.includes('dining') || nameL.includes('dine') || nameL.includes('restaurant') || nameL.includes('eatery') || nameL.includes('cafe') || nameL.includes('district') || nameL.includes('dineout') || nameL.includes('eazydiner');
+  const isMovie = catL.includes('movie') || nameL.includes('movie') || MOVIE_PLATFORMS.some(m => nameL.includes(m) || platL.includes(m) || catL.includes(m));
   const searchedMoviePlat = MOVIE_PLATFORMS.find(p => nameL.includes(p) || (platL && platL.includes(p)));
   const searchedDiningPlat = DINING_PLATFORMS.find(p => nameL.includes(p) || (platL && platL.includes(p)));
 
