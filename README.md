@@ -17,10 +17,10 @@
 
 ## 🚀 Key Features
 
-- **🧠 AI Merchant Search**: Just type a merchant name (e.g., "Swiggy", "Amazon", "Uber"). Our AI identifies the category and tells you which card to pull out.
+- **🧠 AI Merchant Search**: Just type a merchant name (e.g., "Swiggy", "Amazon", "Uber"). AI identifies the category and tells you which card to pull out.
 - **📂 AI? Or ABye!**: If you don't like AI, no worries. I have built a thorough and comprehensive merchant database, you can search and find the best card for your needs.
 - **✈️ Offline-First**: Once you load the app, you don't need internet to use it. Helps when you're traveling or in areas with no internet.
-- **💰 Real Net Value**: We don't just show cashback %. We calculate the true net value by subtracting fees and taxes (like GST on Forex) so you see the real profit.
+- **💰 Real Net Value**: It doesn't just show cashback %. It calculates the true net value by subtracting fees and taxes (like GST on Forex) so you see the real profit.
 - **🌍 Forex Precision**: Traveling abroad? Get real-time exchange rate calculations to see if your card's rewards outweigh its forex markup.
 - **🛫 Lounge Tracker**: Keep tabs on your lounge passes. Automatically tracks your domestic and international visits based on your card's spend milestones.
 - **🎟️ Voucher Strategies**: Discover "reward-on-reward" opportunities. The app tells you when buying a voucher via portals like Tata Neu or SBI Amazon pays more than a direct swipe.
@@ -51,12 +51,13 @@ You shouldn't need to add your personal, financial details or spending habits to
 
 ## 💖 Privacy-First
 
-- **No Data Hoarding**: We only store save states for you to track your offer usage.
+- **No Data Hoarding**: The app only stores save states for you to track your offer usage.
 - **Manual Sync**: Your data stays in your browser until you hit the "Sync" button. It never pings the cloud in the background unless you log in, and you can delete all your data anytime.
 - **No Ads, Ever**: This is a passion project. I'm not here to sell your data, make money, or bug you with ads.
-- **Also**: Fuck SaveSage and their garbage bullshit.
 
 Think of it like a super-powered calculator that remembers your card settings. Nothing more. It's just for you.
+
+- **Also**: Fuck SaveSage and their garbage bullshit.
 
 ---
 
@@ -84,4 +85,4 @@ Think of it like a super-powered calculator that remembers your card settings. N
 
 ---
 
-_Crafted with vibes, for vibes by schultz911._
+_Crafted by vibes, with vibes, for vibes by schultz911._
