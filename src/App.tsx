@@ -782,11 +782,7 @@ export default function App() {
             onClick={() => setSelectedCardForDetails(null)}
           >
             <motion.div
-              {...(selectedCardForDetails.source === 'rec' ? { layoutId: `card-${selectedCardForDetails.source}-${selectedCardForDetails.card.id}` } : {
-                initial: { y: '100%', opacity: 0 },
-                animate: { y: 0, opacity: 1 },
-                exit: { y: '100%', opacity: 0 }
-              })}
+              layoutId={`card-${selectedCardForDetails.source}-${selectedCardForDetails.card.id}`}
               onClick={(e) => e.stopPropagation()}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
               className={cn(
