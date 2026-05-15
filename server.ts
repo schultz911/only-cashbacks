@@ -25,14 +25,16 @@ async function startServer() {
       if (apiKey && (typeof apiKey !== 'string' || apiKey.length > 255)) {
         return res.status(400).json({ error: "Invalid apiKey." });
       }
-      
+
       const authKey = apiKey || process.env.OPENROUTER_API_KEY;
 
       const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${authKey}`,
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "HTTP-Referer": "https://github.com/schultz911/only-cashbacks",
+          "X-Title": "OnlyCashbacks"
         },
         body: JSON.stringify({
           model: "openrouter/auto",
@@ -63,7 +65,8 @@ Output strictly a JSON object matching this TypeScript interface:
               role: "user",
               content: merchantName
             }
-          ]
+          ],
+          session_id: "only-cashbacks-categorization"
         })
       });
 
