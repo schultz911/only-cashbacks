@@ -1,6 +1,6 @@
 # OnlyCashbacks — Make Your Credit Cards Pay
 
-![OC Logo](public/icon.png)
+![OC Logo](public/faviicon.svg)
 
 **OnlyCashbacks** is a **_fully open-source_** personal rewards co-pilot. It uses AI to instantly tell you which credit card in your wallet will give you the most value for every purchase you make.
 [OnlyCashbacks](https://onlycashbacks.in)
