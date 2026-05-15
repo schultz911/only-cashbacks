@@ -31,6 +31,10 @@
 > **This app doesn't use AI by default.**
 > If you want to use AI you need to add an OpenRouter API key by clicking on the information symbol in the header.
 
+> [!CAUTION]
+> If you use the app in local mode, your usage states are saved in your `localStorage`. 
+> If you delete your browser data you will lose all your save states.
+
 ---
 
 ## 🎨 Premium Experience
