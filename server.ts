@@ -26,15 +26,18 @@ async function startServer() {
         return res.status(400).json({ error: "Invalid apiKey." });
       }
       
-      const openrouter = new OpenRouter({
-        apiKey: apiKey || process.env.OPENROUTER_API_KEY,
-      });
+      const authKey = apiKey || process.env.OPENROUTER_API_KEY;
 
-      const response = await openrouter.chat.send({
-        chatRequest: {
-          model: "openrouter/auto", // Use openrouter/auto as requested
-          temperature: 0, // Deterministic output for categorization
-          responseFormat: { type: "json_object" },
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${authKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "openrouter/auto",
+          temperature: 0,
+          response_format: { type: "json_object" },
           messages: [
             {
               role: "system",
@@ -61,10 +64,15 @@ Output strictly a JSON object matching this TypeScript interface:
               content: merchantName
             }
           ]
-        }
+        })
       });
 
-      const result = JSON.parse(response.choices[0]?.message?.content || "{}");
+      if (!response.ok) {
+        throw new Error(`OpenRouter API returned ${response.status}`);
+      }
+
+      const data = await response.json();
+      const result = JSON.parse(data.choices[0]?.message?.content || "{}");
       res.json(result);
     } catch (error) {
       console.error("OpenRouter API Error:", error);
