@@ -1,6 +1,7 @@
 # OnlyCashbacks — Make Your Credit Cards Pay
 
 **OnlyCashbacks** is a **_fully open-source_** personal rewards co-pilot. It uses AI to instantly tell you which credit card in your wallet will give you the most value for every purchase you make.
+
 [OnlyCashbacks](https://onlycashbacks.in)
 
 ## 📋 Table of Contents
@@ -23,16 +24,18 @@
 - **💰 Real Net Value**: It doesn't just show cashback %. It calculates the true net value by subtracting fees and taxes (like GST on Forex) so you see the real profit.
 - **🌍 Forex Precision**: Traveling abroad? Get real-time exchange rate calculations to see if your card's rewards outweigh its forex markup.
 - **🛫 Lounge Tracker**: Keep tabs on your lounge passes. Automatically tracks your domestic and international visits based on your card's spend milestones.
-- **🎟️ Voucher Strategies**: Discover "reward-on-reward" opportunities. The app tells you when buying a voucher via portals like Tata Neu or SBI Amazon pays more than a direct swipe.
+- **🎟️ Voucher Strategies**: Discover "reward-on-reward" opportunities. The app tells you which cards work best with which voucher portals.
 - **📱 Portfolio Sync**: Your cards, limits, and lounge usage stay synced across all your devices securely via your Google account.
 - **🔒 Privacy First**: You're in control. Manually trigger cloud syncs, work in offline mode, or wipe all your data instantly from the profile menu.
 
 > [!IMPORTANT]
 > **This app doesn't use AI by default.**
+>
 > If you want to use AI you need to add an OpenRouter API key by clicking on the information symbol in the header.
 
 > [!CAUTION]
 > If you use the app in local mode, your usage states are saved in your `localStorage`. 
+>
 > If you delete your browser data you will lose all your save states.
 
 ---
@@ -50,6 +53,7 @@ Built for a **premium, glassmorphic feel**, OnlyCashbacks offers:
 You shouldn't need to add your personal, financial details or spending habits to get the best deals.
 
 **This app collects nothing**
+
 **_AT ALL_**
 ### ZERO!
 
