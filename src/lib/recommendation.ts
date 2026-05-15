@@ -12,7 +12,7 @@ const ALLOWED_INTL_CARDS = ['kotak-811-infinity', 'sbi-cashback', 'niyo-dcb'];
 const DEFAULT_EXCLUSIONS = ['fuel', 'wallet', 'rent', 'housing', 'gambling', 'gaming', 'tolls', 'toll', 'finance', 'school', 'education', 'jewellery', 'insurance', 'railway', 'rail', 'government', 'tax', 'utilities', 'utility', 'bills', 'bill', 'telecom', 'internet', 'atm', 'cash', 'charity', 'donation'];
 const MOVIE_PLATFORMS = ['bookmyshow', 'bms', 'paytm insider', 'townscript', 'mera event', 'pvr', 'inox', 'cinepolis', 'movie', 'cinema', 'theatre', 'district'];
 const DINING_PLATFORMS = ['swiggy', 'toing', 'dineout', 'zomato', 'bistro', 'blinkit', 'zepto cafe', 'eatsure', 'fresh menu', 'box8', 'eat club', 'uber eats', 'domino', 'pizza hut', 'magicpin', 'starbucks', 'mcdonald', 'kfc', 'burger king', 'haldiram', 'bikanervala', 'cafe', 'restaurant', 'diner', 'eatery', 'pub', 'bar', 'coffee', 'district'];
-const SPECIFIC_PLATFORMS = ['bookmyshow', 'district', 'swiggy', 'zomato', 'dineout', 'eazydiner', 'nykaa', 'cleartrip', 'ajio'];
+const SPECIFIC_PLATFORMS = ['bookmyshow', 'district', 'swiggy', 'zomato', 'dineout', 'eazydiner', 'nykaa', 'cleartrip', 'ajio', 'amazon', 'flipkart'];
 
 export function getRecommendations(
   merchant: MerchantInfo,
@@ -215,6 +215,15 @@ export function getRecommendations(
     } else if (card.id === 'kotak-811-infinity' && isScanToPay) {
       cashbackAmount = 3;
       benefitText = 'Mystery Cashback on Scan & Pay';
+    } else if (card.id === 'sbi-cashback') {
+      if (isOnline) {
+        const eligible = Math.min(amount, 40000);
+        cashbackAmount = eligible * 0.05;
+        benefitText = '5% Cashback';
+      } else {
+        cashbackAmount = amount * 0.01;
+        benefitText = '1% Base Rewards';
+      }
     } else if (card.id === 'kotak-811-infinity' && !isScanToPay) {
       // Special logic for Kotak 811 offers + cashback
       const movieUsed = offerUsage['kotak-811-infinity-Movies-BMS'] || 0;
@@ -223,12 +232,12 @@ export function getRecommendations(
       if (isIntl) {
         cashbackAmount = Math.min(amount * 0.05, 100);
         benefitText = '5% Cashback';
-      } else if (isMovie && movieUsed < 1) {
+      } else if (isMovie && isOnline && movieUsed < 1) {
         discountAmount = Math.min(amount * 0.5, 300);
         const remaining = amount - discountAmount;
         cashbackAmount = discountAmount + Math.min(remaining * 0.05, 100);
         benefitText = '1+1 Movie on BookMyShow + 5% Cashback';
-      } else if ((isDining || nameL.includes('district')) && diningUsed < 1) {
+      } else if ((isDining || nameL.includes('district')) && isOnline && diningUsed < 1) {
         discountAmount = Math.min(amount * 0.15, 500); // Assuming 15% up to 500 for District
         const remaining = amount - discountAmount;
         cashbackAmount = discountAmount + Math.min(remaining * 0.05, 100);
@@ -240,7 +249,7 @@ export function getRecommendations(
     } else {
       let matchedBenefitValue = -1;
       let usedBenefit = null;
-      
+
       if (isExcluded) {
         // Skip benefit matching for excluded cards
       } else {
@@ -457,7 +466,7 @@ export function getRecommendations(
 
   const availableOffers: { id: string; icon: string; title: string; description: string; cardId?: string; category: string; }[] = [];
 
-  if (isMovie) {
+  if (isMovie && isOnline) {
     if ((offerUsage['kotak-811-infinity-Movies-BMS'] || 0) < 1) {
       availableOffers.push({ id: 'k-bms', icon: '🎬', title: 'Kotak 811', description: 'Buy 1 Get 1 Ticket up to ₹300', category: 'BMS', cardId: 'kotak-811-infinity' });
     }
@@ -472,7 +481,7 @@ export function getRecommendations(
     }
   }
 
-  if (isDining) {
+  if (isDining && isOnline) {
     if ((offerUsage['kotak-811-infinity-Dining-District'] || 0) < 1) {
       availableOffers.push({ id: 'k-dist', icon: '🍽️', title: 'Kotak 811', description: '20% off up to ₹750', category: 'District', cardId: 'kotak-811-infinity' });
     }
