@@ -17,7 +17,7 @@ export const CARD_DATA: Card[] = [
     forexMarkup: 3.5,
     baseRewardRate: 0,
     benefits: [
-      { type: 'cashback', category: 'Swiggy', value: '10%', percentValue: 10, description: 'Cashback on food delivery, dining, and grocery spends on Swiggy.', minSpend: 249, maxSpend: 15000, fallbackRate: 0 },
+      { type: 'cashback', category: 'Swiggy', value: '10%', percentValue: 10, description: 'Cashback on food delivery, dining, and online grocery spends on Swiggy.', minSpend: 249, maxSpend: 15000, fallbackRate: 0 },
       { type: 'cashback', category: 'Online', value: '5%', percentValue: 5, description: 'Cashback on online shopping. Plus 5% off on Nykaa and up to 20% off on Cleartrip (Code: CTSWHDFC).', minSpend: 100, maxSpend: 30000 },
       { type: 'cashback', category: 'All Spends', value: '1%', percentValue: 1, description: 'Cashback on all eligible domestic transactions.', maxSpend: 100000, isHidden: true },
       { type: 'exclusion', category: 'Gift Card', value: '0%', description: 'Gift Cards' },
@@ -43,7 +43,7 @@ export const CARD_DATA: Card[] = [
     forexMarkup: 3.5,
     baseRewardRate: 1.5,
     benefits: [
-      { type: 'cashback', category: 'Dining', value: '10%', percentValue: 10, description: '10% Cashback on food delivery, dining, and groceries.', maxSpend: 10000, fallbackRate: 0 },
+      { type: 'cashback', category: 'Dining', value: '10%', percentValue: 10, description: '10% Cashback on food delivery, dining, and groceries, online and offline.', maxSpend: 10000, fallbackRate: 0 },
       { type: 'lounge', category: 'Domestic', value: '1/qtr', description: 'Complimentary domestic lounge access.' },
       { type: 'exclusion', category: 'Fuel', value: '0%', description: 'Fuel' },
       { type: 'exclusion', category: 'Wallet', value: '0%', description: 'Wallet Loads' },
@@ -66,13 +66,13 @@ export const CARD_DATA: Card[] = [
     forexMarkup: 3.5,
     baseRewardRate: 1.5,
     benefits: [
-      { type: 'cashback', category: 'Tata Neu App', value: '10%', percentValue: 10, description: 'NeuCoins on spends within the Tata Neu app on partner brands, pharma, shopping, and travel. (NeuPass Legend Tier)', minSpend: 67 },
-      { type: 'cashback', category: 'Groceries', value: '10%', percentValue: 10, capPerTxn: 1500, description: 'NeuCoins on grocery spends within the Tata Neu app on BigBasket.', maxSpend: 40000, minSpend: 67, isHidden: true },
-      { type: 'cashback', category: 'Utilities', value: '5%', percentValue: 5, description: 'NeuCoins on utility bill payments on the Tata Neu app.', maxSpend: 40000, minSpend: 67 },
-      { type: 'cashback', category: 'Telecom', value: '5%', percentValue: 5, description: 'NeuCoins on telecom and internet payments on the Tata Neu app.', maxSpend: 40000, minSpend: 67, isHidden: true },
-      { type: 'cashback', category: 'Offline', value: '5%', percentValue: 5, description: 'NeuCoins on spends on Tata partner brands in offline stores like Croma, Westside, Zudio, IHCL, Bigbasket.', minSpend: 67 },
+      { type: 'cashback', category: 'Tata Neu App', value: '10%', percentValue: 10, description: 'NeuCoins on online spends within the Tata Neu app on partner brands, pharma, shopping, and travel. (NeuPass Legend Tier)', minSpend: 67 },
+      { type: 'cashback', category: 'Groceries', value: '10%', percentValue: 10, capPerTxn: 1500, description: 'NeuCoins on online grocery spends within the Tata Neu app on BigBasket.', maxSpend: 40000, minSpend: 67, isHidden: true },
+      { type: 'cashback', category: 'Utilities', value: '5%', percentValue: 5, description: 'NeuCoins on online utility bill payments on the Tata Neu app.', maxSpend: 40000, minSpend: 67 },
+      { type: 'cashback', category: 'Telecom', value: '5%', percentValue: 5, description: 'NeuCoins on online telecom and internet payments on the Tata Neu app.', maxSpend: 40000, minSpend: 67, isHidden: true },
+      { type: 'cashback', category: 'Offline', value: '5%', percentValue: 5, description: 'NeuCoins on offline spends at Tata partner brands like Croma, Westside, Zudio, IHCL, Bigbasket.', minSpend: 67 },
       { type: 'lounge', category: 'Domestic', value: '2/qtr', description: 'Generate voucher on the SmartBuy portal on quarterly spends of 50k.' },
-      { type: 'lounge', category: 'International', value: '1/qtr', description: 'Complimentary through Priority Pass.' },
+      { type: 'lounge', category: 'International', value: '1/qtr', description: 'Complimentary with Priority Pass.' },
       { type: 'exclusion', category: 'Fuel', value: '0%', description: 'Fuel' },
       { type: 'exclusion', category: 'Wallet', value: '0%', description: 'Wallet Loads' },
       { type: 'exclusion', category: 'ATM', value: '0%', description: 'ATM Withdrawals' },
@@ -121,8 +121,8 @@ export const CARD_DATA: Card[] = [
     benefits: [
       { type: 'cashback', category: 'All Spends', value: '5%', percentValue: 5, capPerTxn: 100, description: 'Cashback on online and offline spends. Forex-positive.', maxSpend: 10000 },
       { type: 'offer', category: 'Dining', value: 'District', percentValue: 20, capPerTxn: 750, minSpend: 2000, usageLimit: 1, description: '20% discount up to ₹750 on a min spend of ₹2,000 once a month.' },
-      { type: 'offer', category: 'Movies', value: 'BMS', percentValue: 50, capPerTxn: 300, minSpend: 400, usageLimit: 1, description: 'Buy 1 Get 1 on movie tickets up to ₹300 on a min spend of ₹400 once a month.' },
-      { type: 'upi', category: 'Scan & Pay', value: 'Mystery', percentValue: 0.03, description: 'Earn exclusive Mystery Cashback rewards on all Scan & Pay transactions via Kotak App.', isHidden: true },
+      { type: 'offer', category: 'Movies', value: 'BMS', percentValue: 50, capPerTxn: 300, minSpend: 400, usageLimit: 1, description: 'Buy 1 Get 1 on movie tickets online up to ₹300 on a min spend of ₹400 once a month.' },
+      { type: 'upi', category: 'Scan & Pay', value: 'Mystery', percentValue: 0, description: 'Earn exclusive Mystery Cashback rewards on all Scan & Pay transactions via Kotak App.', isHidden: true },
       { type: 'exclusion', category: 'ATM', value: '0%', description: 'ATM Withdrawals' },
       { type: 'exclusion', category: 'Wallet', value: '0%', description: 'Wallet Loads' },
       { type: 'exclusion', category: 'Finance', value: '0%', description: 'Loan Repayments and EMI' },
@@ -177,7 +177,7 @@ export const CARD_DATA: Card[] = [
     forexMarkup: 0.0,
     baseRewardRate: 0,
     benefits: [
-      { type: 'forex', category: 'Forex', value: '0%', percentValue: 0, description: 'No forex fees on international spends.' },
+      { type: 'forex', category: 'Forex', value: '0%', percentValue: 0, description: 'No forex fees on online and offline international spends.' },
       { type: 'offer', category: 'International', value: 'ATM', percentValue: 100, capPerTxn: 500, usageLimit: 1, description: '100% back as Niyo points up to ₹500 on one international ATM withdrawal per quarter.' },
       { type: 'lounge', category: 'International', value: '1/qtr', description: 'Generate voucher on the Niyo app after international spends of ₹75k.' }
     ]
@@ -193,9 +193,9 @@ export const CARD_DATA: Card[] = [
     forexMarkup: 3.5,
     baseRewardRate: 0,
     benefits: [
-      { type: 'offer', category: 'Food', value: 'Swiggy', percentValue: 24, minSpend: 500, capPerTxn: 120, usageLimit: 2, description: 'Flat ₹120 off on orders over ₹500 twice a month (Code: AXIS120).' },
-      { type: 'offer', category: 'Movies', value: 'District', percentValue: 50, capPerTxn: 200, usageLimit: 1, description: 'Buy 1 Get 1 on movie tickets up to ₹200 once a month (Code: AXIS200).' },
-      { type: 'offer', category: 'Fashion', value: 'Ajio', percentValue: 33, minSpend: 2999, capPerTxn: 1000, description: 'Up to ₹1,000 off on orders over ₹2,999 (Code: AJIOAXISMZ).' },
+      { type: 'offer', category: 'Food', value: 'Swiggy', percentValue: 24, minSpend: 500, capPerTxn: 120, usageLimit: 2, description: 'Flat ₹120 off on online orders over ₹500 twice a month (Code: AXIS120).' },
+      { type: 'offer', category: 'Movies', value: 'District', percentValue: 50, capPerTxn: 200, usageLimit: 1, description: 'Buy 1 Get 1 on movie tickets online up to ₹200 once a month (Code: AXIS200).' },
+      { type: 'offer', category: 'Fashion', value: 'Ajio', percentValue: 33, minSpend: 2999, capPerTxn: 1000, description: 'Flat ₹1,000 off on online orders over ₹2,999 (Code: AJIOAXISMZ).' },
       { type: 'offer', category: 'Dining', value: 'EazyDiner', percentValue: 15, minSpend: 2500, capPerTxn: 500, usageLimit: 1, description: '15% off up to ₹500 on min bill of ₹2,500 once a month.' },
       { type: 'exclusion', category: 'Rent', value: '0%', description: 'Rent' },
       { type: 'exclusion', category: 'Wallet', value: '0%', description: 'Wallet Loads' },
@@ -219,8 +219,8 @@ export const CARD_DATA: Card[] = [
     forexMarkup: 3.5,
     baseRewardRate: 0,
     benefits: [
-      { type: 'offer', category: 'Movies', value: 'BMS', percentValue: 25, usageLimit: 1, description: '25% cashback points up to ₹250 on tickets per calendar month.', maxSpend: 1000 },
-      { type: 'offer', category: 'Food', value: 'Swiggy', percentValue: 5, usageLimit: 1, description: '5% cashback points up to ₹150 per calendar month.', maxSpend: 3000 },
+      { type: 'offer', category: 'Movies', value: 'BMS', percentValue: 25, usageLimit: 1, description: '25% cashback points up to ₹250 on online tickets per calendar month.', maxSpend: 1000 },
+      { type: 'offer', category: 'Food', value: 'Swiggy', percentValue: 5, usageLimit: 1, description: '5% cashback points up to ₹150 on online spends per calendar month.', maxSpend: 3000 },
       { type: 'cashback', category: 'Online', value: '1%', percentValue: 1, description: 'Cashback points on all eligible online spends.', maxSpend: 75000 },
       { type: 'lounge', category: 'Domestic', value: '2/qtr', description: 'Generate voucher on the SmartBuy portal on quarterly spends of 10k.' }
     ]
