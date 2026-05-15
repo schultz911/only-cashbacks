@@ -8,20 +8,28 @@ dotenv.config();
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || 3000;
 
   app.use(express.json());
 
   // API Route for categorization
   app.post("/api/categorize", async (req, res) => {
+    console.log("--- Categorization Request Received ---");
     try {
       const { merchantName } = req.body;
+      console.log(`Merchant to categorize: "${merchantName}"`);
 
       const openrouter = new OpenRouter({
         apiKey: process.env.OPENROUTER_API_KEY,
       });
 
-      const response = await openrouter.chat.send({
+      if (!process.env.OPENROUTER_API_KEY) {
+        console.warn("WARNING: OPENROUTER_API_KEY is not set in process.env");
+      }
+
+      console.log("Calling OpenRouter API via SDK...");
+      
+      const response = await (openrouter.chat.send as any)({
         chatRequest: {
           model: "openrouter/auto", // Use openrouter/auto as requested
           temperature: 0, // Deterministic output for categorization
@@ -55,10 +63,12 @@ Output strictly a JSON object matching this TypeScript interface:
         }
       });
 
-      const result = JSON.parse(response.choices[0]?.message?.content || "{}");
+      console.log("OpenRouter Response Received.");
+      const content = (response as any).choices?.[0]?.message?.content || (response as any).content || "{}";
+      const result = JSON.parse(content);
       res.json(result);
     } catch (error) {
-      console.error("OpenRouter API Error:", error);
+      console.error("Server-side Error during categorization:", error);
       res.status(500).json({ error: "Failed to categorize merchant" });
     }
   });
