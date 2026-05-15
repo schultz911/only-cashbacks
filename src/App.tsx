@@ -121,15 +121,23 @@ export default function App() {
   const [isLoungeOpen, setIsLoungeOpen] = useState(false);
   const [showOffersOverlay, setShowOffersOverlay] = useState(false);
   const [selectedCardForDetails, setSelectedCardForDetails] = useState<{ card: Card, source: string } | null>(null);
-  const [exhaustedCards, setExhaustedCards] = useState<Record<string, boolean>>({});
+  const getInitialState = <T,>(key: string, defaultValue: T): T => {
+    try {
+      const stored = localStorage.getItem(key);
+      if (stored) return JSON.parse(stored);
+    } catch {}
+    return defaultValue;
+  };
+
+  const [exhaustedCards, setExhaustedCards] = useState<Record<string, boolean>>(() => getInitialState('oc_exhaustedCards', {}));
   const [loungeTab, setLoungeTab] = useState<'Domestic' | 'International'>('Domestic');
-  const [loungePassesUsed, setLoungePassesUsed] = useState<Record<string, number>>({});
-  const [loungeMilestonesVerified, setLoungeMilestonesVerified] = useState<Record<string, boolean>>({});
-  const [offerUsage, setOfferUsage] = useState<Record<string, number>>({});
-  const [openRouterApiKey, setOpenRouterApiKey] = useState('');
+  const [loungePassesUsed, setLoungePassesUsed] = useState<Record<string, number>>(() => getInitialState('oc_loungePassesUsed', {}));
+  const [loungeMilestonesVerified, setLoungeMilestonesVerified] = useState<Record<string, boolean>>(() => getInitialState('oc_loungeMilestonesVerified', {}));
+  const [offerUsage, setOfferUsage] = useState<Record<string, number>>(() => getInitialState('oc_offerUsage', {}));
+  const [openRouterApiKey, setOpenRouterApiKey] = useState(() => getInitialState('oc_openRouterApiKey', ''));
   const [isApiModalOpen, setIsApiModalOpen] = useState(false);
   const [tempApiKey, setTempApiKey] = useState('');
-  const [kiwiNeonEarnRate, setKiwiNeonEarnRate] = useState(2);
+  const [kiwiNeonEarnRate, setKiwiNeonEarnRate] = useState(() => getInitialState('oc_kiwiNeonEarnRate', 2));
 
   const [user, setUser] = useState<User | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
@@ -166,11 +174,15 @@ export default function App() {
 
   useEffect(() => {
     if (!user) {
-      setExhaustedCards({});
-      setLoungePassesUsed({});
-      setLoungeMilestonesVerified({});
-      setOfferUsage({});
-      setOpenRouterApiKey('');
+      // Load from localStorage if not signed in
+      skipSyncRef.current = true;
+      setExhaustedCards(getInitialState('oc_exhaustedCards', {}));
+      setLoungePassesUsed(getInitialState('oc_loungePassesUsed', {}));
+      setLoungeMilestonesVerified(getInitialState('oc_loungeMilestonesVerified', {}));
+      setOfferUsage(getInitialState('oc_offerUsage', {}));
+      setOpenRouterApiKey(getInitialState('oc_openRouterApiKey', ''));
+      setKiwiNeonEarnRate(getInitialState('oc_kiwiNeonEarnRate', 2));
+      setTimeout(() => { skipSyncRef.current = false; setIsDataLoaded(true); }, 100);
       return;
     }
 
@@ -194,7 +206,6 @@ export default function App() {
         try {
           handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
         } catch (e) {
-          // Prevent re-throw from crashing the app
           console.warn('Sync failed, continuing with local state.');
         }
       } finally {
@@ -235,10 +246,18 @@ export default function App() {
   };
 
   useEffect(() => {
+    // Save to localStorage regardless of user status
+    localStorage.setItem('oc_exhaustedCards', JSON.stringify(exhaustedCards));
+    localStorage.setItem('oc_loungePassesUsed', JSON.stringify(loungePassesUsed));
+    localStorage.setItem('oc_loungeMilestonesVerified', JSON.stringify(loungeMilestonesVerified));
+    localStorage.setItem('oc_offerUsage', JSON.stringify(offerUsage));
+    localStorage.setItem('oc_openRouterApiKey', JSON.stringify(openRouterApiKey));
+    localStorage.setItem('oc_kiwiNeonEarnRate', JSON.stringify(kiwiNeonEarnRate));
+
     if (isDataLoaded && !skipSyncRef.current) {
       setIsDirty(true);
     }
-  }, [exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, openRouterApiKey, kiwiNeonEarnRate]);
+  }, [exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, openRouterApiKey, kiwiNeonEarnRate, isDataLoaded]);
 
   useEffect(() => {
     if (!user || isAuthLoading || !isDataLoaded || skipSyncRef.current || !isDirty || isSyncing) return;
@@ -493,18 +512,27 @@ export default function App() {
               </div>
             </div>
           ) : (
-            <button
-              onClick={handleLogin}
-              className="flex items-center gap-2 bg-white text-gray-700 px-4 py-2 border border-gray-200 rounded-full font-semibold text-sm hover:bg-gray-50 transition-colors shadow-sm"
-            >
-              <svg className="w-4 h-4" viewBox="0 0 24 24">
-                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-              </svg>
-              Sign In
-            </button>
+            <div className="flex items-center gap-4">
+              <div className="hidden sm:flex flex-col items-end">
+                <span className="text-sm font-bold text-gray-900">Guest</span>
+                <div className="flex items-center gap-1 text-[10px] uppercase font-bold tracking-widest text-gray-400">
+                  <div className="w-1.5 h-1.5 rounded-full bg-gray-400" />
+                  Local
+                </div>
+              </div>
+              <button
+                onClick={handleLogin}
+                className="flex items-center gap-2 bg-white text-gray-700 px-4 py-2 border border-gray-200 rounded-full font-semibold text-sm hover:bg-gray-50 transition-colors shadow-sm"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+                </svg>
+                Sign In
+              </button>
+            </div>
           )}
         </div>
       </header>
