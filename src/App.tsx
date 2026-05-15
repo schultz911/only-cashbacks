@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Search, History, Plane, Loader2, Sparkles, Globe, Wallet, QrCode, X, ChevronDown, Check, UserCircle, LogOut, AlertCircle, Ticket, Tag, CreditCard, Info, RefreshCw, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { categorizeMerchant } from './services/gemini';
@@ -121,6 +121,9 @@ export default function App() {
   const [isLoungeOpen, setIsLoungeOpen] = useState(false);
   const [showOffersOverlay, setShowOffersOverlay] = useState(false);
   const [selectedCardForDetails, setSelectedCardForDetails] = useState<{ card: Card, source: string } | null>(null);
+
+  const activeCards = useMemo(() => CARD_DATA.filter(c => !c.isDummy), []);
+  const loungeCardsCount = useMemo(() => activeCards.filter(c => c.benefits.some(b => b.type === 'lounge')).length, [activeCards]);
   const getInitialState = <T,>(key: string, defaultValue: T): T => {
     try {
       const stored = localStorage.getItem(key);
@@ -855,7 +858,7 @@ export default function App() {
                     <h4 className="text-lg font-bold tracking-wide">Lounge Tracker</h4>
                   </div>
                   <p className="text-xs text-gray-300 leading-relaxed">
-                    You have {CARD_DATA.filter(c => !c.isDummy && c.benefits.some(b => b.type === 'lounge')).length} cards with tracking for lounge access.
+                    You have {loungeCardsCount} cards with tracking for lounge access.
                   </p>
                 </div>
                 <button onClick={() => setIsLoungeOpen(true)} className="relative z-10 bg-white/10 hover:bg-white/20 border border-white/10 text-white text-xs font-bold px-5 py-2.5 rounded-full mt-4 sm:mt-0 backdrop-blur-sm transition-all w-fit shrink-0">View Passes</button>
@@ -872,7 +875,7 @@ export default function App() {
               <History className="w-5 h-5 text-gray-500" />
               My Cards
             </h3>
-            <span className="text-sm text-blue-600 font-semibold bg-blue-50 px-3 py-1.5 rounded-full">{CARD_DATA.filter(c => !c.isDummy).length} Active Cards</span>
+            <span className="text-sm text-blue-600 font-semibold bg-blue-50 px-3 py-1.5 rounded-full">{activeCards.length} Active Cards</span>
           </div>
 
           {/* We turn this into a horizontal scrolling container with a fade mask on the edges if there's overflow, or just a nice grid */}
@@ -880,7 +883,7 @@ export default function App() {
             <div className="absolute top-0 left-0 bottom-0 w-0.5 bg-gradient-to-r from-[#F5F5F7] to-transparent z-10 pointer-events-none sm:hidden"></div>
             <div className="absolute top-0 right-0 bottom-0 w-0.5 bg-gradient-to-l from-[#F5F5F7] to-transparent z-10 pointer-events-none sm:hidden"></div>
             <div className="flex sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 overflow-x-auto pt-8 pb-4 px-1 snap-x scrollbar-hide">
-              {CARD_DATA.filter(c => !c.isDummy).map((card) => (
+              {activeCards.map((card) => (
                 <div key={card.id} className={cn("snap-start shrink-0 w-72 sm:w-auto transition-opacity duration-200", selectedCardForDetails?.card.id === card.id ? "opacity-0 pointer-events-none" : "opacity-100")}>
                   <CardItem layoutId={`card-list-${card.id}`} card={card} onClick={() => setSelectedCardForDetails({ card, source: 'list' })} className="h-full shadow-sm hover:shadow-md transition-shadow cursor-pointer" isExhausted={exhaustedCards[card.id]} />
                 </div>
@@ -1154,7 +1157,7 @@ export default function App() {
                 </div>
 
                 <div className="flex-1 overflow-y-auto flex flex-col gap-3 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent pb-10">
-                  {CARD_DATA.filter(c => !c.isDummy)
+                  {activeCards
                     .filter(c => c.benefits.some(b => b.type === 'lounge' && b.category === loungeTab))
                     .map((card: any) => {
                       const b = card.benefits.find((x: any) => x.type === 'lounge' && x.category === loungeTab)!;
@@ -1203,7 +1206,7 @@ export default function App() {
                       />
                     ))
                   }
-                  {CARD_DATA.filter(c => c.benefits.some(b => b.type === 'lounge' && b.category === loungeTab)).length === 0 && (
+                  {activeCards.filter(c => c.benefits.some(b => b.type === 'lounge' && b.category === loungeTab)).length === 0 && (
                     <div className="text-sm text-gray-400 py-4 text-center">No {loungeTab.toLowerCase()} lounge cards</div>
                   )}
                 </div>
