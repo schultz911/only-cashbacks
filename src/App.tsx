@@ -299,7 +299,7 @@ export default function App() {
 
     setLoading(true);
     try {
-      const info = await categorizeMerchant(query, openRouterApiKey);
+      const info = await categorizeMerchant(query, openRouterApiKey || undefined);
       const rec = getRecommendations(info, effectiveAmount, isOnline, isIntl, !isOnline && isScanToPay, exhaustedCards, offerUsage, kiwiNeonEarnRate);
       setRecommendation(rec);
       setHistory(prev => [info, ...prev.slice(0, 4)]);
