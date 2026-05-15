@@ -1,33 +1,8 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // 0. Global Safety Net
-    match /{document=**} {
-      allow read, write: if false;
-    }
-
-    // Primitives
-    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_-]+$'); }
-    function incoming() { return request.resource.data; }
-    function existing() { return resource.data; }
-    function isSignedIn() { return request.auth != null; }
-
-    // Validation
-    function isValidUserProfile(data) {
-      let validUserId = data.userId is string && data.userId == request.auth.uid;
-      let validExhaustedCards = !('exhaustedCards' in data) || data.exhaustedCards is map;
-      let validLoungePassesUsed = !('loungePassesUsed' in data) || data.loungePassesUsed is map;
-      let validLoungeMilestonesVerified = !('loungeMilestonesVerified' in data) || data.loungeMilestonesVerified is map;
-      let validOfferUsage = !('offerUsage' in data) || data.offerUsage is map;
-      let validApiKey = !('openRouterApiKey' in data) || data.openRouterApiKey is string;
-      let validKiwiNeonEarnRate = !('kiwiNeonEarnRate' in data) || data.kiwiNeonEarnRate is number;
-      let validUpdatedAt = !('updatedAt' in data) || data.updatedAt is number;
-      
-      return validUserId && validExhaustedCards && validLoungePassesUsed && validLoungeMilestonesVerified && validOfferUsage && validApiKey && validKiwiNeonEarnRate && validUpdatedAt;
-    }
-
     match /users/{userId} {
-      allow read, write: if isSignedIn() && request.auth.uid == userId;
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
   }
 }

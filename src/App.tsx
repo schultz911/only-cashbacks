@@ -135,10 +135,13 @@ export default function App() {
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const skipSyncRef = useRef(false);
 
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setIsAuthLoading(false);
+      if (!currentUser) setIsDataLoaded(false);
     });
     return () => unsubscribe();
   }, []);
@@ -154,28 +157,33 @@ export default function App() {
       return;
     }
 
-    const docRef = doc(db, 'users', user.uid);
-    const unsubscribe = onSnapshot(docRef, (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        skipSyncRef.current = true;
-        setExhaustedCards(data.exhaustedCards || {});
-        setLoungePassesUsed(data.loungePassesUsed || {});
-        setLoungeMilestonesVerified(data.loungeMilestonesVerified || {});
-        setOfferUsage(data.offerUsage || {});
-        setOpenRouterApiKey(data.openRouterApiKey || '');
-        setKiwiNeonEarnRate(data.kiwiNeonEarnRate || 2);
-        setTimeout(() => { skipSyncRef.current = false; }, 100);
+    const loadData = async () => {
+      try {
+        const docRef = doc(db, 'users', user.uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          skipSyncRef.current = true;
+          setExhaustedCards(data.exhaustedCards || {});
+          setLoungePassesUsed(data.loungePassesUsed || {});
+          setLoungeMilestonesVerified(data.loungeMilestonesVerified || {});
+          setOfferUsage(data.offerUsage || {});
+          setOpenRouterApiKey(data.openRouterApiKey || '');
+          setKiwiNeonEarnRate(data.kiwiNeonEarnRate || 2);
+          setTimeout(() => { skipSyncRef.current = false; }, 100);
+        }
+      } catch (error) {
+        handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
+      } finally {
+        setIsDataLoaded(true);
       }
-    }, (error) => {
-      handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
-    });
-
-    return () => unsubscribe();
+    };
+    
+    loadData();
   }, [user]);
 
   useEffect(() => {
-    if (!user || isAuthLoading || skipSyncRef.current) return;
+    if (!user || isAuthLoading || !isDataLoaded || skipSyncRef.current) return;
 
     const saveData = async () => {
       try {
