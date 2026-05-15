@@ -8,44 +8,20 @@ dotenv.config();
 
 async function startServer() {
   const app = express();
-  const PORT = Number(process.env.PORT) || 3000;
+  const PORT = 3000;
 
   app.use(express.json());
 
-  // Health check for debugging Render deployments
-  app.get("/api/health", (req, res) => {
-    res.json({
-      status: "running",
-      hasApiKey: !!process.env.OPENROUTER_API_KEY,
-      nodeEnv: process.env.NODE_ENV,
-      port: PORT
-    });
-  });
-
   // API Route for categorization
   app.post("/api/categorize", async (req, res) => {
-    console.log("--- Categorization Request Received ---");
     try {
-      const { merchantName, apiKey } = req.body;
-      console.log(`Merchant: "${merchantName}", Custom API Key: ${!!apiKey}`);
-
-      const authKey = apiKey || process.env.OPENROUTER_API_KEY;
-      if (!authKey) {
-        console.error("No API key available.");
-        return res.status(401).json({ error: "API key required. Provide one in UI or set OPENROUTER_API_KEY on server." });
-      }
+      const { merchantName } = req.body;
 
       const openrouter = new OpenRouter({
-        apiKey: authKey,
+        apiKey: process.env.OPENROUTER_API_KEY,
       });
 
-      if (!process.env.OPENROUTER_API_KEY) {
-        console.warn("WARNING: OPENROUTER_API_KEY is not set in process.env");
-      }
-
-      console.log("Calling OpenRouter API via SDK...");
-      
-      const response = await (openrouter.chat.send as any)({
+      const response = await openrouter.chat.send({
         chatRequest: {
           model: "openrouter/auto", // Use openrouter/auto as requested
           temperature: 0, // Deterministic output for categorization
@@ -79,12 +55,10 @@ Output strictly a JSON object matching this TypeScript interface:
         }
       });
 
-      console.log("OpenRouter Response Received.");
-      const content = (response as any).choices?.[0]?.message?.content || (response as any).content || "{}";
-      const result = JSON.parse(content);
+      const result = JSON.parse(response.choices[0]?.message?.content || "{}");
       res.json(result);
     } catch (error) {
-      console.error("Server-side Error during categorization:", error);
+      console.error("OpenRouter API Error:", error);
       res.status(500).json({ error: "Failed to categorize merchant" });
     }
   });
