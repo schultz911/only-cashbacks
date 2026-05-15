@@ -10,7 +10,7 @@ OnlyCashbacks is a smart web application that helps you maximize credit card rew
 - **Advanced Forex Precision**: Real-time exchange rate calculations including 18% GST on markup fees, ensuring 100% accuracy for international spend decisions.
 - **Lounge Tracker**: Comprehensive domestic and international lounge pass tracking with automated spend-milestone monitoring.
 - **Online vs Offline (Scan & Pay)**: Context-aware logic that adapts recommendations based on the transaction medium (Direct Online vs. UPI Scan & Pay).
-- **Voucher Portals**: Seamless integration with voucher platforms (Tata Neu, HDFC SmartBuy) to find hidden "reward-on-reward" hacks.
+- **Voucher Portals**: Seamless integration with voucher platforms (Tata Neu, HDFC SmartBuy) to find hidden "reward-on-reward" strategies.
 - **Cloud Portfolio Sync**: Securely sync your cards, usage limits, and personalized settings across all devices using Firebase.
 
 ## Technology Stack

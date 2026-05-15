@@ -620,7 +620,7 @@ export default function App() {
                       {recommendation.voucherOption && (
                         <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-100 rounded-xl space-y-2">
                           <h4 className="text-xs font-bold uppercase text-purple-600 flex items-center gap-1">
-                            <Sparkles className="w-3 h-3" /> Smart Voucher Hack
+                            <Sparkles className="w-3 h-3" /> Smart Voucher Strategy
                           </h4>
                           <p className="text-sm text-gray-800">
                             Check <span className="font-semibold">{recommendation.voucherOption.platform}</span> for <span className="font-semibold text-green-700">{recommendation.voucherOption.discount}</span> value.
