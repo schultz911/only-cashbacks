@@ -7,7 +7,7 @@ service cloud.firestore {
     }
 
     // Primitives
-    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_-]+$'); }
     function incoming() { return request.resource.data; }
     function existing() { return resource.data; }
     function isSignedIn() { return request.auth != null; }
@@ -20,8 +20,10 @@ service cloud.firestore {
       let validLoungeMilestonesVerified = !('loungeMilestonesVerified' in data) || data.loungeMilestonesVerified is map;
       let validOfferUsage = !('offerUsage' in data) || data.offerUsage is map;
       let validApiKey = !('openRouterApiKey' in data) || data.openRouterApiKey is string;
+      let validKiwiNeonEarnRate = !('kiwiNeonEarnRate' in data) || data.kiwiNeonEarnRate is number;
+      let validUpdatedAt = !('updatedAt' in data) || data.updatedAt is number;
       
-      return validUserId && validExhaustedCards && validLoungePassesUsed && validLoungeMilestonesVerified && validOfferUsage && validApiKey;
+      return validUserId && validExhaustedCards && validLoungePassesUsed && validLoungeMilestonesVerified && validOfferUsage && validApiKey && validKiwiNeonEarnRate && validUpdatedAt;
     }
 
     match /users/{userId} {

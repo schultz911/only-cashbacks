@@ -266,6 +266,11 @@ export function getRecommendations(
             continue;
           }
 
+          const descLForOnline = `${benefit.category} ${benefit.value} ${benefit.description || ''}`.toLowerCase();
+          if (!isOnline && descLForOnline.includes('online') && !descLForOnline.includes('offline')) {
+            continue;
+          }
+
           if (benefit.type === 'offer') {
             const descL = benefit.description.toLowerCase();
             const valLower = benefit.value.toLowerCase();
