@@ -247,6 +247,7 @@ export function getRecommendations(
         const searchedDiningPlat = diningPlatforms.find(p => nameL.includes(p) || (platL && platL.includes(p)));
 
         for (const benefit of card.benefits) {
+          if (benefit.type === 'exclusion' || benefit.type === 'lounge' || (benefit.type as any) === 'milestone') continue;
           let matchScore = -1;
 
           const usageKey = `${card.id}-${benefit.category}-${benefit.value}`;

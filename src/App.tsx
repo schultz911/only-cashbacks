@@ -202,7 +202,7 @@ export default function App() {
       await signInWithPopup(auth, googleProvider);
     } catch (error: any) {
       console.error('Login error with popup:', error);
-      if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+      if (error.code) {
         try {
           await signInWithRedirect(auth, googleProvider);
         } catch (redirectError) {
