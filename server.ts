@@ -2,6 +2,7 @@ import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import { OpenRouter } from "@openrouter/sdk";
+import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -16,27 +17,17 @@ async function startServer() {
   app.post("/api/categorize", async (req, res) => {
     console.log("--- Categorization Request Received ---");
     try {
-      const { merchantName } = req.body;
+      const { merchantName, apiKey } = req.body;
       console.log(`Merchant to categorize: "${merchantName}"`);
 
-      const openrouter = new OpenRouter({
-        apiKey: process.env.OPENROUTER_API_KEY,
-      });
+      // Determine which API to use
+      const userOpenRouterKey = apiKey;
+      const envOpenRouterKey = process.env.OPENROUTER_API_KEY;
+      const envGeminiKey = process.env.GEMINI_API_KEY;
+      
+      const effectiveOpenRouterKey = userOpenRouterKey || envOpenRouterKey;
 
-      if (!process.env.OPENROUTER_API_KEY) {
-        console.warn("WARNING: OPENROUTER_API_KEY is not set in process.env");
-      }
-
-      console.log("Calling OpenRouter API via SDK...");
-      const response = await (openrouter.chat.send as any)({
-        chatRequest: {
-          model: "openrouter/auto", // Use openrouter/auto as requested
-          temperature: 0, // Deterministic output for categorization
-          responseFormat: { type: "json_object" },
-          messages: [
-            {
-              role: "system",
-              content: `Analyze this transaction destination and categorize it. 
+      const systemPrompt = `Analyze this transaction destination and categorize it. 
 Return the broad category (Food, Grocery, E-commerce, Fuel, Travel, Utilities, Dining, Gaming, Entertainment, etc.).
 Determine if it is online or offline.
 Also flag if it seems to be a personal P2P UPI payment (like paying a friend, a person's name) versus a business/merchant.
@@ -52,18 +43,45 @@ Output strictly a JSON object matching this TypeScript interface:
   isOnline: boolean;
   isP2P: boolean;
   platform?: string;
-}`
-            },
-            {
-              role: "user",
-              content: merchantName
-            }
-          ]
-        }
-      });
+}`;
 
-      console.log("OpenRouter Response Received.");
-      const result = JSON.parse(response.choices[0]?.message?.content || "{}");
+      let result = null;
+
+      if (effectiveOpenRouterKey) {
+        console.log("Calling OpenRouter API via SDK...");
+        const openrouter = new OpenRouter({ apiKey: effectiveOpenRouterKey });
+        const response = await (openrouter.chat.send as any)({
+          chatRequest: {
+            model: "google/gemini-2.0-flash-lite-001",
+            temperature: 0,
+            responseFormat: { type: "json_object" },
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: merchantName }
+            ]
+          }
+        });
+        console.log("OpenRouter Response Received.");
+        result = JSON.parse(response.choices[0]?.message?.content || "{}");
+      } else if (envGeminiKey) {
+        console.log("Calling Google Gemini Environment API...");
+        const ai = new GoogleGenAI({ apiKey: envGeminiKey });
+        const response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents: merchantName,
+          config: {
+            systemInstruction: systemPrompt,
+            temperature: 0,
+            responseMimeType: "application/json"
+          }
+        });
+        console.log("Gemini Response Received.");
+        result = JSON.parse(response.text || "{}");
+      } else {
+        console.warn("No valid API Key found (User Input APIs or Environment API).");
+        return res.status(400).json({ error: "API Key is required" });
+      }
+
       res.json(result);
     } catch (error) {
       console.error("Server-side Error during categorization:", error);

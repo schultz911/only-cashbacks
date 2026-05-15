@@ -131,67 +131,26 @@ function categorizeLocal(merchantName: string): MerchantInfo | null {
 export async function categorizeMerchant(merchantName: string, apiKey?: string): Promise<MerchantInfo> {
   if (!merchantName) throw new Error("Merchant name is required");
 
-  // On a Static Site, we must call the API directly from the frontend.
-  // Use the provided apiKey (from UI) or a baked-in env var if available.
-  const effectiveKey = apiKey || ((import.meta as any).env.VITE_OPENROUTER_API_KEY as string);
+  try {
+    const response = await fetch("/api/categorize", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ merchantName, apiKey })
+    });
 
-  if (effectiveKey) {
-    try {
-      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${effectiveKey}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer": window.location.origin,
-          "X-Title": "OnlyCashbacks"
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.0-flash-lite-001",
-          temperature: 0,
-          response_format: { type: "json_object" },
-          messages: [
-            {
-              role: "system",
-              content: `Analyze this transaction destination and categorize it. 
-Return the broad category (Food, Grocery, E-commerce, Fuel, Travel, Utilities, Dining, Gaming, Entertainment, etc.).
-Determine if it is online or offline.
-Also flag if it seems to be a personal P2P UPI payment (like paying a friend, a person's name) versus a business/merchant.
-IMPORTANT PLATFORM MATCHING:
-- If it is part of the Tata ecosystem (e.g. Croma, Westside, Zudio, BigBasket, 1mg, Qmin, IHCL, Tata Cliq, Taj), set 'platform' exactly to "Tata Brands".
-- If it is part of the Swiggy ecosystem (Swiggy, Instamart, Dineout), set 'platform' to "Swiggy".
-- Otherwise, if it's a known platform (Amazon, Flipkart, Cleartrip, Nykaa, etc.), put that in 'platform'.
-
-Output strictly a JSON object matching this TypeScript interface:
-{
-  name: string;
-  category: string;
-  isOnline: boolean;
-  isP2P: boolean;
-  platform?: string;
-}`
-            },
-            {
-              role: "user",
-              content: merchantName
-            }
-          ]
-        })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const content = data.choices?.[0]?.message?.content || "{}";
-        const result = JSON.parse(content);
-        if (result && result.category) {
-          return result as MerchantInfo;
-        }
-      } else {
-        const errText = await response.text();
-        console.warn("OpenRouter API Error:", errText);
+    if (response.ok) {
+      const data = await response.json();
+      if (data && data.category) {
+        return data as MerchantInfo;
       }
-    } catch (error) {
-      console.error("OpenRouter Fetch Error:", error);
+    } else {
+      const errText = await response.text();
+      console.warn("Backend API Error:", errText);
     }
+  } catch (error) {
+    console.error("Backend API Fetch Error:", error);
   }
 
   // Fallback to local string/regex resolution if API fails or returns invalid data

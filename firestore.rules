@@ -27,10 +27,7 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow get, list: if isSignedIn() && request.auth.uid == userId && isValidId(userId);
-      allow create: if isSignedIn() && request.auth.uid == userId && isValidId(userId) && isValidUserProfile(incoming());
-      allow update: if isSignedIn() && request.auth.uid == userId && isValidId(userId) && isValidUserProfile(incoming()) && incoming().userId == existing().userId;
-      allow delete: if isSignedIn() && request.auth.uid == userId && isValidId(userId);
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
     }
   }
 }
