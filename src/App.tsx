@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
-import { Search, History, Plane, Loader2, Sparkles, Globe, Wallet, QrCode, X, ChevronDown, Check, UserCircle, LogOut, AlertCircle, Ticket, Tag, CreditCard, Info, RefreshCw } from 'lucide-react';
+import { Search, History, Plane, Loader2, Sparkles, Globe, Wallet, QrCode, X, ChevronDown, Check, UserCircle, LogOut, AlertCircle, Ticket, Tag, CreditCard, Info, RefreshCw, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { categorizeMerchant } from './services/gemini';
 import { getRecommendations } from './lib/recommendation';
@@ -15,7 +15,7 @@ import { LoungeTrackerItem } from './components/LoungeTrackerItem';
 import { cn } from './lib/utils';
 import { auth, googleProvider, db, handleFirestoreError, OperationType } from './firebase';
 import { signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut, User } from 'firebase/auth';
-import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot, deleteDoc } from 'firebase/firestore';
 
 const CustomSelect = ({ value, onChange, options, placeholder, className, dropdownClassName }: any) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -139,6 +139,20 @@ export default function App() {
   const [syncError, setSyncError] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+        setIsProfileMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -254,8 +268,38 @@ export default function App() {
   const handleLogout = async () => {
     try {
       await signOut(auth);
+      setIsProfileMenuOpen(false);
     } catch (error) {
       console.error('Logout error:', error);
+    }
+  };
+
+  const handleDeleteData = async () => {
+    if (deleteConfirmText !== 'DELETE' || !user) return;
+    
+    try {
+      const docRef = doc(db, 'users', user.uid);
+      await deleteDoc(docRef);
+      
+      // Reset local state
+      skipSyncRef.current = true;
+      setExhaustedCards({});
+      setLoungePassesUsed({});
+      setLoungeMilestonesVerified({});
+      setOfferUsage({});
+      setOpenRouterApiKey('');
+      setKiwiNeonEarnRate(2);
+      
+      setShowDeleteConfirm(false);
+      setDeleteConfirmText('');
+      setIsProfileMenuOpen(false);
+      setSyncError(null);
+      setIsDirty(false);
+      
+      setTimeout(() => { skipSyncRef.current = false; }, 500);
+    } catch (error: any) {
+      console.error('Error deleting data:', error);
+      alert('Failed to delete data. Please check your permissions.');
     }
   };
 
@@ -408,20 +452,45 @@ export default function App() {
                   {isSyncing ? 'Syncing...' : syncError ? 'Sync Now' : isDirty ? 'Pending Save' : 'Synced'}
                 </button>
               </div>
-              <button
-                onClick={handleLogout}
-                className="w-10 h-10 rounded-full overflow-hidden border-2 border-white shadow-sm ring-2 ring-gray-100 hover:ring-blue-100 transition-all flex items-center justify-center bg-gray-50 text-gray-500 group relative"
-                title="Logout"
-              >
-                {user.photoURL ? (
-                  <>
-                    <img src={user.photoURL} alt={user.displayName || 'User'} className="w-full h-full object-cover group-hover:opacity-10 transition-opacity" />
-                    <LogOut className="w-5 h-5 absolute inset-0 m-auto opacity-0 group-hover:opacity-100 text-gray-900 transition-opacity" />
-                  </>
-                ) : (
-                  <LogOut className="w-5 h-5" />
-                )}
-              </button>
+              <div className="relative" ref={profileMenuRef}>
+                <button
+                  onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                  className="w-10 h-10 rounded-full overflow-hidden border-2 border-white shadow-sm ring-2 ring-gray-100 hover:ring-blue-100 transition-all flex items-center justify-center bg-gray-50 text-gray-500"
+                >
+                  {user.photoURL ? (
+                    <img src={user.photoURL} alt={user.displayName || 'User'} className="w-full h-full object-cover" />
+                  ) : (
+                    <UserCircle className="w-6 h-6" />
+                  )}
+                </button>
+
+                <AnimatePresence>
+                  {isProfileMenuOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      className="absolute right-0 mt-2 w-48 bg-white/90 backdrop-blur-xl border border-gray-100 shadow-2xl rounded-2xl overflow-hidden z-[200] py-1.5"
+                    >
+                      <button
+                        onClick={handleLogout}
+                        className="w-full px-4 py-2 text-left text-sm font-semibold text-gray-700 hover:bg-gray-50 flex items-center gap-3 transition-colors"
+                      >
+                        <LogOut className="w-4 h-4 text-gray-400" />
+                        Sign Out
+                      </button>
+                      <div className="h-px bg-gray-100 my-1" />
+                      <button
+                        onClick={() => setShowDeleteConfirm(true)}
+                        className="w-full px-4 py-2 text-left text-sm font-semibold text-red-600 hover:bg-red-50 flex items-center gap-3 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Delete all data
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
           ) : (
             <button
@@ -1269,6 +1338,70 @@ export default function App() {
                     className="flex-1 px-4 py-3 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors"
                   >
                     Save Key
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showDeleteConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              className="bg-white rounded-[2.5rem] p-8 w-full max-w-md shadow-2xl relative border border-red-100"
+            >
+              <button 
+                onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmText(''); }} 
+                className="absolute top-6 right-6 p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              
+              <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mb-6">
+                <Trash2 className="w-8 h-8 text-red-600" />
+              </div>
+
+              <h2 className="text-2xl font-black text-gray-900 mb-2 tracking-tight">Delete all data?</h2>
+              <p className="text-sm text-gray-500 mb-8 font-medium leading-relaxed">
+                This action is <span className="text-red-600 font-bold">permanent</span> and cannot be undone. All your card tracking, lounge passes, and settings will be wiped from our database.
+              </p>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="block text-xs font-black uppercase tracking-widest text-gray-400">Type <span className="text-red-600">DELETE</span> to confirm</label>
+                  <input
+                    type="text"
+                    value={deleteConfirmText}
+                    onChange={(e) => setDeleteConfirmText(e.target.value)}
+                    placeholder="Type DELETE..."
+                    className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-4 py-4 outline-none focus:ring-2 ring-red-500 transition-all font-bold text-gray-900"
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmText(''); }}
+                    className="flex-1 px-4 py-4 rounded-2xl border border-gray-200 font-bold text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    Keep Data
+                  </button>
+                  <button
+                    disabled={deleteConfirmText !== 'DELETE'}
+                    onClick={handleDeleteData}
+                    className="flex-1 px-4 py-4 rounded-2xl bg-red-600 text-white font-bold hover:bg-red-700 transition-colors disabled:opacity-30 disabled:grayscale shadow-lg shadow-red-600/20"
+                  >
+                    Delete Forever
                   </button>
                 </div>
               </div>
