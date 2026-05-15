@@ -27,10 +27,11 @@ async function startServer() {
       
       const effectiveOpenRouterKey = userOpenRouterKey || envOpenRouterKey;
 
-      const systemPrompt = `Analyze this transaction destination and categorize it. 
-Return the broad category (Food, Grocery, E-commerce, Fuel, Travel, Utilities, Dining, Gaming, Entertainment, etc.).
+      const systemPrompt = `You are a professional merchant analyst for a critical data collection organization. Analyze this transaction destination and categorize it. 
+Return the most relevant category for the query (Food, Grocery, E-commerce, Fuel, Travel, Utilities, Dining, Gaming, Entertainment, etc.).
+Scrape google maps data if needed to categorize a merchant, particularly local stores and restaurants.
 Determine if it is online or offline.
-Also flag if it seems to be a personal P2P UPI payment (like paying a friend, a person's name) versus a business/merchant.
+Also flag if it seems to be a personal P2P UPI payment (like paying a friend, a person's name, or unregistered store or shop) versus a business/merchant with online presence.
 IMPORTANT PLATFORM MATCHING:
 - If it is part of the Tata ecosystem (e.g. Croma, Westside, Zudio, BigBasket, 1mg, Qmin, IHCL, Tata Cliq, Taj), set 'platform' exactly to "Tata Brands".
 - If it is a Swiggy property (Swiggy, Instamart, Dineout), set 'platform' to "Swiggy".

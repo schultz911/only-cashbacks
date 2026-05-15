@@ -7,13 +7,13 @@ import { MerchantInfo } from "../types";
 
 const EXHAUSTIVE_MERCHANT_MAPPINGS = [
   // Swiggy & Zomato Ecosystem
-  { pattern: /swiggy|toing|dineout/i, category: "Food Delivery", isOnline: true, isP2P: false, platform: "Swiggy" },
-  { pattern: /zomato|bistro|blinkit/i, category: "Food Delivery", isOnline: true, isP2P: false, platform: "Zomato" },
+  { pattern: /swiggy|toing/i, category: "Food Delivery", isOnline: true, isP2P: false, platform: "Swiggy" },
+  { pattern: /zomato|bistro/i, category: "Food Delivery", isOnline: true, isP2P: false, platform: "Zomato" },
   { pattern: /zepto ?cafe|eatsure|fresh ?menu|box8|eat ?club|uber ?eats/i, category: "Food Delivery", isOnline: true, isP2P: false },
 
   // Quick Commerce & Grocery
   { pattern: /zepto/i, category: "Grocery", isOnline: true, isP2P: false, platform: "Zepto" },
-  { pattern: /big ?basket|jio ?mart|nature.?s basket|supermart|amazon fresh|dunzo|insta ?mart|getir|flink|jokr/i, category: "Grocery", isOnline: true, isP2P: false },
+  { pattern: /big ?basket|bbnow|jio ?mart|nature.?s basket|first ?club|supermart|grocery|groceries|amazon fresh|flipkart grocery|dmart ready|dunzo|insta ?mart|getir|flink|jokr/i, category: "Grocery", isOnline: true, isP2P: false },
   { pattern: /d ?mart|star ?bazaar|spencers|more|supermarket|grocery|groceries|kirana|provisions|convenience|general|household|produce|retail|outlet|mart/i, category: "Grocery", isOnline: false, isP2P: false },
 
   // D2C Food, Beverage & Meat
@@ -40,9 +40,9 @@ const EXHAUSTIVE_MERCHANT_MAPPINGS = [
   // Travel, Hotels & Transport
   { pattern: /cleartrip|makemytrip|redbus|abhibus|mmt|yatra|goibibo|ixigo|agoda|booking\.com|booking|easemytrip|airbnb|travel|tour|trip|holiday|vacation/i, category: "Travel", isOnline: true, isP2P: false },
   { pattern: /irctc|indian railway|rail|railway|train|railway ticket|vande bharat|tejas|gatimaan|shatabdi|rajdhani|duronto|suyodhan|tejas express|tejas rajdhani|tejas shatabdi|tejas duronto/i, category: "Rail", isOnline: true, isP2P: false },
-  { pattern: /uber|ola|olacabs|rapido|namma yatri|cab|taxi|auto|commute|transport/i, category: "Commute", isOnline: true, isP2P: false },
+  { pattern: /uber|ola|olacabs|rapido|namma yatri|cab|taxi|auto|commute|transport|drive ?u/i, category: "Commute", isOnline: true, isP2P: false },
   { pattern: /flight|airways|airlines|indigo|spicejet|air india|vistara|akasa|aviation/i, category: "Flights", isOnline: true, isP2P: false },
-  { pattern: /hotel|resort|club mahindra|radisson|lemon tree|oyorooms|airbnb|stay|accommodation|lodging/i, category: "Hotel", isOnline: false, isP2P: false },
+  { pattern: /hotel|resort|club mahindra|marriott|mariott|marriot|radisson|ibis|sheraton|hilton|hyatt|novotel|lemon tree|oyorooms|airbnb|stay|accommodation|lodging/i, category: "Hotel", isOnline: false, isP2P: false },
   { pattern: /taj|ihcl/i, category: "Hotel", isOnline: false, isP2P: false, platform: "Tata" },
 
   // Entertainment, OTT & Events
@@ -58,9 +58,9 @@ const EXHAUSTIVE_MERCHANT_MAPPINGS = [
   { pattern: /scooboo|stationery|book|pen|paper|office supply/i, category: "Shopping", isOnline: true, isP2P: false },
 
   // Software, VPNs & Cloud
-  { pattern: /nordvpn|surfshark|expressvpn|proton vpn|mullvad|cyberghost/i, category: "Software", isOnline: true, isP2P: false },
-  { pattern: /microsoft onedrive|pcloud|sync\.com|icedrive|aws|azure|google cloud|iha cloud/i, category: "Software", isOnline: true, isP2P: false },
-  { pattern: /google|google play|youtube premium|google storage|play store|android store/i, category: "App Store", isOnline: true, isP2P: false, platform: "Google Play" },
+  { pattern: /nordvpn|surfshark|eset|bitdefender|norton|adguard|expressvpn|proton vpn|mullvad|cyberghost/i, category: "Software", isOnline: true, isP2P: false },
+  { pattern: /microsoft onedrive|pcloud|sync\.com|icedrive|aws|azure|google cloud|claude|openai|chatgpt|grok|gpt|ai|iha cloud/i, category: "Software", isOnline: true, isP2P: false },
+  { pattern: /google|google play|youtube premium|google storage|play store|android store|gemini/i, category: "App Store", isOnline: true, isP2P: false, platform: "Google Play" },
   { pattern: /apple|icloud|app store|itunes|mac store/i, category: "App Store", isOnline: true, isP2P: false, platform: "Apple" },
 
   // Home Services & Utility
@@ -76,19 +76,19 @@ const EXHAUSTIVE_MERCHANT_MAPPINGS = [
   { pattern: /rent|housing|society|maintenance|proptech|nobroker|magicbricks|99acres/i, category: "Rent", isOnline: true, isP2P: false },
 
   // Insurance
-  { pattern: /lic|insurance|policy|premium|hdfc life|icici pru|max life|tata aia|bajaj allianz|policybazaar/i, category: "Insurance", isOnline: true, isP2P: false },
+  { pattern: /lic|insurance|policy|premium|hdfc life|ergo|even\.in|icici pru|max life|tata aia|bajaj allianz|policybazaar|godigit|acko/i, category: "Insurance", isOnline: true, isP2P: false },
 
   // Government & Taxes
   { pattern: /tax|challan|government|municipal|bbmp|itax|income tax|gst|property tax|traffic challan/i, category: "Government", isOnline: true, isP2P: false },
 
   // Jewellery
-  { pattern: /jewel|jewelry|gold|silver|tanishq|malabar|kalyan|joyalukkas|pc jeweller|caratlane/i, category: "Jewellery", isOnline: false, isP2P: false },
+  { pattern: /jewel|jewelry|jewellery|gold|silver|platinum|diamond|mia|tanishq|malabar|kalyan|joyalukkas|pc jeweller|caratlane/i, category: "Jewellery", isOnline: false, isP2P: false },
 
   // Fuel & Gas
-  { pattern: /hpcl|hindustan petroleum|indianoil|indian oil|iocl|bharat petroleum|bpcl|shell|nayara|petrol|fuel|gas station|diesel|cng/i, category: "Fuel", isOnline: false, isP2P: false },
+  { pattern: /hpcl|hindustan petroleum|indianoil|indian oil|iocl|indane|bharat ?gas|bharat petroleum|bpcl|shell|nayara|jiobp|petrol|fuel|gas station|diesel|lpg|cng/i, category: "Fuel", isOnline: false, isP2P: false },
 
   // Dining
-  { pattern: /domino|pizza hut|eat.?sure|box8|freshmenu|magicpin|starbucks|mcdonald|kfc|burger king|haldiram|bikanervala|dining|food|meal|feast/i, category: "Dining", isOnline: true, isP2P: false },
+  { pattern: /domino|pizza.?hut|papa ?johns|mcdonald|kfc|burger.?king|subway|starbucks|faasos|behrouz|oven.?story|box8|freshmenu|eat.?sure|magicpin|haldiram|bikanervala|barbeque.?nation|cafe.?coffee.?day|ccd|chaayos|chai.?point|wow.?momo|wow.?china|taco.?bell|dunkin|krispy.?kreme|mad.?over.?donuts|baskin.?robbin|natural.?ice.?cream|giani|cream.?stone|ibaco|polar.?bear|burger.?singh|wat.?a.?burger|jumbo.?king|goli.?vada.?pav|tibbs|rolls.?mania|kathi.?junction|khan.?chacha|sagar.?ratna|saravana.?bhavan|adyar.?ananda.?bhavan|a2b|mavalli.?tiffin|mtr|paradise.?biryani|biryani.?by.?kilo|bbk|charcoal.?eats|mojo.?pizza|la.?pino|chicago.?pizza|smokin.?joe|pizza.?corner|us.?pizza|papa.?john|slay.?coffee|barista|costa.?coffee|chai.?sutta|mba.?chai|tea.?post|chocolate.?room|cookie.?man|belgian.?waffle|monginis|mio.?amore|karachi.?bakery|theobroma|glen.?s.?bakehouse|nik.?baker|flurys|keventers|drunken.?monkey|lassi.?n.?shake|frozen.?bottle|mainland.?china|asia.?seven|mamagoto|punjab.?grill|moti.?mahal|copper.?chimney|rajdhani|absolute.?barbecue|pirates.?of.?grill|sigree|oh!.?calcutta|little.?italy|cream.?centre|kailash.?parbat|bikaner.?sweets|nathu|aggarwal.?sweets|om.?sweets|kanti.?sweets|anand.?sweets|hatti.?kaapi|indian.?coffee.?house|social|farzi.?cafe|smoke.?house.?deli|chili.?s|tgi.?friday|nando|carl.?s.?jr|wendy|cinnabon|auntie.?anne|pa.?pa.?ya|yauatcha|pind.?balluchi|sankalp|sangeetha|vasudev.?adiga|nandini|empire|meghana.?food|mani.?s.?dum.?biryani|leon.?s.?burger|truffles|toscano|dining|food|meal|feast/i, category: "Dining", isOnline: true, isP2P: false },
   { pattern: /cafe|restaurant|diner|eatery|pub|bar|coffee|bistro|lounge|grill|steakhouse/i, category: "Dining", isOnline: false, isP2P: false }
 ];
 
