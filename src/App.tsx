@@ -202,7 +202,7 @@ export default function App() {
       await signInWithPopup(auth, googleProvider);
     } catch (error: any) {
       console.error('Login error with popup:', error);
-      if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+      if (error.code) {
         try {
           await signInWithRedirect(auth, googleProvider);
         } catch (redirectError) {
@@ -299,7 +299,7 @@ export default function App() {
 
     setLoading(true);
     try {
-      const info = await categorizeMerchant(query, openRouterApiKey);
+      const info = await categorizeMerchant(query, openRouterApiKey || undefined);
       const rec = getRecommendations(info, effectiveAmount, isOnline, isIntl, !isOnline && isScanToPay, exhaustedCards, offerUsage, kiwiNeonEarnRate);
       setRecommendation(rec);
       setHistory(prev => [info, ...prev.slice(0, 4)]);
