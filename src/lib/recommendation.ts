@@ -6,6 +6,14 @@
 import { Card, MerchantInfo, Recommendation } from '../types';
 import { CARD_DATA } from '../data/cards';
 
+const TATA_NEU_MERCHANTS = ['croma', 'westside', 'zudio', 'ihcl', 'bigbasket', '1mg', 'cliq', 'air india', 'air india express', 'qmin', 'cult', 'tata play', 'titan', 'tanishq', 'mia', 'fastrack', 'caratlane', 'helios', 'zoya'];
+const ALLOWED_UPI_CARDS = ['kiwi-neon', 'amazon-pay-upi', 'cred-pay-upi', 'kotak-811-infinity'];
+const ALLOWED_INTL_CARDS = ['kotak-811-infinity', 'sbi-cashback', 'niyo-dcb'];
+const DEFAULT_EXCLUSIONS = ['fuel', 'wallet', 'rent', 'housing', 'gambling', 'gaming', 'tolls', 'toll', 'finance', 'school', 'education', 'jewellery', 'insurance', 'railway', 'rail', 'government', 'tax', 'utilities', 'utility', 'bills', 'bill', 'telecom', 'internet', 'atm', 'cash', 'charity', 'donation'];
+const MOVIE_PLATFORMS = ['bookmyshow', 'bms', 'paytm insider', 'townscript', 'mera event', 'pvr', 'inox', 'cinepolis', 'movie', 'cinema', 'theatre', 'district'];
+const DINING_PLATFORMS = ['swiggy', 'toing', 'dineout', 'zomato', 'bistro', 'blinkit', 'zepto cafe', 'eatsure', 'fresh menu', 'box8', 'eat club', 'uber eats', 'domino', 'pizza hut', 'magicpin', 'starbucks', 'mcdonald', 'kfc', 'burger king', 'haldiram', 'bikanervala', 'cafe', 'restaurant', 'diner', 'eatery', 'pub', 'bar', 'coffee', 'district'];
+const SPECIFIC_PLATFORMS = ['bookmyshow', 'district', 'swiggy', 'zomato', 'dineout', 'eazydiner', 'nykaa', 'cleartrip', 'ajio', 'amazon', 'flipkart'];
+
 export function getRecommendations(
   merchant: MerchantInfo,
   amount: number,
@@ -44,8 +52,7 @@ export function getRecommendations(
   }
 
   // Tata Neu merchants
-  const tataNeuMerchants = ['croma', 'westside', 'zudio', 'ihcl', 'bigbasket', '1mg', 'cliq', 'air india', 'air india express', 'qmin', 'cult', 'tata play', 'titan', 'tanishq', 'mia', 'fastrack', 'caratlane', 'helios', 'zoya'];
-  const isTataNeuAppMerchant = tataNeuMerchants.some(tm => nameL.includes(tm) || catL.includes(tm) || platL.includes(tm));
+  const isTataNeuAppMerchant = TATA_NEU_MERCHANTS.some(tm => nameL.includes(tm) || catL.includes(tm) || platL.includes(tm));
   const isTataNeuPartnerMerchant = ['pharmacy', 'medical', 'health', 'apparel', 'clothing', 'fashion', 'electronics', 'gadgets', 'footwear', 'watches', 'accessories', 'jewelry', 'jewellery', 'hotel', 'resort', 'travel', 'luxury'].some(k => nameL.includes(k));
 
   const calculationResults = CARD_DATA.map(card => {
@@ -56,8 +63,7 @@ export function getRecommendations(
     let cardToUse = { ...card };
 
     if (isScanToPay) {
-      const allowedUpiCards = ['kiwi-neon', 'amazon-pay-upi', 'cred-pay-upi', 'kotak-811-infinity'];
-      if (!allowedUpiCards.includes(card.id)) {
+      if (!ALLOWED_UPI_CARDS.includes(card.id)) {
         isExcluded = true;
         benefitText = "Not a Scan & Pay option";
       }
@@ -67,17 +73,14 @@ export function getRecommendations(
     }
 
     if (isIntl) {
-      const allowedIntlCards = ['kotak-811-infinity', 'sbi-cashback', 'niyo-dcb'];
-      if (!allowedIntlCards.includes(card.id)) {
+      if (!ALLOWED_INTL_CARDS.includes(card.id)) {
         isExcluded = true;
         benefitText = "Not optimized for International spend";
       }
     }
 
-    const defaultExclusions = ['fuel', 'wallet', 'rent', 'housing', 'gambling', 'gaming', 'tolls', 'toll', 'finance', 'school', 'education', 'jewellery', 'insurance', 'railway', 'rail', 'government', 'tax', 'utilities', 'utility', 'bills', 'bill', 'telecom', 'internet', 'atm', 'cash', 'charity', 'donation'];
-
     if (card.type === 'Credit' || card.type === 'Debit') {
-      const isExcludedCat = defaultExclusions.find(ex => catL.includes(ex) || nameL.includes(ex) || platL.includes(ex));
+      const isExcludedCat = DEFAULT_EXCLUSIONS.find(ex => catL.includes(ex) || nameL.includes(ex) || platL.includes(ex));
       if (isExcludedCat) {
         isExcluded = true;
         benefitText = `Excluded category (${isExcludedCat})`;
@@ -212,6 +215,15 @@ export function getRecommendations(
     } else if (card.id === 'kotak-811-infinity' && isScanToPay) {
       cashbackAmount = 3;
       benefitText = 'Mystery Cashback on Scan & Pay';
+    } else if (card.id === 'sbi-cashback') {
+      if (isOnline) {
+        const eligible = Math.min(amount, 40000);
+        cashbackAmount = eligible * 0.05;
+        benefitText = '5% Cashback';
+      } else {
+        cashbackAmount = amount * 0.01;
+        benefitText = '1% Base Rewards';
+      }
     } else if (card.id === 'kotak-811-infinity' && !isScanToPay) {
       // Special logic for Kotak 811 offers + cashback
       const movieUsed = offerUsage['kotak-811-infinity-Movies-BMS'] || 0;
@@ -220,12 +232,12 @@ export function getRecommendations(
       if (isIntl) {
         cashbackAmount = Math.min(amount * 0.05, 100);
         benefitText = '5% Cashback';
-      } else if (isMovie && movieUsed < 1) {
+      } else if (isMovie && isOnline && movieUsed < 1) {
         discountAmount = Math.min(amount * 0.5, 300);
         const remaining = amount - discountAmount;
         cashbackAmount = discountAmount + Math.min(remaining * 0.05, 100);
         benefitText = '1+1 Movie on BookMyShow + 5% Cashback';
-      } else if ((isDining || nameL.includes('district')) && diningUsed < 1) {
+      } else if ((isDining || nameL.includes('district')) && isOnline && diningUsed < 1) {
         discountAmount = Math.min(amount * 0.15, 500); // Assuming 15% up to 500 for District
         const remaining = amount - discountAmount;
         cashbackAmount = discountAmount + Math.min(remaining * 0.05, 100);
@@ -237,14 +249,12 @@ export function getRecommendations(
     } else {
       let matchedBenefitValue = -1;
       let usedBenefit = null;
-      
+
       if (isExcluded) {
         // Skip benefit matching for excluded cards
       } else {
-        const moviePlatforms = ['bookmyshow', 'bms', 'paytm insider', 'townscript', 'mera event', 'pvr', 'inox', 'cinepolis', 'movie', 'cinema', 'theatre', 'district'];
-        const diningPlatforms = ['swiggy', 'toing', 'dineout', 'zomato', 'bistro', 'blinkit', 'zepto cafe', 'eatsure', 'fresh menu', 'box8', 'eat club', 'uber eats', 'domino', 'pizza hut', 'magicpin', 'starbucks', 'mcdonald', 'kfc', 'burger king', 'haldiram', 'bikanervala', 'cafe', 'restaurant', 'diner', 'eatery', 'pub', 'bar', 'coffee', 'district'];
-        const searchedMoviePlat = moviePlatforms.find(p => nameL.includes(p) || (platL && platL.includes(p)));
-        const searchedDiningPlat = diningPlatforms.find(p => nameL.includes(p) || (platL && platL.includes(p)));
+        const searchedMoviePlat = MOVIE_PLATFORMS.find(p => nameL.includes(p) || (platL && platL.includes(p)));
+        const searchedDiningPlat = DINING_PLATFORMS.find(p => nameL.includes(p) || (platL && platL.includes(p)));
 
         for (const benefit of card.benefits) {
           if (benefit.type === 'exclusion' || benefit.type === 'lounge' || (benefit.type as any) === 'milestone') continue;
@@ -263,9 +273,8 @@ export function getRecommendations(
             const isDiningOffer = benefit.category.toLowerCase().includes('dining') || benefit.category.toLowerCase().includes('swiggy') || benefit.category.toLowerCase().includes('zomato');
 
             let skip = false;
-            const specificPlatforms = ['bookmyshow', 'district', 'swiggy', 'zomato', 'dineout', 'eazydiner', 'nykaa', 'cleartrip', 'ajio'];
 
-            for (const plat of specificPlatforms) {
+            for (const plat of SPECIFIC_PLATFORMS) {
               if (descL.includes(plat) || valLower.includes(plat)) {
                 if (!nameL.includes(plat) && !(platL && platL.includes(plat))) {
                   skip = true;
@@ -457,7 +466,7 @@ export function getRecommendations(
 
   const availableOffers: { id: string; icon: string; title: string; description: string; cardId?: string; category: string; }[] = [];
 
-  if (isMovie) {
+  if (isMovie && isOnline) {
     if ((offerUsage['kotak-811-infinity-Movies-BMS'] || 0) < 1) {
       availableOffers.push({ id: 'k-bms', icon: '🎬', title: 'Kotak 811', description: 'Buy 1 Get 1 Ticket up to ₹300', category: 'BMS', cardId: 'kotak-811-infinity' });
     }
@@ -472,7 +481,7 @@ export function getRecommendations(
     }
   }
 
-  if (isDining) {
+  if (isDining && isOnline) {
     if ((offerUsage['kotak-811-infinity-Dining-District'] || 0) < 1) {
       availableOffers.push({ id: 'k-dist', icon: '🍽️', title: 'Kotak 811', description: '20% off up to ₹750', category: 'District', cardId: 'kotak-811-infinity' });
     }

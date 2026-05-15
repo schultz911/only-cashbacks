@@ -620,7 +620,7 @@ export default function App() {
                       {recommendation.voucherOption && (
                         <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-100 rounded-xl space-y-2">
                           <h4 className="text-xs font-bold uppercase text-purple-600 flex items-center gap-1">
-                            <Sparkles className="w-3 h-3" /> Smart Voucher Hack
+                            <Sparkles className="w-3 h-3" /> Smart Voucher Strategy
                           </h4>
                           <p className="text-sm text-gray-800">
                             Check <span className="font-semibold">{recommendation.voucherOption.platform}</span> for <span className="font-semibold text-green-700">{recommendation.voucherOption.discount}</span> value.
@@ -782,11 +782,7 @@ export default function App() {
             onClick={() => setSelectedCardForDetails(null)}
           >
             <motion.div
-              {...(selectedCardForDetails.source === 'rec' ? { layoutId: `card-${selectedCardForDetails.source}-${selectedCardForDetails.card.id}` } : {
-                initial: { y: '100%', opacity: 0 },
-                animate: { y: 0, opacity: 1 },
-                exit: { y: '100%', opacity: 0 }
-              })}
+              layoutId={`card-${selectedCardForDetails.source}-${selectedCardForDetails.card.id}`}
               onClick={(e) => e.stopPropagation()}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
               className={cn(

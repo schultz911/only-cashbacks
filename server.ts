@@ -16,6 +16,15 @@ async function startServer() {
   app.post("/api/categorize", async (req, res) => {
     try {
       const { merchantName, apiKey } = req.body;
+
+      // Input Validation
+      if (typeof merchantName !== 'string' || merchantName.trim().length === 0 || merchantName.length > 100) {
+        return res.status(400).json({ error: "Invalid merchantName. Must be a string between 1 and 100 characters." });
+      }
+
+      if (apiKey && (typeof apiKey !== 'string' || apiKey.length > 255)) {
+        return res.status(400).json({ error: "Invalid apiKey." });
+      }
       
       const authKey = apiKey || process.env.OPENROUTER_API_KEY;
 
@@ -59,7 +68,7 @@ Output strictly a JSON object matching this TypeScript interface:
       });
 
       if (!response.ok) {
-        const errBody = await response.text(); throw new Error(`OpenRouter API returned ${response.status}: ${errBody}`);
+        throw new Error(`OpenRouter API returned ${response.status}`);
       }
 
       const data = await response.json();
