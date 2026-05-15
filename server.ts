@@ -12,15 +12,31 @@ async function startServer() {
 
   app.use(express.json());
 
+  // Health check for debugging Render deployments
+  app.get("/api/health", (req, res) => {
+    res.json({
+      status: "running",
+      hasApiKey: !!process.env.OPENROUTER_API_KEY,
+      nodeEnv: process.env.NODE_ENV,
+      port: PORT
+    });
+  });
+
   // API Route for categorization
   app.post("/api/categorize", async (req, res) => {
     console.log("--- Categorization Request Received ---");
     try {
-      const { merchantName } = req.body;
-      console.log(`Merchant to categorize: "${merchantName}"`);
+      const { merchantName, apiKey } = req.body;
+      console.log(`Merchant: "${merchantName}", Custom API Key: ${!!apiKey}`);
+
+      const authKey = apiKey || process.env.OPENROUTER_API_KEY;
+      if (!authKey) {
+        console.error("No API key available.");
+        return res.status(401).json({ error: "API key required. Provide one in UI or set OPENROUTER_API_KEY on server." });
+      }
 
       const openrouter = new OpenRouter({
-        apiKey: process.env.OPENROUTER_API_KEY,
+        apiKey: authKey,
       });
 
       if (!process.env.OPENROUTER_API_KEY) {
