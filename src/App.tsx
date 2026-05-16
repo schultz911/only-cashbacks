@@ -994,8 +994,6 @@ export default function App() {
 
           {/* We turn this into a horizontal scrolling container with a fade mask on the edges if there's overflow, or just a nice grid */}
           <div className="relative">
-            <div className={cn("absolute top-0 left-0 bottom-0 w-1 bg-gradient-to-r to-transparent z-10 pointer-events-none sm:hidden", theme === 'light' ? 'from-[#F5F5F7]' : theme === 'dark' ? 'from-[#0f172a]' : 'from-black')}></div>
-            <div className={cn("absolute top-0 right-0 bottom-0 w-1 bg-gradient-to-l to-transparent z-10 pointer-events-none sm:hidden", theme === 'light' ? 'from-[#F5F5F7]' : theme === 'dark' ? 'from-[#0f172a]' : 'from-black')}></div>
             <motion.div 
               layoutScroll
               className="flex sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 overflow-x-auto pt-8 pb-4 px-1 snap-x scrollbar-hide"
