@@ -71,6 +71,9 @@ export function getRecommendations(
   const isTataNeuAppMerchant = TATA_NEU_MERCHANTS.some(tm => nameL.includes(tm) || catL.includes(tm) || platL.includes(tm));
   const isTataNeuPartnerMerchant = ['pharmacy', 'medical', 'health', 'apparel', 'clothing', 'fashion', 'electronics', 'gadgets', 'footwear', 'watches', 'accessories', 'jewelry', 'jewellery', 'hotel', 'resort', 'travel', 'luxury'].some(k => nameL.includes(k));
 
+  // Optimization: Hoist DEFAULT_EXCLUSIONS.find out of the map loop since catL, nameL, and platL are constant
+  const isExcludedCatCache = DEFAULT_EXCLUSIONS.find(ex => catL.includes(ex) || nameL.includes(ex) || platL.includes(ex));
+
   const calculationResults = CARD_DATA.map(card => {
     let cashbackAmount = 0;
     let benefitText = 'Base Rewards';
@@ -96,7 +99,7 @@ export function getRecommendations(
     }
 
     if (card.type === 'Credit' || card.type === 'Debit') {
-      const isExcludedCat = DEFAULT_EXCLUSIONS.find(ex => catL.includes(ex) || nameL.includes(ex) || platL.includes(ex));
+      const isExcludedCat = isExcludedCatCache;
       if (isExcludedCat) {
         isExcluded = true;
         benefitText = `Excluded category (${isExcludedCat})`;
