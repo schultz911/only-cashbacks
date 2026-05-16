@@ -996,13 +996,16 @@ export default function App() {
           <div className="relative">
             <div className={cn("absolute top-0 left-0 bottom-0 w-1 bg-gradient-to-r to-transparent z-10 pointer-events-none sm:hidden", theme === 'light' ? 'from-[#F5F5F7]' : theme === 'dark' ? 'from-[#0f172a]' : 'from-black')}></div>
             <div className={cn("absolute top-0 right-0 bottom-0 w-1 bg-gradient-to-l to-transparent z-10 pointer-events-none sm:hidden", theme === 'light' ? 'from-[#F5F5F7]' : theme === 'dark' ? 'from-[#0f172a]' : 'from-black')}></div>
-            <div className="flex sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 overflow-x-auto pt-8 pb-4 px-1 snap-x scrollbar-hide">
+            <motion.div 
+              layoutScroll
+              className="flex sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 overflow-x-auto pt-8 pb-4 px-1 snap-x scrollbar-hide"
+            >
               {(walletCards.length > 0 ? CARD_DATA.filter(c => walletCards.includes(c.id) && !c.isDummy) : CARD_DATA.filter(c => !c.isDummy)).map((card) => (
-                <div key={card.id} className={cn("snap-start shrink-0 w-72 sm:w-auto transition-opacity duration-200", selectedCardForDetails?.card.id === card.id ? "opacity-0 pointer-events-none" : "opacity-100")}>
+                <div key={card.id} className={cn("snap-start shrink-0 w-72 sm:w-auto", selectedCardForDetails?.card.id === card.id ? "opacity-0 pointer-events-none" : "opacity-100")}>
                   <CardItem layoutId={`card-list-${card.id}`} card={card} onClick={() => setSelectedCardForDetails({ card, source: 'list' })} className="h-full shadow-sm hover:shadow-md transition-shadow cursor-pointer" isExhausted={normalizedExhaustedCards[card.id]} />
                 </div>
               ))}
-            </div>
+            </motion.div>
           </div>
         </div>
 
