@@ -298,6 +298,7 @@ export function getRecommendations(
 
         for (const benefit of card.benefits) {
           if (benefit.type === 'exclusion' || benefit.type === 'lounge' || (benefit.type as any) === 'milestone') continue;
+          if (isIntl && benefit.type === 'offer' && benefit.category !== 'International') continue;
           let matchScore = -1;
 
           const cycle = getCycleForCard(card.id, cardBillDates);
@@ -512,7 +513,7 @@ export function getRecommendations(
 
   const availableOffers: { id: string; icon: string; title: string; description: string; cardId?: string; category: string; }[] = [];
 
-  if (isMovie && isOnline) {
+  if (!isIntl && isMovie && isOnline) {
     if ((offerUsage['kotak-811-infinity-Movies-BMS'] || 0) < 1) {
       availableOffers.push({ id: 'k-bms', icon: '🎬', title: 'Kotak 811', description: 'Buy 1 Get 1 Ticket up to ₹300', category: 'BMS', cardId: 'kotak-811-infinity' });
     }
@@ -527,7 +528,7 @@ export function getRecommendations(
     }
   }
 
-  if (isDining && isOnline) {
+  if (!isIntl && isDining && isOnline) {
     if ((offerUsage['kotak-811-infinity-Dining-District'] || 0) < 1) {
       availableOffers.push({ id: 'k-dist', icon: '🍽️', title: 'Kotak 811', description: '20% off up to ₹750', category: 'District', cardId: 'kotak-811-infinity' });
     }
@@ -536,7 +537,7 @@ export function getRecommendations(
     }
   }
 
-  if (isFoodDelivery) {
+  if (!isIntl && isFoodDelivery) {
     if ((offerUsage['axis-myzone-Food-Swiggy'] || 0) < 2) {
       availableOffers.push({ id: 'a-swig', icon: '🍔', title: 'Axis MyZone', description: 'Flat ₹120 off (AXIS120)', category: 'Swiggy', cardId: 'axis-myzone' });
     }
@@ -545,7 +546,7 @@ export function getRecommendations(
     }
   }
 
-  if ((nameL.includes('ajio') || platL.includes('ajio') || catL.includes('apparel')) && amount >= 999) {
+  if (!isIntl && (nameL.includes('ajio') || platL.includes('ajio') || catL.includes('apparel')) && amount >= 999) {
     availableOffers.push({ id: 's-ajio', icon: '🛍️', title: 'Swiggy oneBLCK', description: 'Flat 20% off on select styles', category: 'Ajio', cardId: 'hdfc-swiggy' });
   }
 
