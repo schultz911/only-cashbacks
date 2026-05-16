@@ -441,7 +441,7 @@ export default function App() {
             <div className="flex items-center gap-3">
               {(!openRouterApiKey) && (
                 <div className="relative group flex items-center">
-                  <button onClick={() => { setTempApiKey(openRouterApiKey); setIsApiModalOpen(true); }} className="flex items-center justify-center bg-amber-100 text-amber-700 p-2 rounded-full hover:bg-amber-200 transition-colors shadow-sm">
+                  <button aria-label="Open API settings" onClick={() => { setTempApiKey(openRouterApiKey); setIsApiModalOpen(true); }} className="flex items-center justify-center bg-amber-100 text-amber-700 p-2 rounded-full hover:bg-amber-200 transition-colors shadow-sm">
                     <AlertCircle className="w-5 h-5" />
                   </button>
                   <div className="absolute top-full right-0 mt-2 w-52 bg-gray-900 text-white text-xs rounded-lg p-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-xl">
@@ -473,6 +473,7 @@ export default function App() {
               </div>
               <div className="relative" ref={profileMenuRef}>
                 <button
+                  aria-label="Toggle profile menu"
                   onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
                   className="w-10 h-10 rounded-full overflow-hidden border-2 border-white shadow-sm ring-2 ring-gray-100 hover:ring-blue-100 transition-all flex items-center justify-center bg-gray-50 text-gray-500"
                 >
@@ -1132,6 +1133,7 @@ export default function App() {
                   </div>
                 </div>
                 <button
+                  aria-label="Close lounge tracker"
                   onClick={() => setIsLoungeOpen(false)}
                   className="p-2 bg-gray-100/50 rounded-full hover:bg-gray-200 transition-colors"
                 >
@@ -1244,6 +1246,7 @@ export default function App() {
                   </div>
                 </div>
                 <button
+                  aria-label="Close offers overlay"
                   onClick={() => setShowOffersOverlay(false)}
                   className="w-12 h-12 bg-gray-100/80 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-all active:scale-90 border border-gray-200/50"
                 >
@@ -1330,7 +1333,7 @@ export default function App() {
               transition={{ type: "spring", damping: 35, stiffness: 400 }}
               className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl relative"
             >
-              <button onClick={() => setIsApiModalOpen(false)} className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500">
+              <button aria-label="Close configure API key modal" onClick={() => setIsApiModalOpen(false)} className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500">
                 <X className="w-5 h-5" />
               </button>
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Configure API Key</h2>
@@ -1390,6 +1393,7 @@ export default function App() {
               className="bg-white rounded-[2.5rem] p-8 w-full max-w-md shadow-2xl relative border border-red-100"
             >
               <button 
+                aria-label="Close delete confirmation modal"
                 onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmText(''); }} 
                 className="absolute top-6 right-6 p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400"
               >
