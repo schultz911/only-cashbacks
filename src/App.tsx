@@ -1107,7 +1107,7 @@ export default function App() {
                             <div className="flex items-center justify-center relative z-10 w-full h-full">
                               <motion.div
                                 animate={{ 
-                                  x: isLogged ? 48 : -72,
+                                  x: isLogged ? 48 : -82,
                                 }}
                                 transition={{ duration: 0.6, ease: "easeInOut" }}
                                 className="absolute z-20"
@@ -1122,7 +1122,7 @@ export default function App() {
                                       key="initial"
                                       initial={{ opacity: 0 }}
                                       animate={{ opacity: 1 }}
-                                      exit={{ opacity: 0, x: 10 }}
+                                      exit={{ opacity: 0, x: 20 }}
                                       transition={{ duration: 0.2 }}
                                       className="flex items-center gap-2 ml-6"
                                     >
@@ -1277,7 +1277,7 @@ export default function App() {
             <div className="flex items-center gap-3">
               <div className="relative group flex cursor-pointer" onClick={() => setIsDashboardOpen(true)}>
                 <button className="relative overflow-hidden flex items-center justify-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-white/10 transition-colors shadow-sm text-yellow-600 dark:text-yellow-500 px-4 py-1.5 rounded-full text-sm font-bold gap-2 focus:ring-2 ring-gray-200 dark:ring-gray-800 outline-none group/piggy">
-                  <span className="absolute -top-3 left-[70%] w-1.5 h-1.5 rounded-full bg-yellow-600 dark:bg-yellow-500 opacity-0 group-hover/piggy:opacity-0 group-hover/piggy:animate-[coin-drop_0.5s_ease-in_forwards] z-[5]"></span>
+                  <span className="absolute -top-1 left-[50%] w-1.5 h-1.5 rounded-full bg-yellow-600 dark:bg-yellow-500 opacity-0 group-hover/piggy:opacity-0 group-hover/piggy:animate-[coin-drop_0.5s_ease-in_forwards] z-[5]"></span>
                   <PiggyBank className="w-5 h-5 transition-transform group-hover/piggy:scale-110 relative z-10 fill-white dark:fill-gray-800" strokeWidth={2} />
                 </button>
                 <div className="absolute -top-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity bg-gray-900 border border-gray-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg whitespace-nowrap shadow-xl z-50">
