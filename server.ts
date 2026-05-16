@@ -62,21 +62,32 @@ Output strictly a JSON object matching this TypeScript interface:
       let result = null;
 
       if (effectiveOpenRouterKey) {
-        console.log("Calling OpenRouter API via SDK...");
-        const openrouter = new OpenRouter({ apiKey: effectiveOpenRouterKey });
-        const response = await (openrouter.chat.send as any)({
-          chatRequest: {
+        console.log("Calling OpenRouter API via fetch...");
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${effectiveOpenRouterKey}`,
+            "Content-Type": "application/json",
+            "HTTP-Referer": process.env.URL || "http://localhost:3000",
+            "X-Title": "Only Cashbacks"
+          },
+          body: JSON.stringify({
             model: "google/gemini-2.0-flash-lite-001",
             temperature: 0,
-            responseFormat: { type: "json_object" },
+            response_format: { type: "json_object" },
             messages: [
               { role: "system", content: systemPrompt },
               { role: "user", content: sanitizedMerchantName }
             ]
-          }
+          })
         });
+
+        if (!response.ok) {
+          throw new Error(`OpenRouter API Error: ${response.status} ${await response.text()}`);
+        }
+        const data = await response.json();
         console.log("OpenRouter Response Received.");
-        result = JSON.parse(response.choices[0]?.message?.content || "{}");
+        result = JSON.parse(data.choices[0]?.message?.content || "{}");
       } else if (envGeminiKey) {
         console.log("Calling Google Gemini Environment API...");
         const ai = new GoogleGenAI({ apiKey: envGeminiKey });

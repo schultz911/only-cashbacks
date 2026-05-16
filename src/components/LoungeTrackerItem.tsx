@@ -55,13 +55,13 @@ export const LoungeTrackerItem: React.FC<LoungeTrackerItemProps> = ({
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       className={cn(
-        "relative p-4 rounded-2xl flex flex-col gap-2 overflow-hidden transition-all duration-500 shadow-sm border shrink-0",
+        "relative p-4 rounded-2xl flex flex-col gap-2 overflow-hidden transition-all duration-500 shadow-sm border shrink-0 backdrop-blur-xl group",
         isVerified || card.id !== 'kiwi-neon' ? "cursor-pointer" : "cursor-default",
         isExhausted
-          ? "bg-gray-100 grayscale opacity-80 border-gray-200"
+          ? "bg-gray-100/50 dark:bg-gray-800/50 grayscale opacity-80 border-gray-200 dark:border-gray-800"
           : isVerified && passesCount > 0
-            ? "bg-gradient-to-br from-blue-100 to-blue-50 border-blue-300 hover:shadow-md"
-            : "bg-white border-gray-100 hover:shadow-md"
+            ? "bg-gradient-to-br from-blue-50/90 to-blue-100/50 dark:from-blue-900/40 dark:to-blue-900/10 border-blue-200/50 dark:border-blue-700/30 hover:shadow-md hover:border-blue-300 dark:hover:border-blue-600/50"
+            : "bg-white/80 dark:bg-gray-800/80 border-gray-200/60 dark:border-gray-700 hover:shadow-md"
       )}
       onClick={handleInteract}
     >
@@ -70,7 +70,7 @@ export const LoungeTrackerItem: React.FC<LoungeTrackerItemProps> = ({
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="absolute inset-x-0 top-0 h-full bg-gradient-to-br from-white/60 via-white/10 to-gray-50/40 backdrop-blur-[1px] pointer-events-none rounded-2xl z-10 opacity-70"
+          className="absolute inset-x-0 top-0 h-full bg-gradient-to-br from-white/30 via-white/5 to-transparent dark:from-white/5 dark:via-transparent dark:to-transparent backdrop-blur-[2px] pointer-events-none rounded-2xl z-10 opacity-70 group-hover:opacity-100 transition-opacity"
         />
       )}
 
@@ -81,7 +81,7 @@ export const LoungeTrackerItem: React.FC<LoungeTrackerItemProps> = ({
             initial={{ y: -20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -20, opacity: 0 }}
-            className="absolute top-0 left-1/2 -translate-x-1/2 bg-gradient-to-b from-yellow-200 to-yellow-500 text-yellow-900 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-b-lg shadow z-20 shadow-yellow-500/20"
+            className="absolute top-0 left-1/2 -translate-x-1/2 bg-gradient-to-b from-amber-200 to-amber-500 dark:from-amber-400 dark:to-amber-600 text-amber-900 dark:text-amber-950 text-[10px] font-black uppercase tracking-widest px-4 py-1 rounded-b-xl shadow-md z-20 shadow-amber-500/20"
           >
             {passesRemaining} {passesRemaining === 1 ? 'Pass' : 'Passes'} Left
           </motion.div>
@@ -90,30 +90,54 @@ export const LoungeTrackerItem: React.FC<LoungeTrackerItemProps> = ({
 
       <div className={cn("flex justify-between items-start gap-4 relative z-20 transition-all", isVerified && !isExhausted && passesCount > 0 ? "pt-2" : "")}>
         <div className="flex flex-col gap-1">
-          <div className="font-bold text-gray-800">{card.name}</div>
-          <div className={cn("font-black bg-gray-50/80 backdrop-blur-sm border border-gray-100 px-2 py-0.5 rounded-md text-sm w-fit shadow-sm", category === 'International' ? "text-purple-600" : "text-blue-600")}>
+          <div className="font-black text-gray-900 dark:text-gray-100 mt-1">{card.name}</div>
+          <div className={cn("font-bold backdrop-blur-md border px-2.5 py-0.5 rounded-lg text-xs w-fit shadow-sm bg-white/60 dark:bg-gray-800/60", category === 'International' ? "text-purple-600 dark:text-purple-400 border-purple-100 dark:border-purple-800/30" : "text-blue-600 dark:text-blue-400 border-blue-100 dark:border-blue-800/30")}>
             {parsed.passesStr}
           </div>
         </div>
-        <div className="shrink-0 flex justify-end">
+        <div className="shrink-0 flex justify-end mt-1">
           {parsed.isFree ? (
-            <span className="font-black text-green-700 bg-green-100/80 backdrop-blur-sm border border-green-200 px-3 py-1 rounded-lg text-sm shadow-sm uppercase tracking-wider">Free</span>
+            <span className="font-black text-green-700 dark:text-green-400 bg-green-100/80 dark:bg-green-900/30 backdrop-blur-sm border border-green-200 dark:border-green-800/50 px-3 py-1 rounded-xl text-xs shadow-sm uppercase tracking-wider">Free</span>
           ) : parsed.spend > 0 ? (
-            <span className="font-black text-yellow-800 bg-yellow-100/80 backdrop-blur-sm px-3 py-1 rounded-lg text-sm shadow-sm border border-yellow-300">₹{parsed.spend.toLocaleString()} Spend</span>
+            <span className="font-black text-amber-800 dark:text-amber-500 bg-amber-100/80 dark:bg-amber-900/20 backdrop-blur-sm px-3 py-1 rounded-xl text-xs shadow-sm border border-amber-300/50 dark:border-amber-800/30">₹{parsed.spend.toLocaleString()} Spend</span>
           ) : (
             <span className={cn(
-              "font-black px-3 py-1 rounded-lg text-sm shadow-sm",
+              "font-black px-3 py-1 rounded-xl text-xs shadow-sm backdrop-blur-sm",
               card.id === 'kiwi-neon' && !isVerified
-                ? "text-gray-400 bg-gray-100 border border-gray-200"
-                : "text-blue-600 bg-blue-100/80 backdrop-blur-sm border border-blue-200"
+                ? "text-gray-500 dark:text-gray-400 bg-gray-100/80 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700/50"
+                : "text-blue-600 dark:text-blue-400 bg-blue-100/80 dark:bg-blue-900/30 border border-blue-200/50 dark:border-blue-800/50"
             )}>
               {card.id === 'kiwi-neon' && !isVerified ? 'Locked' : 'Milestone'}
             </span>
           )}
         </div>
       </div>
-      <div className="text-sm text-gray-500 font-medium mt-1 leading-relaxed relative z-20">
-        {parsed.description}
+      <div className="flex flex-col gap-2 relative z-20 mt-1">
+        <div className="text-sm text-gray-500 font-medium leading-relaxed">
+          {parsed.description}
+        </div>
+        {isVerified && !isExhausted && passesCount > 0 && category === 'Domestic' && card.id === 'hdfc-tata-neu-infinity' && (
+          <a
+            href="https://www.gyftr.com/myrewards/tataneuhdfcbankcreditcards/"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="text-xs font-bold text-blue-700 bg-blue-100/80 backdrop-blur-sm border border-blue-200 px-3 py-1.5 rounded-lg w-fit hover:bg-blue-200 transition-colors shadow-sm"
+          >
+            Redeem Voucher
+          </a>
+        )}
+        {isVerified && !isExhausted && passesCount > 0 && category === 'Domestic' && card.id === 'hdfc-imperia' && (
+          <a
+            href="https://www.gyftr.com/myrewards/hdfcdebitcardloungeprogram/"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="text-xs font-bold text-blue-700 bg-blue-100/80 backdrop-blur-sm border border-blue-200 px-3 py-1.5 rounded-lg w-fit hover:bg-blue-200 transition-colors shadow-sm"
+          >
+            Redeem Voucher
+          </a>
+        )}
       </div>
 
       {/* Verify Dialog Overlay */}

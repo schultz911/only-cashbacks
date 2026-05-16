@@ -195,7 +195,7 @@ export const CARD_DATA: Card[] = [
     benefits: [
       { type: 'offer', category: 'Food', value: 'Swiggy', percentValue: 24, minSpend: 500, capPerTxn: 120, usageLimit: 2, description: 'Flat ₹120 off on online orders over ₹500 twice a month (Code: AXIS120).' },
       { type: 'offer', category: 'Movies', value: 'District', percentValue: 50, capPerTxn: 200, usageLimit: 1, description: 'Buy 1 Get 1 on movie tickets online up to ₹200 once a month (Code: AXIS200).' },
-      { type: 'offer', category: 'Fashion', value: 'Ajio', percentValue: 33, minSpend: 2999, capPerTxn: 1000, description: 'Flat ₹1,000 off on online orders over ₹2,999 (Code: AJIOAXISMZ).' },
+      { type: 'offer', category: 'Fashion', value: 'Ajio', percentValue: 33, minSpend: 2999, capPerTxn: 1000, description: 'Flat ₹1,000 off on online orders over ₹2,999 (Code: AJIOAXISMZ).', isHidden: true },
       { type: 'offer', category: 'Dining', value: 'EazyDiner', percentValue: 15, minSpend: 2500, capPerTxn: 500, usageLimit: 1, description: '15% off up to ₹500 on min bill of ₹2,500 once a month.' },
       { type: 'exclusion', category: 'Rent', value: '0%', description: 'Rent' },
       { type: 'exclusion', category: 'Wallet', value: '0%', description: 'Wallet Loads' },

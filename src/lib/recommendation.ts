@@ -27,6 +27,22 @@ const MOVIE_KEYWORDS = ['movie', ...MOVIE_PLATFORMS];
 const hasKeyword = (targets: string[], keywords: string[]) =>
   keywords.some(keyword => targets.some(target => target.includes(keyword)));
 
+export function getCycleForCard(cardId: string, cardBillDates: Record<string, number>): string {
+  let billDay = cardBillDates[cardId] || 1;
+  const card = CARD_DATA.find(c => c.id === cardId);
+  if (card && card.type === 'Debit') {
+    billDay = 1;
+  }
+  
+  const now = new Date();
+  if (now.getDate() >= billDay) {
+    return `${now.getFullYear()}-${now.getMonth() + 1}`;
+  } else {
+    const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    return `${prev.getFullYear()}-${prev.getMonth() + 1}`;
+  }
+}
+
 export function getRecommendations(
   merchant: MerchantInfo,
   amount: number,
@@ -35,7 +51,9 @@ export function getRecommendations(
   isScanToPay: boolean = false,
   exhaustedCards: Record<string, boolean> = {},
   offerUsage: Record<string, number> = {},
-  kiwiNeonEarnRate: number = 2
+  kiwiNeonEarnRate: number = 2,
+  walletCards: string[] | null = null,
+  cardBillDates: Record<string, number> = {}
 ): Recommendation {
 
   const nameL = merchant.name.toLowerCase();
@@ -74,7 +92,11 @@ export function getRecommendations(
   // Optimization: Hoist DEFAULT_EXCLUSIONS.find out of the map loop since catL, nameL, and platL are constant
   const isExcludedCatCache = DEFAULT_EXCLUSIONS.find(ex => catL.includes(ex) || nameL.includes(ex) || platL.includes(ex));
 
-  const calculationResults = CARD_DATA.map(card => {
+  const cardsToEvaluate = walletCards 
+    ? CARD_DATA.filter(c => walletCards.includes(c.id) && !c.isDummy)
+    : CARD_DATA.filter(c => !c.isDummy);
+
+  const calculationResults = cardsToEvaluate.map(card => {
     let cashbackAmount = 0;
     let benefitText = 'Base Rewards';
     let isExcluded = false;
@@ -229,8 +251,9 @@ export function getRecommendations(
         benefitText = '1% Base Rewards';
       }
     } else if (card.id === 'kiwi-neon' && (isScanToPay || isOnline)) {
-      cashbackAmount = amount * (kiwiNeonEarnRate / 100);
-      benefitText = `${kiwiNeonEarnRate}% Cashback on ${isScanToPay ? 'Scan & Pay' : 'Online UPI'}`;
+      let finalRate = isScanToPay ? kiwiNeonEarnRate : 0.5;
+      cashbackAmount = amount * (finalRate / 100);
+      benefitText = `${finalRate}% Cashback on ${isScanToPay ? 'Scan & Pay' : 'Online UPI'}`;
     } else if (card.id === 'kotak-811-infinity' && isScanToPay) {
       cashbackAmount = 3;
       benefitText = 'Mystery Cashback on Scan & Pay';
@@ -277,7 +300,8 @@ export function getRecommendations(
           if (benefit.type === 'exclusion' || benefit.type === 'lounge' || (benefit.type as any) === 'milestone') continue;
           let matchScore = -1;
 
-          const usageKey = `${card.id}-${benefit.category}-${benefit.value}`;
+          const cycle = getCycleForCard(card.id, cardBillDates);
+          const usageKey = `${card.id}-${benefit.category}-${benefit.value}-${cycle}`;
           const usedCount = offerUsage[usageKey] || 0;
           if (benefit.usageLimit && usedCount >= benefit.usageLimit) {
             continue;

@@ -131,6 +131,12 @@ function categorizeLocal(merchantName: string): MerchantInfo | null {
 export async function categorizeMerchant(merchantName: string, apiKey?: string): Promise<MerchantInfo> {
   if (!merchantName) throw new Error("Merchant name is required");
 
+  // UX/Performance Polish: Check local exact/pattern matches FIRST to avoid 1-2s API latency for known merchants!
+  const localMatch = categorizeLocal(merchantName);
+  if (localMatch) {
+    return localMatch;
+  }
+
   try {
     const response = await fetch("/api/categorize", {
       method: "POST",
@@ -153,13 +159,7 @@ export async function categorizeMerchant(merchantName: string, apiKey?: string):
     console.error("Backend API Fetch Error:", error);
   }
 
-  // Fallback to local string/regex resolution if API fails or returns invalid data
-  const localMatch = categorizeLocal(merchantName);
-  if (localMatch) {
-    return localMatch;
-  }
-
-  // Final fallback
+  // Final fallback if both local and API fail
   return {
     name: merchantName,
     category: "Other",

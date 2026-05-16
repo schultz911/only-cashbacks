@@ -4,108 +4,45 @@
  */
 
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { Search, History, Plane, Loader2, Sparkles, Globe, Wallet, QrCode, X, ChevronDown, Check, UserCircle, LogOut, AlertCircle, Ticket, Tag, Info, RefreshCw, Trash2 } from 'lucide-react';
+import { Search, History, Plane, Loader2, Sparkles, Globe, Wallet, QrCode, X, ChevronDown, Check, UserCircle, LogOut, AlertCircle, Ticket, Tag, Info, RefreshCw, Trash2, Store, Moon, Sun, CloudOff, Cloud, Undo2, RotateCcw, Banknote, Download, PiggyBank } from 'lucide-react';
+
 import { motion, AnimatePresence } from 'motion/react';
 import { categorizeMerchant } from './services/gemini';
-import { getRecommendations } from './lib/recommendation';
+import { getRecommendations, getCycleForCard } from './lib/recommendation';
 import { Recommendation, MerchantInfo, Card } from './types';
 import { CARD_DATA } from './data/cards';
 import { CardItem } from './components/CardItem';
+import { BillReminders } from './components/BillReminders';
+import { BillDateSelector } from './components/BillDateSelector';
 import { LoungeTrackerItem } from './components/LoungeTrackerItem';
+import { LoungeTrackerModal, CustomSelect, parseLoungeBenefit } from './components/LoungeTrackerModal';
+import { WalletManagerModal } from './components/WalletManagerModal';
+import { DashboardModal } from './components/DashboardModal';
 import { cn } from './lib/utils';
 import { auth, googleProvider, db, handleFirestoreError, OperationType } from './firebase';
 import { signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut, User } from 'firebase/auth';
 import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 
-const CustomSelect = ({ value, onChange, options, placeholder, className, dropdownClassName }: any) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const selectRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  return (
-    <div ref={selectRef} className={`relative ${className}`} style={{ zIndex: isOpen ? 500 : 10 }}>
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full h-full flex items-center justify-between outline-none cursor-pointer gap-1 pl-3"
-      >
-        <span className="truncate">{value ? options.find((o: any) => o.value === value)?.label : placeholder}</span>
-        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
-      </button>
-
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -5, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -5, scale: 0.98 }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
-            className={`absolute z-[500] bg-white/80 backdrop-blur-xl border border-gray-100/80 shadow-2xl rounded-2xl mt-2 overflow-hidden ring-1 ring-black/5 ${dropdownClassName}`}
-          >
-            <div className="max-h-64 overflow-y-auto p-1.5 scrollbar-thin scrollbar-thumb-gray-200 space-y-0.5">
-              {options.map((option: any) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  className={`w-full text-left px-3 py-2 flex items-center justify-between transition-all duration-200 rounded-xl text-sm ${value === option.value ? 'bg-gradient-to-r from-blue-500 to-blue-600 shadow-sm text-white font-bold' : 'text-gray-700 font-medium hover:bg-gray-100 hover:text-gray-900'}`}
-                  onClick={() => {
-                    onChange(option.value);
-                    setIsOpen(false);
-                  }}
-                >
-                  <span className="truncate pr-4">{option.label}</span>
-                  {value === option.value && <div className="w-1.5 h-1.5 rounded-full bg-white shrink-0 shadow-sm" />}
-                </button>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-};
-
-const parseLoungeBenefit = (b: { value: string, description: string }) => {
-  let spend = 0;
-  let isFree = false;
-  const descLocal = b.description.toLowerCase();
-
-  if (descLocal.includes('complimentary') || descLocal.includes('no spend') || descLocal.includes('free') || descLocal.includes('automatically')) {
-    isFree = true;
-    spend = 0;
-  } else {
-    const kMatch = b.description.match(/(\d+)k/i);
-    if (kMatch) {
-      spend = parseInt(kMatch[1], 10) * 1000;
-    }
-  }
-
-  let passesStr = b.value.replace('/qtr', ' / Quarter')
-    .replace('/milestone', ' / Milestone')
-    .replace('/qr', ' / Quarter');
-
-  let passesCount = 0;
-  const numMatch = passesStr.match(/(\d+)/);
-  if (numMatch) {
-    passesCount = parseInt(numMatch[1], 10);
-  }
-
-  return { spend, isFree, passesStr, passesCount, description: b.description };
-};
+import Fuse from 'fuse.js';
+import { KNOWN_MERCHANTS } from './data/merchants';
 
 export default function App() {
+  const getInitialState = <T,>(key: string, defaultValue: T): T => {
+    try {
+      const stored = localStorage.getItem(key);
+      if (stored) return JSON.parse(stored);
+    } catch {}
+    return defaultValue;
+  };
+
   const [query, setQuery] = useState('');
-  const [amount, setAmount] = useState<string>('10000');
-  const [foreignAmount, setForeignAmount] = useState<string>('150');
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [focusedSuggestionIndex, setFocusedSuggestionIndex] = useState(-1);
+  const suggestionRef = useRef<HTMLDivElement>(null);
+
+  const [amount, setAmount] = useState<string>('');
+  const [foreignAmount, setForeignAmount] = useState<string>('');
   const [baseCurrency, setBaseCurrency] = useState('USD');
   const [exchangeRates, setExchangeRates] = useState<Record<string, number>>({});
 
@@ -121,15 +58,31 @@ export default function App() {
   const [isLoungeOpen, setIsLoungeOpen] = useState(false);
   const [showOffersOverlay, setShowOffersOverlay] = useState(false);
   const [selectedCardForDetails, setSelectedCardForDetails] = useState<{ card: Card, source: string } | null>(null);
-  const getInitialState = <T,>(key: string, defaultValue: T): T => {
-    try {
-      const stored = localStorage.getItem(key);
-      if (stored) return JSON.parse(stored);
-    } catch {}
-    return defaultValue;
+  
+  // Toast Notification State
+  const [toast, setToast] = useState<{message: string, type: 'success' | 'error' | 'info'} | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
   };
 
-  const [exhaustedCards, setExhaustedCards] = useState<Record<string, boolean>>(() => getInitialState('oc_exhaustedCards', {}));
+  const [exhaustedCards, setExhaustedCards] = useState<Record<string, any>>(() => getInitialState('oc_exhaustedCards', {}));
+  const [cardBillDates, setCardBillDates] = useState<Record<string, number>>(() => getInitialState('oc_cardBillDates', {}));
+
+  const normalizedExhaustedCards = useMemo(() => {
+    const result: Record<string, boolean> = {};
+    for (const card of CARD_DATA) {
+      const cycle = getCycleForCard(card.id, cardBillDates);
+      const ex = exhaustedCards[card.id];
+      if (ex === true) result[card.id] = true;
+      else if (ex === cycle) result[card.id] = true;
+    }
+    return result;
+  }, [exhaustedCards, cardBillDates]);
+
+  const [paidBills, setPaidBills] = useState<Record<string, string>>(() => getInitialState('oc_paidBills', {}));
+
   const [loungeTab, setLoungeTab] = useState<'Domestic' | 'International'>('Domestic');
   const [loungePassesUsed, setLoungePassesUsed] = useState<Record<string, number>>(() => getInitialState('oc_loungePassesUsed', {}));
   const [loungeMilestonesVerified, setLoungeMilestonesVerified] = useState<Record<string, boolean>>(() => getInitialState('oc_loungeMilestonesVerified', {}));
@@ -139,8 +92,55 @@ export default function App() {
   const [tempApiKey, setTempApiKey] = useState('');
   const [kiwiNeonEarnRate, setKiwiNeonEarnRate] = useState(() => getInitialState('oc_kiwiNeonEarnRate', 2));
 
+  // Feature states
+  const [walletCards, setWalletCards] = useState<string[]>(() => getInitialState('oc_walletCards', []));
+  const [isWalletOpen, setIsWalletOpen] = useState(false);
+  const [cashbackLogs, setCashbackLogs] = useState<{amount: number, date: number}[]>(() => getInitialState('oc_cashbackLogs', []));
+  const [isDashboardOpen, setIsDashboardOpen] = useState(false);
+  const [theme, setTheme] = useState<'light' | 'dark' | 'oled'>(() => {
+    const saved = getInitialState('oc_theme', null);
+    if (saved) return saved;
+    return getInitialState('oc_isDarkMode', false) ? 'dark' : 'light';
+  });
+  const [isSyncPaused, setIsSyncPaused] = useState(() => getInitialState('oc_isSyncPaused', false));
+
+  // Apply theme
+  useEffect(() => {
+    document.documentElement.classList.remove('dark', 'oled');
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else if (theme === 'oled') {
+      document.documentElement.classList.add('dark', 'oled');
+    }
+    localStorage.setItem('oc_theme', JSON.stringify(theme));
+  }, [theme]);
+
   const [user, setUser] = useState<User | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+
+  // Initialize fuse
+  const fuse = useMemo(() => new Fuse(KNOWN_MERCHANTS, { threshold: 0.3 }), []);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (suggestionRef.current && !suggestionRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (query && showSuggestions) {
+      const results = fuse.search(query).slice(0, 5).map(r => r.item);
+      setSuggestions(results);
+    } else {
+      setSuggestions([]);
+    }
+    setFocusedSuggestionIndex(-1);
+  }, [query, showSuggestions, fuse]);
+
   const skipSyncRef = useRef(false);
 
   const [isDataLoaded, setIsDataLoaded] = useState(false);
@@ -215,11 +215,17 @@ export default function App() {
           const data = docSnap.data();
           skipSyncRef.current = true;
           setExhaustedCards(data.exhaustedCards || {});
+          setCardBillDates(data.cardBillDates || {});
+          setPaidBills(data.paidBills || {});
           setLoungePassesUsed(data.loungePassesUsed || {});
           setLoungeMilestonesVerified(data.loungeMilestonesVerified || {});
           setOfferUsage(data.offerUsage || {});
           setOpenRouterApiKey(data.openRouterApiKey || '');
           setKiwiNeonEarnRate(data.kiwiNeonEarnRate || 2);
+          if (data.walletCards) setWalletCards(data.walletCards);
+          if (data.cashbackLogs) setCashbackLogs(data.cashbackLogs);
+          if (data.theme) setTheme(data.theme);
+          else if (data.isDarkMode !== undefined) setTheme(data.isDarkMode ? 'dark' : 'light');
           setTimeout(() => { skipSyncRef.current = false; }, 100);
         }
       } catch (error: any) {
@@ -248,14 +254,22 @@ export default function App() {
         loungePassesUsed,
         loungeMilestonesVerified,
         offerUsage,
+        cardBillDates,
+        paidBills,
         openRouterApiKey,
         kiwiNeonEarnRate,
+        walletCards,
+        cashbackLogs,
+        theme,
+        isDarkMode: theme !== 'light',
         updatedAt: Date.now()
       }, { merge: true });
       setSyncError(null);
       setIsDirty(false);
+      // showToast('Synced to cloud', 'success');
     } catch (error: any) {
       setSyncError(error.message || 'Failed to save to cloud');
+      // showToast('Failed to sync', 'error');
       try {
         handleFirestoreError(error, OperationType.WRITE, `users/${user.uid}`);
       } catch (e) {
@@ -267,28 +281,66 @@ export default function App() {
   };
 
   useEffect(() => {
+    if (!isDataLoaded || !walletCards || walletCards.length === 0) return;
+    
+    // Use a small timeout to avoid showing immediately on load
+    const timer = setTimeout(() => {
+      let hasUnpaidPastDue = false;
+      const today = new Date();
+      for (const cardId of walletCards) {
+        const card = CARD_DATA.find(c => c.id === cardId);
+        if (!card || card.isDummy || card.type !== 'Credit') continue;
+        
+        const billDay = cardBillDates[cardId] || 1;
+        const cycle = getCycleForCard(cardId, cardBillDates);
+        const isPaid = paidBills[cardId] === cycle;
+        
+        if (!isPaid) {
+          if (today.getDate() >= billDay + 2) {
+            hasUnpaidPastDue = true;
+            break;
+          }
+        }
+      }
+      
+      if (hasUnpaidPastDue) {
+        showToast('You have unpaid credit card bills past their billing dates.', 'info');
+      }
+    }, 2000);
+    
+    return () => clearTimeout(timer);
+  }, [isDataLoaded, walletCards, paidBills, cardBillDates]);
+
+  useEffect(() => {
     // Save to localStorage regardless of user status
     localStorage.setItem('oc_exhaustedCards', JSON.stringify(exhaustedCards));
+    localStorage.setItem('oc_cardBillDates', JSON.stringify(cardBillDates));
+    localStorage.setItem('oc_paidBills', JSON.stringify(paidBills));
     localStorage.setItem('oc_loungePassesUsed', JSON.stringify(loungePassesUsed));
     localStorage.setItem('oc_loungeMilestonesVerified', JSON.stringify(loungeMilestonesVerified));
     localStorage.setItem('oc_offerUsage', JSON.stringify(offerUsage));
     localStorage.setItem('oc_openRouterApiKey', JSON.stringify(openRouterApiKey));
     localStorage.setItem('oc_kiwiNeonEarnRate', JSON.stringify(kiwiNeonEarnRate));
+    localStorage.setItem('oc_walletCards', JSON.stringify(walletCards));
+    localStorage.setItem('oc_cashbackLogs', JSON.stringify(cashbackLogs));
+    localStorage.setItem('oc_isDarkMode', JSON.stringify(theme !== 'light')); // back compat
+    localStorage.setItem('oc_theme', JSON.stringify(theme));
+    localStorage.setItem('oc_isSyncPaused', JSON.stringify(isSyncPaused));
 
     if (isDataLoaded && !skipSyncRef.current) {
       setIsDirty(true);
     }
-  }, [exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, openRouterApiKey, kiwiNeonEarnRate, isDataLoaded]);
+  }, [exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, cardBillDates, paidBills, openRouterApiKey, kiwiNeonEarnRate, walletCards, cashbackLogs, theme, isDataLoaded]);
 
   useEffect(() => {
-    if (!user || isAuthLoading || !isDataLoaded || skipSyncRef.current || !isDirty || isSyncing) return;
+    if (!user || isAuthLoading || !isDataLoaded || skipSyncRef.current || !isDirty || isSyncing || isSyncPaused) return;
 
     const timer = setTimeout(() => {
       saveData();
     }, 2000); // Auto-save after 2 seconds of inactivity
 
     return () => clearTimeout(timer);
-  }, [isDirty, user, isAuthLoading, isDataLoaded]);
+  }, [isDirty, user, isAuthLoading, isDataLoaded, isSyncPaused]);
 
   const handleLogin = async () => {
     try {
@@ -314,6 +366,11 @@ export default function App() {
     }
   };
 
+  const markBillPaid = (cardId: string) => {
+    const cycle = getCycleForCard(cardId, cardBillDates);
+    setPaidBills(prev => ({ ...prev, [cardId]: cycle }));
+  };
+
   const handleDeleteData = async () => {
     if (deleteConfirmText !== 'DELETE' || !user) return;
     
@@ -336,6 +393,8 @@ export default function App() {
       setSyncError(null);
       setIsDirty(false);
       
+      showToast('All user data deleted permanently.', 'info');
+
       setTimeout(() => { skipSyncRef.current = false; }, 500);
     } catch (error: any) {
       console.error('Error deleting data:', error);
@@ -354,11 +413,21 @@ export default function App() {
   };
 
   useEffect(() => {
+    const cachedRates = localStorage.getItem('oc_exchangeRates');
+    if (cachedRates) {
+      try {
+        setExchangeRates(JSON.parse(cachedRates));
+      } catch (e) {
+        console.error("Could not parse cached exchange rates", e);
+      }
+    }
+
     fetch('https://open.er-api.com/v6/latest/INR')
       .then(res => res.json())
       .then(data => {
         if (data && data.rates) {
           setExchangeRates(data.rates);
+          localStorage.setItem('oc_exchangeRates', JSON.stringify(data.rates));
         }
       })
       .catch(err => console.error("Could not fetch exchange rates:", err));
@@ -396,18 +465,63 @@ export default function App() {
       }
 
       if (effectiveAmount > 0) {
-        setRecommendation(getRecommendations(info, effectiveAmount, isOnline, isIntl, !isOnline && isScanToPay, exhaustedCards, offerUsage, kiwiNeonEarnRate));
+        setRecommendation(getRecommendations(info, effectiveAmount, isOnline, isIntl, !isOnline && isScanToPay, normalizedExhaustedCards, offerUsage, kiwiNeonEarnRate, walletCards.length > 0 ? walletCards : null, cardBillDates));
       } else {
         setRecommendation(null);
       }
     }
-  }, [exhaustedCards, offerUsage, amount, foreignAmount, isIntl, isOnline, isScanToPay, kiwiNeonEarnRate, exchangeRates, baseCurrency]);
+  }, [normalizedExhaustedCards, offerUsage, cardBillDates, amount, foreignAmount, isIntl, isOnline, isScanToPay, kiwiNeonEarnRate, exchangeRates, baseCurrency, walletCards]);
 
-  const handleSearch = async (e?: React.FormEvent) => {
+  const formatAmountStr = (val: string) => {
+    if (!val) return '';
+    const parts = val.split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return parts.join('.');
+  };
+
+  const handleLogTransaction = () => {
+    if (recommendation && recommendation.cashbackEarned > 0) {
+      setCashbackLogs(prev => [...prev, { amount: recommendation.cashbackEarned, date: Date.now() }]);
+      showToast('Transaction logged!', 'success');
+    } else {
+      showToast('No cashback earned for this transaction.', 'info');
+    }
+  };
+
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  }, []);
+
+  const handleInstallClick = () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(() => setDeferredPrompt(null));
+    } else {
+      showToast('Install prompt not available. On iOS, use Share > Add to Home Screen.', 'info');
+    }
+  };
+
+  const [isLogged, setIsLogged] = useState(false);
+
+  const handleSearch = async (e?: React.FormEvent, directQuery?: string, prefilledAmount?: string) => {
+    setIsLogged(false);
     if (e) e.preventDefault();
-    const parsedAmount = parseFloat(amount) || 0;
-    const parsedForeign = parseFloat(foreignAmount) || 0;
-    if (!query.trim() || (isIntl ? parsedForeign <= 0 : parsedAmount <= 0)) {
+    const activeQuery = directQuery !== undefined ? directQuery : query;
+    let activeAmountRaw = prefilledAmount !== undefined ? prefilledAmount : (isIntl ? foreignAmount : amount);
+    
+    // We shouldn't enforce amount = 0 fail if user is just clicking a quick pill might have no amount
+    // But if there is no amount we default to what's in the state.
+    const parsedAmount = parseFloat(prefilledAmount !== undefined ? prefilledAmount : amount) || 0;
+    const parsedForeign = parseFloat(prefilledAmount !== undefined ? prefilledAmount : foreignAmount) || 0;
+    
+    if (!activeQuery.trim() || (isIntl ? parsedForeign <= 0 : parsedAmount <= 0)) {
       setRecommendation(null);
       return;
     }
@@ -420,12 +534,18 @@ export default function App() {
       if (mockRates[baseCurrency]) effectiveAmount = parsedForeign / mockRates[baseCurrency];
     }
 
+    if (directQuery !== undefined) setQuery(directQuery);
+    if (prefilledAmount !== undefined && !isIntl) setAmount(prefilledAmount);
+
     setLoading(true);
     try {
-      const info = await categorizeMerchant(query, openRouterApiKey || undefined);
-      const rec = getRecommendations(info, effectiveAmount, isOnline, isIntl, !isOnline && isScanToPay, exhaustedCards, offerUsage, kiwiNeonEarnRate);
+      const info = await categorizeMerchant(activeQuery, openRouterApiKey || undefined);
+      const rec = getRecommendations(info, effectiveAmount, isOnline, isIntl, !isOnline && isScanToPay, normalizedExhaustedCards, offerUsage, kiwiNeonEarnRate, walletCards.length > 0 ? walletCards : null, cardBillDates);
       setRecommendation(rec);
-      setHistory(prev => [info, ...prev.slice(0, 4)]);
+      setHistory(prev => {
+        const filtered = prev.filter(p => p.name.toLowerCase() !== info.name.toLowerCase());
+        return [info, ...filtered].slice(0, 4);
+      });
     } catch (error) {
       console.error(error);
     } finally {
@@ -436,10 +556,10 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#F5F5F7] text-[#1D1D1F] font-sans selection:bg-blue-100 pb-12">
       {/* Header */}
-      <header className="sticky top-0 z-[100] bg-white/80 backdrop-blur-md border-b border-gray-100 px-6 py-4">
+      <header className="sticky top-0 z-[200] bg-white/80 backdrop-blur-md border-b border-gray-100 px-6 py-4">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <div className="w-10 h-10 md:w-12 md:h-12 shrink-0 bg-[#0095f6] rounded-full flex items-center justify-center shadow-md relative overflow-hidden">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 shrink-0 bg-[#0095f6] rounded-full flex items-center justify-center shadow-md relative overflow-hidden">
               <svg viewBox="0 0 100 100" className="w-[85%] h-[85%] mt-0.5 ml-0.5" fill="white" xmlns="http://www.w3.org/2000/svg">
                 {/* Outer circle shape similar to the 'O' in OF */}
                 <path d="M 50 15 A 35 35 0 1 0 50 85 A 35 35 0 0 0 50 15 Z M 50 35 A 15 15 0 1 1 50 65 A 15 15 0 0 1 50 35 Z" />
@@ -448,10 +568,10 @@ export default function App() {
               </svg>
             </div>
             <div className="flex flex-col">
-              <h1 className="text-xl md:text-2xl font-black tracking-tight text-gray-900 leading-none pb-0.5">
+              <h1 className="text-sm sm:text-xl md:text-2xl font-black tracking-tight text-gray-900 leading-none pb-0.5">
                 OnlyCashbacks
               </h1>
-              <p className="text-[10px] md:text-xs font-bold tracking-widest text-[#0095f6] uppercase">Make Your Credit Cards Pay</p>
+              <p className="text-[7px] sm:text-[10px] md:text-xs font-bold tracking-widest text-[#0095f6] uppercase">Make Your Credit Cards Pay</p>
             </div>
           </div>
           {isAuthLoading ? (
@@ -465,7 +585,7 @@ export default function App() {
                   <button aria-label="Open API settings" onClick={() => { setTempApiKey(openRouterApiKey); setIsApiModalOpen(true); }} className="flex items-center justify-center bg-amber-100 text-amber-700 p-2 rounded-full hover:bg-amber-200 transition-colors shadow-sm">
                     <AlertCircle className="w-5 h-5" />
                   </button>
-                  <div className="absolute top-full right-0 mt-2 w-52 bg-gray-900 text-white text-xs rounded-lg p-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-xl">
+                  <div className="absolute top-full right-0 mt-2 w-max max-w-[200px] bg-gray-900 border border-gray-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-xl text-center">
                     API not set. Live verification is unavailable. Using local database. Click to set.
                   </div>
                 </div>
@@ -492,6 +612,37 @@ export default function App() {
                   {isSyncing ? 'Syncing...' : syncError ? 'Sync Now' : isDirty ? 'Pending Save' : 'Synced'}
                 </button>
               </div>
+              
+              <div className="flex items-center gap-2">
+                <div className="relative group flex">
+                  <button
+                    onClick={() => setIsSyncPaused(!isSyncPaused)}
+                    className="w-10 h-10 rounded-full flex items-center justify-center bg-gray-100 hover:bg-white dark:bg-gray-800 dark:hover:bg-gray-700 transition-all shadow-sm hover:shadow-md text-gray-600 hover:scale-105 active:scale-95"
+                    aria-label={isSyncPaused ? "Enable Cloud Sync" : "Enable Offline Mode"}
+                  >
+                    {isSyncPaused ? <CloudOff className="w-5 h-5 text-amber-500 transition-transform group-hover:scale-110" /> : <Cloud className={cn("w-5 h-5 transition-transform group-hover:scale-110", isDirty ? "text-blue-500 group-hover:text-blue-400" : "text-emerald-500 group-hover:text-emerald-400")} />}
+                  </button>
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity bg-gray-900 border border-gray-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg whitespace-nowrap shadow-xl z-50">
+                    {isSyncPaused ? "Enable Cloud Sync" : (isDirty ? "Cloud Sync: Pending" : "Cloud Sync: Saved")}
+                  </div>
+                </div>
+
+                <div className="relative group flex">
+                  <button
+                    onClick={() => {
+                      setTheme(prev => prev === 'light' ? 'dark' : prev === 'dark' ? 'oled' : 'light');
+                    }}
+                    className="w-10 h-10 rounded-full flex items-center justify-center bg-gray-100 hover:bg-white dark:bg-gray-800 dark:hover:bg-gray-700 transition-all shadow-sm hover:shadow-md text-gray-600 hover:scale-105 active:scale-95"
+                    aria-label="Switch Theme"
+                  >
+                    {theme === 'oled' ? <Moon className="w-5 h-5 text-amber-500 fill-amber-500 transition-transform group-hover:rotate-12" /> : theme === 'dark' ? <Moon className="w-5 h-5 text-amber-500 transition-transform group-hover:-rotate-12" /> : <Sun className="w-5 h-5 text-amber-500 transition-transform group-hover:rotate-45" />}
+                  </button>
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity bg-gray-900 border border-gray-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg whitespace-nowrap shadow-xl z-50">
+                    {theme === 'light' ? "Switch to Dark Mode" : theme === 'dark' ? "Switch to OLED Mode" : "Switch to Light Mode"}
+                  </div>
+                </div>
+              </div>
+
               <div className="relative" ref={profileMenuRef}>
                 <button
                   aria-label="Toggle profile menu"
@@ -566,19 +717,74 @@ export default function App() {
             <section className="space-y-4">
               <div className="space-y-1">
                 <h2 className="text-2xl font-bold tracking-tight">Where are you spending?</h2>
-                <p className="text-gray-500 text-sm">Enter merchant to get the best card choice.</p>
+                <p className="text-gray-500 text-sm">Enter a merchant, category, or item.</p>
               </div>
 
-              <form onSubmit={handleSearch} className="space-y-4">
-                <div className="relative group">
+              <form onSubmit={handleSearch} className="space-y-4 relative z-[120]">
+                <div className="relative group z-[110]" ref={suggestionRef}>
                   <input
                     type="text"
                     value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder="e.g. Swiggy, Amazon, Uber..."
-                    className="w-full bg-white border border-gray-200 rounded-2xl py-4 pl-12 pr-4 shadow-sm focus:ring-2 ring-blue-500 transition-all outline-none text-lg font-medium"
+                    onChange={(e) => {
+                      setQuery(e.target.value);
+                      setShowSuggestions(true);
+                    }}
+                    onFocus={() => setShowSuggestions(true)}
+                    onKeyDown={(e) => {
+                      if (!showSuggestions || suggestions.length === 0) return;
+                      if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        setFocusedSuggestionIndex(prev => (prev < suggestions.length - 1 ? prev + 1 : prev));
+                      } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        setFocusedSuggestionIndex(prev => (prev > 0 ? prev - 1 : -1));
+                      } else if (e.key === 'Enter') {
+                        if (focusedSuggestionIndex >= 0) {
+                          e.preventDefault();
+                          setQuery(suggestions[focusedSuggestionIndex]);
+                          setShowSuggestions(false);
+                          setFocusedSuggestionIndex(-1);
+                        }
+                      }
+                    }}
+                    placeholder="e.g. Swiggy, Groceries, iPhone..."
+                    className="w-full bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-white border border-gray-200 rounded-2xl py-4 pl-12 pr-12 shadow-sm focus:ring-2 ring-blue-500 transition-all outline-none text-lg font-medium"
+                    autoComplete="off"
                   />
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                  {query && (
+                    <button type="button" onClick={() => { setQuery(''); setShowSuggestions(false); }} className="absolute right-4 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 bg-gray-100 rounded-full transition-colors">
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                  
+                  {/* Suggestions Dropdown */}
+                  <AnimatePresence>
+                    {showSuggestions && suggestions.length > 0 && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -10, scale: 0.98 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden z-50"
+                      >
+                        {suggestions.map((s, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => {
+                              setQuery(s);
+                              setShowSuggestions(false);
+                            }}
+                            className={cn("w-full px-5 py-3 text-left flex items-center gap-3 transition-colors text-gray-700 dark:text-gray-200 font-medium border-b border-gray-50 dark:border-gray-700/50 last:border-0", focusedSuggestionIndex === idx ? "bg-gray-100 dark:bg-white/10" : "hover:bg-gray-50 dark:hover:bg-white/10")}
+                          >
+                            <Search className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                            {s}
+                          </button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
 
                 <div className="flex gap-2 relative z-[100]">
@@ -597,27 +803,28 @@ export default function App() {
                   <input
                     type="text"
                     inputMode="decimal"
-                    value={isIntl ? foreignAmount : amount}
+                    value={formatAmountStr(isIntl ? foreignAmount : amount)}
                     onChange={(e) => {
-                      const val = e.target.value.replace(/[^0-9.]/g, '');
+                      const val = e.target.value.replace(/,/g, '').replace(/[^0-9.]/g, '');
                       isIntl ? setForeignAmount(val) : setAmount(val);
                     }}
                     className={cn("w-full bg-white border border-gray-200 rounded-2xl py-4 pr-24 shadow-sm focus:ring-2 ring-blue-500 transition-all outline-none font-bold text-lg", isIntl ? "pl-[120px]" : "pl-10")}
                   />
-                  <button
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
                     disabled={loading}
                     className="absolute right-2 top-1/2 -translate-y-1/2 bg-[#0095f6] text-white rounded-xl px-4 py-2 text-sm font-semibold hover:bg-blue-600 transition-colors disabled:opacity-50 shadow"
                   >
                     {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Check'}
-                  </button>
+                  </motion.button>
                 </div>
 
-                <div className="flex flex-nowrap md:portrait:flex-wrap items-center justify-between xl:justify-start gap-2 md:gap-3 px-3 md:px-4 py-3 bg-white rounded-2xl border border-gray-100 shadow-sm w-full overflow-x-auto scrollbar-hide">
+                <div className="flex flex-nowrap md:portrait:flex-wrap items-center justify-between xl:justify-start gap-2 md:gap-3 px-3 md:px-4 py-3 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm w-full overflow-x-auto scrollbar-hide">
                   <div className="flex items-center gap-2 md:gap-3 shrink-0">
                     <button
                       type="button"
-                      onClick={() => setIsOnline(!isOnline)}
-                      className={cn("flex items-center gap-1.5 md:gap-1 px-3 md:px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0", isOnline ? "bg-blue-600 text-white shadow-md shadow-blue-600/20" : "bg-gray-50 text-gray-600 hover:bg-gray-100")}
+                      onClick={() => { setIsOnline(true); setIsScanToPay(false); }}
+                      className={cn("flex items-center gap-1.5 md:gap-1 px-3 md:px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0", isOnline ? "bg-blue-600 text-white shadow-md shadow-blue-600/20" : "bg-gray-50 dark:bg-gray-800/60 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10")}
                     >
                       <Globe className="w-4 h-4 shrink-0" />
                       <span className="whitespace-nowrap">Online</span>
@@ -626,9 +833,9 @@ export default function App() {
                       type="button"
                       onClick={() => {
                         setIsIntl(!isIntl);
-                        if (!isIntl) setIsScanToPay(false);
+                        if (!isIntl) { setIsScanToPay(false); }
                       }}
-                      className={cn("flex items-center gap-1.5 md:gap-1 px-3 md:px-3 py-2 -ml-1 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0", isIntl ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20" : "bg-gray-50 text-gray-600 hover:bg-gray-100")}
+                      className={cn("flex items-center gap-1.5 md:gap-1 px-3 md:px-3 py-2 -ml-1 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0", isIntl ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20" : "bg-gray-50 dark:bg-gray-800/60 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10")}
                     >
                       <Plane className="w-4 h-4 shrink-0" />
                       <span className="whitespace-nowrap">International</span>
@@ -641,42 +848,79 @@ export default function App() {
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.95 }}
-                      onClick={() => setIsScanToPay(!isScanToPay)}
-                      className={cn("flex items-center justify-center lg:ml-auto gap-2 px-3 md:px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0 md:portrait:w-full lg:w-auto", isScanToPay ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/20" : "bg-gray-50 text-gray-600 hover:bg-gray-100")}
+                      onClick={() => { setIsScanToPay(!isScanToPay); setIsOnline(false); }}
+                      className={cn("flex items-center justify-center lg:ml-auto gap-2 px-3 md:px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0 md:portrait:w-full lg:w-auto", isScanToPay ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/20" : "bg-gray-50 dark:bg-gray-800/60 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10")}
                     >
                       <QrCode className="w-4 h-4 shrink-0" />
                       <span className="hidden max-md:landscape:inline md:portrait:inline xl:inline whitespace-nowrap">Scan & Pay</span>
                     </motion.button>
                   )}
+                  {isOnline && !isIntl && (
+                    <motion.button
+                      type="button"
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      onClick={() => { setIsOnline(false); setIsScanToPay(false); }}
+                      className={cn("flex items-center justify-center lg:ml-auto gap-2 px-3 md:px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0 md:portrait:w-full lg:w-auto", !isOnline && !isScanToPay && !isIntl ? "bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-900 shadow-md shadow-gray-800/20 dark:shadow-gray-200/20" : "bg-gray-50 dark:bg-gray-800/60 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10")}
+                    >
+                      <Store className="w-4 h-4 shrink-0" />
+                      <span className="hidden max-md:landscape:inline md:portrait:inline xl:inline whitespace-nowrap">In-Store</span>
+                    </motion.button>
+                  )}
                 </div>
               </form>
+
+              {/* Recent History Shortcuts */}
+              {history.length > 0 && (
+                <div className="space-y-3 pt-4 border-t border-gray-100">
+                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest pl-1">Recent Searches</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {history.slice(0, 4).map((item, idx) => (
+                      <button
+                        key={`${item.name}-${idx}`}
+                        onClick={() => {
+                          setIsOnline(true);
+                          setIsIntl(false);
+                          handleSearch(undefined, item.name, amount);
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-2 bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700/50 rounded-xl text-sm font-medium hover:border-blue-300 dark:hover:border-blue-500/50 hover:bg-gray-100 dark:hover:bg-white/10 hover:shadow-sm hover:text-blue-600 dark:hover:text-blue-300 transition-all text-gray-600 dark:text-gray-300 text-left"
+                      >
+                        <History className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
+                        <span>{item.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </section>
 
             {/* Vouchers (Desktop) */}
-            <section className="space-y-4 hidden md:block">
+            <section className="space-y-4 hidden md:block relative z-[100]">
               <div className="space-y-1">
                 <h2 className="text-xl font-bold tracking-tight">Voucher Portals</h2>
                 <p className="text-gray-500 text-xs">Select your portal to check card pairing.</p>
               </div>
-              <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col gap-4 min-h-[180px]">
-                <div className="relative bg-gray-50 rounded-xl border border-gray-200 focus-within:ring-2 focus-within:ring-blue-500 hover:bg-gray-100 transition-colors">
+              <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl p-5 rounded-3xl border border-gray-200/60 dark:border-gray-800 shadow-sm flex flex-col gap-4 min-h-[180px] relative group z-20">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-transparent pointer-events-none rounded-3xl overflow-hidden" />
+                <div className="relative z-50 bg-gray-50 dark:bg-gray-800/80 rounded-2xl border border-gray-200 dark:border-gray-700/50 focus-within:ring-2 focus-within:ring-purple-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors shadow-inner">
                   <CustomSelect
                     value={selectedVoucherPortal}
                     onChange={setSelectedVoucherPortal}
                     options={Object.keys(VOUCHER_PORTALS).map(portal => ({ label: portal === 'tata neu' ? 'Tata Neu' : portal.charAt(0).toUpperCase() + portal.slice(1), value: portal }))}
                     placeholder="Select a portal..."
-                    className="w-full px-4 py-3 font-medium text-gray-800"
+                    className="w-full px-4 py-3 font-medium text-gray-800 dark:text-gray-200"
                     dropdownClassName="w-full left-0 right-0 top-full"
                   />
                 </div>
-                <div className="p-4 bg-purple-50 border border-purple-100 rounded-xl flex items-center justify-between mt-auto gap-3 flex-wrap">
-                  <span className="text-sm font-semibold text-purple-900 shrink-0">Best Card:</span>
+                <div className="p-4 bg-purple-50/80 dark:bg-purple-900/20 backdrop-blur-sm border border-purple-100/50 dark:border-purple-800/30 rounded-2xl flex items-center justify-between mt-auto gap-3 flex-wrap relative z-10">
+                  <span className="text-sm font-semibold text-purple-900 dark:text-purple-300 shrink-0">Best Card:</span>
                   {selectedVoucherPortal ? (
-                    <span className="text-sm font-bold text-purple-700 bg-white px-3 py-1 rounded-lg shadow-sm text-right">
+                    <span className="text-sm font-bold text-purple-700 dark:text-purple-200 bg-white/90 dark:bg-purple-900/50 px-3 py-1 rounded-xl shadow-sm text-right border border-purple-100 dark:border-purple-800/50 backdrop-blur-md">
                       {VOUCHER_PORTALS[selectedVoucherPortal]}
                     </span>
                   ) : (
-                    <span className="text-sm font-medium text-purple-700/60 italic">
+                    <span className="text-sm font-medium text-purple-700/60 dark:text-purple-300/50 italic">
                       Pending selection
                     </span>
                   )}
@@ -690,7 +934,30 @@ export default function App() {
           {/* Right Column - Results */}
           <div className="md:col-span-7 lg:col-span-8 lg:landscape:col-span-7 xl:col-span-7 space-y-8 min-h-0">
             <AnimatePresence mode="wait">
-              {recommendation ? (
+              {loading ? (
+                <motion.section
+                  key="loading-skeleton"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="space-y-6"
+                >
+                  <div className="flex items-center gap-3 pl-4 border-l-4 border-gray-200">
+                    <div className="w-40 h-6 bg-gray-200 rounded-lg animate-pulse" />
+                  </div>
+                  <div className="grid grid-cols-1 landscape:grid-cols-2 lg:grid-cols-2 gap-6">
+                    <div className="w-full h-[220px] bg-gray-200 rounded-[2rem] animate-pulse" />
+                    <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-5 shadow-sm">
+                      <div className="h-20 bg-gray-100 rounded-xl animate-pulse" />
+                      <div className="space-y-2">
+                        <div className="h-4 bg-gray-100 rounded-lg w-full animate-pulse" />
+                        <div className="h-4 bg-gray-100 rounded-lg w-5/6 animate-pulse" />
+                        <div className="h-4 bg-gray-100 rounded-lg w-4/6 animate-pulse" />
+                      </div>
+                    </div>
+                  </div>
+                </motion.section>
+              ) : recommendation ? (
                 <motion.section
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -724,7 +991,7 @@ export default function App() {
                             isRecommendation
                             benefitText={benefit}
                             onClick={() => setSelectedCardForDetails({ card, source: 'rec' })}
-                            isExhausted={exhaustedCards[card.id]}
+                            isExhausted={normalizedExhaustedCards[card.id]}
                           />
                         ))
                       ) : (
@@ -734,24 +1001,26 @@ export default function App() {
                           isRecommendation
                           benefitText={recommendation.expectedBenefit}
                           onClick={() => setSelectedCardForDetails({ card: recommendation.bestCard, source: 'rec' })}
-                          isExhausted={exhaustedCards[recommendation.bestCard.id]}
+                          isExhausted={normalizedExhaustedCards[recommendation.bestCard.id]}
                         />
                       )}
                     </div>
 
-                    <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm space-y-5 flex flex-col justify-between">
-                      <div className="space-y-4">
-                        <div className="flex bg-blue-50 rounded-xl p-4 items-center justify-between">
+                    <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200/60 dark:border-gray-800 rounded-3xl p-6 shadow-sm space-y-5 flex flex-col justify-between relative overflow-hidden group">
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-transparent rounded-bl-full pointer-events-none" />
+                      <div className="space-y-4 relative z-10">
+                        <div className="flex bg-blue-50/50 dark:bg-blue-900/20 backdrop-blur-sm rounded-2xl p-4 items-center justify-between border border-blue-100/50 dark:border-blue-800/30 shadow-inner">
                           <div className="flex flex-col">
-                            <span className="text-xs uppercase font-bold text-blue-500 mb-1">Net Value</span>
-                            <span className="text-2xl font-black text-blue-900">
-                              {recommendation.netValue >= 0 ? '+' : ''}₹{recommendation.netValue.toFixed(2)}
+                            <span className="text-[10px] uppercase font-black tracking-widest text-blue-500 dark:text-blue-400 mb-1">Net Value</span>
+                            <span className="text-3xl font-black text-blue-900 dark:text-blue-100 drop-shadow-sm">
+                              {recommendation.netValue < 0 ? '-' : ''}₹{Math.abs(recommendation.netValue).toFixed(2)}
                             </span>
                           </div>
-                          <div className="text-xs text-right font-medium text-gray-500 space-y-1">
-                            <div>CB: <span className="font-bold text-green-600">₹{recommendation.cashbackEarned.toFixed(2)}</span></div>
-                            {recommendation.feesPaid > 0 && <div className="text-red-500">Fees: ₹{recommendation.feesPaid.toFixed(2)}</div>}
-                          </div>
+                          {recommendation.feesPaid > 0 && (
+                            <div className="text-xs text-right font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/40 rounded-xl px-3 py-2 shadow-sm border border-red-100 dark:border-red-900/50 flex items-center justify-center">
+                              <div className="font-bold">Fee: ₹{recommendation.feesPaid.toFixed(2)}</div>
+                            </div>
+                          )}
                         </div>
 
                         <p className="text-sm font-medium text-gray-700 leading-relaxed whitespace-pre-line">{recommendation.reason}</p>
@@ -791,6 +1060,94 @@ export default function App() {
                             </motion.div>
                           </motion.button>
                         )}
+                        
+                        <div className="pt-2 relative">
+                          <motion.button
+                            onClick={(e) => {
+                              if (isLogged) return;
+                              setIsLogged(true);
+                              
+                              for (let i = 0; i < 15; i++) {
+                                const confetti = document.createElement('div');
+                                confetti.innerHTML = '🪙';
+                                confetti.className = 'fixed pointer-events-none z-[400] text-xl drop-shadow-md';
+                                
+                                confetti.style.left = `${e.clientX}px`;
+                                confetti.style.top = `${e.clientY}px`;
+                                document.body.appendChild(confetti);
+                                
+                                const angle = Math.random() * Math.PI * 2;
+                                const velocity = 40 + Math.random() * 80;
+                                const tx = Math.cos(angle) * velocity;
+                                const ty = Math.sin(angle) * velocity - 60;
+                                
+                                confetti.animate([
+                                  { transform: 'translate(-50%, -50%) scale(0.5) rotate(0deg)', opacity: 1 },
+                                  { transform: `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px)) scale(1.5) rotate(${Math.random() * 180}deg)`, opacity: 0 }
+                                ], {
+                                  duration: 700 + Math.random() * 400,
+                                  easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)'
+                                }).onfinish = () => confetti.remove();
+                              }
+
+                              setTimeout(() => {
+                                handleLogTransaction();
+                              }, 1200);
+                            }}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.95 }}
+                            className={cn(
+                              "w-full h-12 relative overflow-hidden group text-white font-bold rounded-2xl transition-all duration-300 flex items-center justify-center gap-2",
+                              isLogged 
+                                ? "bg-gradient-to-r from-emerald-500 to-emerald-600 shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_20px_rgba(16,185,129,0.3)]" 
+                                : "bg-gradient-to-r from-blue-600 to-indigo-600 shadow-[0_0_20px_rgba(79,70,229,0.3)] hover:shadow-[0_0_25px_rgba(79,70,229,0.5)]"
+                            )}
+                          >
+                            <span className="absolute inset-0 w-full h-full -ml-[100%] bg-gradient-to-r from-transparent via-white/20 to-transparent group-hover:left-[200%] transition-all duration-700 ease-in-out" />
+                            <AnimatePresence mode="wait">
+                              {!isLogged ? (
+                                <motion.div
+                                  key="initial"
+                                  initial={{ opacity: 0 }}
+                                  animate={{ opacity: 1 }}
+                                  exit={{ opacity: 0, scale: 0.95 }}
+                                  transition={{ duration: 0.15 }}
+                                  className="flex items-center justify-center gap-2 relative z-10 w-full"
+                                >
+                                  <Check className="w-5 h-5 -mt-0.5" strokeWidth={2.5} />
+                                  <span className="text-base font-bold whitespace-nowrap">Log Transaction</span>
+                                </motion.div>
+                              ) : (
+                                <motion.div
+                                  key="logged"
+                                  className="flex items-center justify-center relative z-10 w-full h-full"
+                                >
+                                  <motion.div
+                                    initial={{ x: -40, rotate: -20, scale: 1.5, opacity: 0 }}
+                                    animate={{ x: 45, rotate: 0, scale: 1.5, opacity: 1 }}
+                                    transition={{ duration: 0.7, ease: "easeInOut" }}
+                                    className="absolute z-20"
+                                  >
+                                    <Check className="w-6 h-6 drop-shadow-md" strokeWidth={3} />
+                                  </motion.div>
+                                  <div className="flex z-10 relative pr-4">
+                                    {['L', 'o', 'g', 'g', 'e', 'd'].map((char, index) => (
+                                      <motion.span
+                                        key={index}
+                                        initial={{ opacity: 0, scale: 0.8, y: 4 }}
+                                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                                        transition={{ delay: 0.1 + index * 0.1, duration: 0.25, type: 'spring', bounce: 0.5 }}
+                                        className="text-base font-bold"
+                                      >
+                                        {char}
+                                      </motion.span>
+                                    ))}
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </motion.button>
+                        </div>
                       </div>
 
                       {recommendation.voucherOption && (
@@ -810,14 +1167,17 @@ export default function App() {
                   </div>
 
                   {recommendation.alternatives.length > 0 && (
-                    <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm mt-6">
-                      <h4 className="text-sm uppercase font-bold text-gray-400 mb-4 tracking-wider">Top Alternatives</h4>
-                      <div className="grid grid-cols-1 landscape:grid-cols-2 md:grid-cols-3 gap-4">
+                    <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200/60 dark:border-gray-800 rounded-3xl p-6 shadow-sm mt-6 relative overflow-hidden group/alts">
+                      <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-indigo-500/5 to-transparent rounded-bl-full pointer-events-none" />
+                      <h4 className="text-[10px] uppercase font-black text-gray-400 dark:text-gray-500 mb-4 tracking-widest relative z-10">Top Alternatives</h4>
+                      <div className="grid grid-cols-1 landscape:grid-cols-2 md:grid-cols-3 gap-4 relative z-10">
                         {recommendation.alternatives.map((alt) => (
-                          <div key={alt.card.id} className="p-4 bg-gray-50 rounded-xl border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all duration-200 group/alt cursor-default">
-                            <div className="font-semibold text-gray-800 mb-1 truncate group-hover/alt:text-blue-700 transition-colors">{alt.card.name}</div>
-                            <div className="text-xs text-gray-500 mb-3 truncate" title={alt.benefit}>{alt.benefit}</div>
-                            <div className="text-sm text-blue-600 font-bold bg-blue-100/60 inline-block px-2.5 py-1 rounded-lg">Net: ₹{alt.netValue.toFixed(0)}</div>
+                          <div key={alt.card.id} className="p-4 bg-gray-50/80 dark:bg-gray-800/80 rounded-2xl border border-gray-200 dark:border-gray-700/50 hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/20 transition-all duration-300 group/alt cursor-default shadow-sm hover:shadow-md dark:shadow-none dark:hover:shadow-none">
+                            <div className="font-bold text-gray-900 dark:text-gray-100 mb-1.5 truncate group-hover/alt:text-indigo-700 dark:group-hover/alt:text-indigo-300 transition-colors">{alt.card.name}</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mb-3 line-clamp-2 md:min-h-[2rem] leading-relaxed">{alt.benefit}</div>
+                            <div className="text-xs tracking-wide text-indigo-700 dark:text-indigo-300 font-bold bg-indigo-100/60 dark:bg-indigo-900/40 inline-flex items-center px-3 py-1.5 rounded-xl border border-indigo-200/50 dark:border-indigo-800/50 shadow-inner">
+                              <span className="opacity-70 mr-1 uppercase text-[10px]">Net:</span> ₹{alt.netValue.toFixed(0)}
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -838,30 +1198,31 @@ export default function App() {
 
             <div className="w-full flex flex-col gap-8 md:gap-6">
               {/* Vouchers (Mobile) */}
-              <section className="space-y-4 md:hidden">
+              <section className="space-y-4 md:hidden relative z-[100]">
                 <div className="space-y-1">
                   <h2 className="text-xl font-bold tracking-tight">Voucher Portals</h2>
                   <p className="text-gray-500 text-xs">Select your portal to check card pairing.</p>
                 </div>
-                <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col gap-4 min-h-[180px]">
-                  <div className="relative bg-gray-50 rounded-xl border border-gray-200 focus-within:ring-2 focus-within:ring-blue-500 hover:bg-gray-100 transition-colors">
+                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl p-5 rounded-3xl border border-gray-200/60 dark:border-gray-800 shadow-sm flex flex-col gap-4 min-h-[180px] relative group z-20">
+                  <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-transparent pointer-events-none rounded-3xl overflow-hidden" />
+                  <div className="relative z-50 bg-gray-50 dark:bg-gray-800/80 rounded-2xl border border-gray-200 dark:border-gray-700/50 focus-within:ring-2 focus-within:ring-purple-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors shadow-inner">
                     <CustomSelect
                       value={selectedVoucherPortal}
                       onChange={setSelectedVoucherPortal}
                       options={Object.keys(VOUCHER_PORTALS).map(portal => ({ label: portal === 'tata neu' ? 'Tata Neu' : portal.charAt(0).toUpperCase() + portal.slice(1), value: portal }))}
                       placeholder="Select a portal..."
-                      className="w-full px-4 py-3 font-medium text-gray-800"
+                      className="w-full px-4 py-3 font-medium text-gray-800 dark:text-gray-200"
                       dropdownClassName="w-full left-0 right-0 top-full"
                     />
                   </div>
-                  <div className="p-4 bg-purple-50 border border-purple-100 rounded-xl flex items-center justify-between mt-auto gap-3 flex-wrap">
-                    <span className="text-sm font-semibold text-purple-900 shrink-0">Best Card:</span>
+                  <div className="p-4 bg-purple-50/80 dark:bg-purple-900/20 backdrop-blur-sm border border-purple-100/50 dark:border-purple-800/30 rounded-2xl flex items-center justify-between mt-auto gap-3 flex-wrap relative z-10">
+                    <span className="text-sm font-semibold text-purple-900 dark:text-purple-300 shrink-0">Best Card:</span>
                     {selectedVoucherPortal ? (
-                      <span className="text-sm font-bold text-purple-700 bg-white px-3 py-1 rounded-lg shadow-sm text-right">
+                      <span className="text-sm font-bold text-purple-700 dark:text-purple-200 bg-white/90 dark:bg-purple-900/50 px-3 py-1 rounded-xl shadow-sm text-right border border-purple-100 dark:border-purple-800/50 backdrop-blur-md">
                         {VOUCHER_PORTALS[selectedVoucherPortal]}
                       </span>
                     ) : (
-                      <span className="text-sm font-medium text-purple-700/60 italic">
+                      <span className="text-sm font-medium text-purple-700/60 dark:text-purple-300/50 italic">
                         Pending selection
                       </span>
                     )}
@@ -870,18 +1231,26 @@ export default function App() {
               </section>
 
               {/* Lounge Access Tip */}
-              <section className="bg-gradient-to-tr from-gray-900 via-gray-800 to-gray-900 rounded-3xl p-6 py-6 md:py-8 text-white overflow-hidden relative shadow-lg min-h-[140px] flex flex-col sm:flex-row sm:items-center justify-between mt-6 md:mt-0 lg:mt-0 xl:mt-0 border border-gray-700">
+                  <section className="bg-gray-900/95 dark:bg-black/80 backdrop-blur-xl rounded-3xl p-6 py-6 md:py-8 text-white overflow-hidden relative shadow-lg min-h-[140px] flex flex-col sm:flex-row sm:items-center justify-between border border-gray-800 dark:border-gray-700/50 group">
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-500/20 via-transparent to-transparent pointer-events-none opacity-50 group-hover:opacity-100 transition-opacity duration-500" />
                 <div className="space-y-3 relative z-10 sm:max-w-[70%]">
-                  <div className="flex items-center gap-2">
-                    <Plane className="w-5 h-5 text-gray-300 drop-shadow" />
-                    <h4 className="text-lg font-bold tracking-wide">Lounge Tracker</h4>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-500/10 to-blue-600/5 flex items-center justify-center border border-blue-500/10 shadow-sm backdrop-blur-md">
+                      <Plane className="w-5 h-5 text-blue-300/80 drop-shadow-sm" />
+                    </div>
+                    <div className="flex flex-col">
+                      <h4 className="text-lg font-bold tracking-tight leading-tight">Lounge Tracker</h4>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Airport Benefits</p>
+                    </div>
                   </div>
-                  <p className="text-xs text-gray-300 leading-relaxed">
+                  <p className="text-xs text-gray-300 leading-relaxed font-medium pl-1">
                     You have {CARD_DATA.filter(c => !c.isDummy && c.benefits.some(b => b.type === 'lounge')).length} cards with tracking for lounge access.
                   </p>
                 </div>
-                <button onClick={() => setIsLoungeOpen(true)} className="relative z-10 bg-white/10 hover:bg-white/20 border border-white/10 text-white text-xs font-bold px-5 py-2.5 rounded-full mt-4 sm:mt-0 backdrop-blur-sm transition-all w-fit shrink-0">View Passes</button>
-                <Plane className="absolute -bottom-10 -right-8 w-48 h-48 text-white opacity-[0.03] rotate-12 pointer-events-none" />
+                <button onClick={() => setIsLoungeOpen(true)} className="relative z-10 bg-white hover:bg-gray-100 text-gray-900 text-sm font-bold px-6 py-3 rounded-2xl mt-4 sm:mt-0 transition-all w-fit shrink-0 shadow-lg shadow-white/5 hover:scale-105 active:scale-95 flex items-center gap-2 group/btn">
+                  View Passes
+                </button>
+                <Plane className="absolute -bottom-10 -right-8 w-48 h-48 text-white opacity-[0.02] group-hover:opacity-[0.04] rotate-12 transition-opacity duration-500 pointer-events-none" />
               </section>
             </div>
           </div>
@@ -890,11 +1259,30 @@ export default function App() {
         {/* My Cards Section - Full Width Bottom */}
         <div className="mt-12 pt-8 border-t border-gray-200 space-y-6">
           <div className="flex items-center justify-between">
-            <h3 className="text-xl font-bold flex items-center gap-2 text-gray-900">
-              <History className="w-5 h-5 text-gray-500" />
-              My Cards
+            <h3 className="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
+              <Wallet className="w-5 h-5 text-gray-500" />
+              My Wallet
+              <span className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 rounded-full px-2 py-0.5 text-[10px] font-black ml-1">
+                {(walletCards.length > 0 ? CARD_DATA.filter(c => walletCards.includes(c.id) && !c.isDummy) : CARD_DATA.filter(c => !c.isDummy)).length}
+              </span>
             </h3>
-            <span className="text-sm text-blue-600 font-semibold bg-blue-50 px-3 py-1.5 rounded-full">{CARD_DATA.filter(c => !c.isDummy).length} Active Cards</span>
+            <div className="flex items-center gap-3">
+              <div className="relative group flex cursor-pointer" onClick={() => setIsDashboardOpen(true)}>
+                <button className="relative overflow-hidden flex items-center justify-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-white/10 transition-colors shadow-sm text-yellow-600 dark:text-yellow-500 px-4 py-1.5 rounded-full text-sm font-bold gap-2 focus:ring-2 ring-gray-200 dark:ring-gray-800 outline-none group/piggy">
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-yellow-600 dark:bg-yellow-500 opacity-0 group-hover/piggy:opacity-0 group-hover/piggy:animate-[coin-drop_0.5s_ease-in_forwards] z-[5]"></span>
+                  <PiggyBank className="w-5 h-5 transition-transform group-hover/piggy:scale-110 relative z-10 fill-white dark:fill-gray-800" strokeWidth={2} />
+                </button>
+                <div className="absolute -top-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity bg-gray-900 border border-gray-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg whitespace-nowrap shadow-xl z-50">
+                  My Savings
+                </div>
+              </div>
+              <button
+                onClick={() => setIsWalletOpen(true)}
+                className="text-sm font-semibold flex items-center gap-2 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 px-5 py-1.5 rounded-full transition-colors shadow-sm focus:ring-2 ring-gray-200 outline-none"
+              >
+                Edit
+              </button>
+            </div>
           </div>
 
           {/* We turn this into a horizontal scrolling container with a fade mask on the edges if there's overflow, or just a nice grid */}
@@ -902,49 +1290,56 @@ export default function App() {
             <div className="absolute top-0 left-0 bottom-0 w-0.5 bg-gradient-to-r from-[#F5F5F7] to-transparent z-10 pointer-events-none sm:hidden"></div>
             <div className="absolute top-0 right-0 bottom-0 w-0.5 bg-gradient-to-l from-[#F5F5F7] to-transparent z-10 pointer-events-none sm:hidden"></div>
             <div className="flex sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 overflow-x-auto pt-8 pb-4 px-1 snap-x scrollbar-hide">
-              {CARD_DATA.filter(c => !c.isDummy).map((card) => (
+              {(walletCards.length > 0 ? CARD_DATA.filter(c => walletCards.includes(c.id) && !c.isDummy) : CARD_DATA.filter(c => !c.isDummy)).map((card) => (
                 <div key={card.id} className={cn("snap-start shrink-0 w-72 sm:w-auto transition-opacity duration-200", selectedCardForDetails?.card.id === card.id ? "opacity-0 pointer-events-none" : "opacity-100")}>
-                  <CardItem layoutId={`card-list-${card.id}`} card={card} onClick={() => setSelectedCardForDetails({ card, source: 'list' })} className="h-full shadow-sm hover:shadow-md transition-shadow cursor-pointer" isExhausted={exhaustedCards[card.id]} />
+                  <CardItem layoutId={`card-list-${card.id}`} card={card} onClick={() => setSelectedCardForDetails({ card, source: 'list' })} className="h-full shadow-sm hover:shadow-md transition-shadow cursor-pointer" isExhausted={normalizedExhaustedCards[card.id]} />
                 </div>
               ))}
             </div>
           </div>
         </div>
 
-        {/* Redemption Reminder Section */}
-        <section className="mt-12 bg-white rounded-2xl p-5 border border-indigo-100 shadow-sm max-w-lg mx-auto">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="p-1.5 bg-indigo-50 rounded-lg">
-              <Wallet className="w-4 h-4 text-indigo-600" />
+        {/* Reminders / Dashboard Area */}
+        <div className="mt-12 max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
+          <BillReminders
+            walletCards={walletCards}
+            cardBillDates={cardBillDates}
+            paidBills={paidBills}
+            markBillPaid={markBillPaid}
+          />
+
+          {/* Redemption Reminder Section */}
+          <section className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200/60 dark:border-gray-800 rounded-3xl p-6 shadow-sm flex flex-col justify-between h-full relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-pink-500/10 to-transparent rounded-bl-full pointer-events-none" />
+            
+            <div>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-900/40 dark:to-pink-900/20 flex items-center justify-center border border-pink-200/50 shadow-sm relative z-10">
+                  <Ticket className="w-5 h-5 text-pink-600 dark:text-pink-400" />
+                </div>
+                <div className="relative z-10">
+                  <h3 className="font-bold text-gray-900 dark:text-white leading-tight">Redemption Reminder</h3>
+                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">Don't let balances expire</p>
+                </div>
+              </div>
+              
+              <ul className="space-y-2 mt-6 relative z-10">
+                {[
+                  { name: 'Kiwi Neon', type: 'Kiwis' },
+                  { name: 'Tata Neu', type: 'NeuCoins' },
+                  { name: 'Amazon Pay', type: 'Wallet balance' },
+                  { name: 'OneCard', type: 'Reward points' },
+                  { name: 'Imperia Platinum', type: 'Cashback points' }
+                ].map((item, i) => (
+                  <li key={i} className="flex justify-between items-center bg-gray-50/50 hover:bg-gray-100/50 dark:bg-gray-800/50 dark:hover:bg-gray-800 transition-colors p-3 rounded-xl border border-gray-100 dark:border-gray-800">
+                    <span className="font-bold text-sm text-gray-700 dark:text-gray-300">{item.name}</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-pink-600/80 dark:text-pink-400 bg-pink-50 dark:bg-pink-900/30 px-2 py-1 rounded-md">{item.type}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <h3 className="font-bold text-gray-900">Redemption Reminder</h3>
-          </div>
-          <p className="text-xs text-gray-600 leading-relaxed font-medium mb-3">
-            Don't forget to redeem flat points and balances across your ecosystems. Small balances add up!
-          </p>
-          <ul className="text-xs space-y-2 text-gray-700">
-            <li className="flex justify-between items-center bg-gray-50 p-2 rounded-lg">
-              <span className="font-semibold">Kiwi Neon</span>
-              <span className="text-gray-500">Kiwis</span>
-            </li>
-            <li className="flex justify-between items-center bg-gray-50 p-2 rounded-lg">
-              <span className="font-semibold">Tata Neu</span>
-              <span className="text-gray-500">NeuCoins</span>
-            </li>
-            <li className="flex justify-between items-center bg-gray-50 p-2 rounded-lg">
-              <span className="font-semibold">Amazon Pay</span>
-              <span className="text-gray-500">Wallet balance</span>
-            </li>
-            <li className="flex justify-between items-center bg-gray-50 p-2 rounded-lg">
-              <span className="font-semibold">OneCard</span>
-              <span className="text-gray-500">Reward points</span>
-            </li>
-            <li className="flex justify-between items-center bg-gray-50 p-2 rounded-lg">
-              <span className="font-semibold">Imperia Platinum</span>
-              <span className="text-gray-500">Cashback points</span>
-            </li>
-          </ul>
-        </section>
+          </section>
+        </div>
       </main>
 
       <AnimatePresence>
@@ -954,7 +1349,7 @@ export default function App() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-white/40 backdrop-blur-md"
+            className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-white/40 backdrop-blur-md"
             onClick={() => setSelectedCardForDetails(null)}
           >
             <motion.div
@@ -969,13 +1364,13 @@ export default function App() {
               <div className="absolute inset-0 rounded-3xl shadow-2xl shadow-black/40 pointer-events-none" />
               <button
                 onClick={() => setSelectedCardForDetails(null)}
-                className="absolute right-4 top-4 p-2 bg-black/20 rounded-full hover:bg-black/40 transition-colors z-20 backdrop-blur-md"
+                className="absolute right-4 top-4 p-2 bg-black/20 rounded-full hover:bg-black/40 transition-colors z-40 backdrop-blur-md"
                 aria-label="Close details"
               >
                 <X className="w-5 h-5 text-white" />
               </button>
 
-              <div className="flex flex-col mb-6 relative z-10">
+              <div className="flex flex-col mb-6 relative z-30">
                 <span className="text-xs font-semibold uppercase tracking-widest opacity-80 mb-1">{selectedCardForDetails.card.bank}</span>
                 <h2 className="text-3xl font-black text-white leading-tight pr-10">
                   {selectedCardForDetails.card.name}
@@ -987,18 +1382,35 @@ export default function App() {
                       {selectedCardForDetails.card.tier}
                     </span>
                   )}
+                  {selectedCardForDetails.card.id === 'sbi-cashback' && (
+                    <div className="relative group ml-auto flex">
+                      <a
+                        href="https://docs.google.com/spreadsheets/d/1LEw12SuubMCJ-6u_4PZtRSD8FI1B5uecbeyCvCApQtk/edit?gid=1950331142#gid=1950331142"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-xs font-bold bg-white/20 hover:bg-white/30 text-white px-2 py-0.5 rounded transition-colors shadow-sm backdrop-blur-md flex items-center gap-1"
+                      >
+                        <Store className="w-3 h-3" /> Merchants
+                      </a>
+                      <div className="absolute top-full right-0 mt-2 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity bg-gray-900 border border-gray-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg whitespace-nowrap shadow-xl z-50">
+                        Browse the community-maintained merchant list.
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
               <div className="overflow-y-auto pr-2 space-y-3 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent relative z-10 pb-4">
                 {selectedCardForDetails.card.benefits.filter(b => b.type !== 'exclusion' && b.type !== 'lounge' && !b.isHidden).map((b, i) => {
-                  const usageKey = `${selectedCardForDetails.card.id}-${b.category}-${b.value}`;
+                  const cycle = getCycleForCard(selectedCardForDetails.card.id, cardBillDates);
+                  const usageKey = `${selectedCardForDetails.card.id}-${b.category}-${b.value}-${cycle}`;
                   const usedCount = offerUsage[usageKey] || 0;
                   return (
                     <div key={i} className="p-4 border border-white/10 rounded-2xl bg-black/20 backdrop-blur-sm flex flex-col gap-1">
-                      <div className="font-bold text-white flex items-center justify-between gap-2 overflow-hidden">
+                      <div className="font-bold text-white flex items-center justify-between gap-2 min-w-0">
                         <span className="truncate pr-2">{b.category}</span>
-                        <span className="shrink-0 font-black bg-white text-black px-2 py-1 rounded-lg text-[13px] shadow-sm">
+                        <span className="shrink-0 font-bold bg-white/20 border border-white/20 text-white px-2 py-1 rounded-lg text-[13px] shadow-sm relative z-10">
                           {b.value}
                         </span>
                       </div>
@@ -1049,11 +1461,24 @@ export default function App() {
                 {selectedCardForDetails.card.benefits.filter(b => b.type !== 'exclusion' && b.type !== 'lounge' && !b.isHidden).length === 0 && (
                   <div className="text-white/60 text-sm py-4 text-center font-medium">No quick-view benefits available.</div>
                 )}
+                
+                {selectedCardForDetails.card.type === 'Credit' && (
+                  <div className="mt-2 border-t border-white/20 pt-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm font-semibold opacity-90 text-white">Bill Generation Date</span>
+                      <BillDateSelector
+                        date={cardBillDates[selectedCardForDetails.card.id] || 1}
+                        onChange={(date) => setCardBillDates(prev => ({ ...prev, [selectedCardForDetails.card.id]: date }))}
+                      />
+                    </div>
+                    <p className="text-xs text-white/70">Used to send payment reminders and reset monthly offer limits.</p>
+                  </div>
+                )}
               </div>
 
               {/* Kiwi Neon Slider */}
-              {selectedCardForDetails.card.id === 'kiwi-neon' && (
-                <div className="mt-6 pt-6 border-t border-white/20 relative z-10 flex flex-col gap-2">
+                  {selectedCardForDetails.card.id === 'kiwi-neon' && (
+                <div className="mt-2 pt-4 border-t border-white/20 relative z-10 flex flex-col gap-2">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-extrabold tracking-widest uppercase text-white/90">Current Milestone</span>
                     <span className="text-xs font-black bg-white/20 px-3 py-1 rounded-full shadow-inner text-white border border-white/10">
@@ -1077,7 +1502,7 @@ export default function App() {
                       onChange={(e) => setKiwiNeonEarnRate(parseInt(e.target.value, 10))}
                       className="w-full h-2.5 rounded-full appearance-none cursor-pointer outline-none shadow-inner"
                       style={{
-                        background: `linear-gradient(to right, #4ade80 0%, #fef08a ${((kiwiNeonEarnRate - 2) / 3) * 100}%, rgba(0,0,0,0.3) ${((kiwiNeonEarnRate - 2) / 3) * 100}%, rgba(0,0,0,0.3) 100%)`,
+                        background: `linear-gradient(to right, #4ade80 0%, #fef08a ${((kiwiNeonEarnRate - 2) / 3) * 100}%, rgba(255,255,255,0.3) ${((kiwiNeonEarnRate - 2) / 3) * 100}%, rgba(255,255,255,0.3) 100%)`,
                       }}
                     />
                     <style>{`
@@ -1109,13 +1534,24 @@ export default function App() {
                   <span className="text-[11px] font-medium text-white/60 leading-none">Exclude from recommendations</span>
                 </div>
                 <button
-                  onClick={() => setExhaustedCards(prev => ({ ...prev, [selectedCardForDetails.card.id]: !prev[selectedCardForDetails.card.id] }))}
-                  className={cn("w-12 h-6 rounded-full transition-colors flex items-center px-1 shadow-inner shrink-0 ml-4", exhaustedCards[selectedCardForDetails.card.id] ? "bg-red-500" : "bg-black/40")}
+                  onClick={() => {
+                    const isEx = normalizedExhaustedCards[selectedCardForDetails.card.id];
+                    setExhaustedCards(prev => {
+                      if (isEx) {
+                        const copy = { ...prev };
+                        delete copy[selectedCardForDetails.card.id];
+                        return copy;
+                      } else {
+                        return { ...prev, [selectedCardForDetails.card.id]: getCycleForCard(selectedCardForDetails.card.id, cardBillDates) };
+                      }
+                    });
+                  }}
+                  className={cn("w-12 h-6 rounded-full transition-colors flex items-center px-1 shadow-inner shrink-0 ml-4", normalizedExhaustedCards[selectedCardForDetails.card.id] ? "bg-red-500" : "bg-white/20 border border-white/20")}
                 >
                   <motion.div
                     layout
                     className="w-4 h-4 bg-white rounded-full shadow-sm"
-                    animate={{ x: exhaustedCards[selectedCardForDetails.card.id] ? 24 : 0 }}
+                    animate={{ x: normalizedExhaustedCards[selectedCardForDetails.card.id] ? 24 : 0 }}
                   />
                 </button>
               </div>
@@ -1125,115 +1561,17 @@ export default function App() {
       </AnimatePresence>
 
       <AnimatePresence>
-        {isLoungeOpen && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm"
-              onClick={() => setIsLoungeOpen(false)}
-            />
-            {/* Sidebar */}
-            <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="fixed inset-y-0 right-0 z-[101] w-full md:w-[28rem] bg-white shadow-2xl flex flex-col"
-            >
-              <div className="flex items-center justify-between p-6 pr-4 border-b border-gray-100">
-                <div className="flex items-center gap-3">
-                  <div className="p-3 bg-blue-50 rounded-2xl">
-                    <Plane className="w-6 h-6 text-blue-600" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-black text-gray-900 leading-tight">Lounge Tracker</h2>
-                    <p className="text-sm font-medium text-gray-500">Your complimentary passes</p>
-                  </div>
-                </div>
-                <button
-                  aria-label="Close lounge tracker"
-                  onClick={() => setIsLoungeOpen(false)}
-                  className="p-2 bg-gray-100/50 rounded-full hover:bg-gray-200 transition-colors"
-                >
-                  <X className="w-5 h-5 text-gray-500" />
-                </button>
-              </div>
-
-              <div className="flex-1 flex flex-col p-6 overflow-hidden min-h-0">
-                <div className="mb-6 relative shrink-0" style={{ zIndex: 100 }}>
-                  <CustomSelect
-                    value={loungeTab}
-                    onChange={(val: any) => setLoungeTab(val)}
-                    options={[
-                      { label: 'Domestic Lounges', value: 'Domestic' },
-                      { label: 'International Lounges', value: 'International' }
-                    ]}
-                    className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl py-3 px-4 font-bold outline-none"
-                    dropdownClassName="w-full top-full left-0 mt-2 z-50 shadow-xl"
-                  />
-                </div>
-
-                <div className="flex-1 overflow-y-auto flex flex-col gap-3 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent pb-10">
-                  {CARD_DATA.filter(c => !c.isDummy)
-                    .filter(c => c.benefits.some(b => b.type === 'lounge' && b.category === loungeTab))
-                    .map((card: any) => {
-                      const b = card.benefits.find((x: any) => x.type === 'lounge' && x.category === loungeTab)!;
-                      const parsed = parseLoungeBenefit(b);
-
-                      let finalPasses = parsed.passesCount;
-                      let finalVerified = loungeMilestonesVerified[`${card.id}-${loungeTab}`] ?? parsed.isFree;
-
-                      if (card.id === 'kiwi-neon') {
-                        let passes = 0;
-                        if (kiwiNeonEarnRate >= 3) passes += 1;
-                        if (kiwiNeonEarnRate >= 4) passes += 1;
-                        if (kiwiNeonEarnRate >= 5) passes += 1;
-                        finalPasses = passes;
-                        finalVerified = passes > 0;
-                        parsed.passesCount = finalPasses;
-                      }
-
-                      const used = loungePassesUsed[`${card.id}-${loungeTab}`] || 0;
-                      const passesRemaining = Math.max(0, finalPasses - used);
-                      const isExhausted = finalPasses > 0 && passesRemaining === 0;
-                      return { card, b, parsed, isExhausted, isVerified: finalVerified };
-                    })
-                    .sort((a, b) => {
-                      if (a.isExhausted && !b.isExhausted) return 1;
-                      if (!a.isExhausted && b.isExhausted) return -1;
-                      if (a.isVerified && !b.isVerified) return -1;
-                      if (!a.isVerified && b.isVerified) return 1;
-                      if (a.parsed.spend !== b.parsed.spend) return a.parsed.spend - b.parsed.spend;
-                      return b.parsed.passesCount - a.parsed.passesCount;
-                    })
-                    .map(({ card, parsed, isVerified }, i) => (
-                      <LoungeTrackerItem
-                        key={`${card.id}-${loungeTab}`}
-                        card={card}
-                        parsed={parsed}
-                        category={loungeTab}
-                        isVerified={isVerified}
-                        passesUsed={loungePassesUsed[`${card.id}-${loungeTab}`] || 0}
-                        setPassesUsed={(updater: any) => setLoungePassesUsed(prev => {
-                          const current = prev[`${card.id}-${loungeTab}`] || 0;
-                          const next = typeof updater === 'function' ? updater(current) : updater;
-                          return { ...prev, [`${card.id}-${loungeTab}`]: next };
-                        })}
-                        setIsVerified={(val: boolean) => setLoungeMilestonesVerified(prev => ({ ...prev, [`${card.id}-${loungeTab}`]: val }))}
-                      />
-                    ))
-                  }
-                  {CARD_DATA.filter(c => c.benefits.some(b => b.type === 'lounge' && b.category === loungeTab)).length === 0 && (
-                    <div className="text-sm text-gray-400 py-4 text-center">No {loungeTab.toLowerCase()} lounge cards</div>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          </>
-        )}
+      <LoungeTrackerModal
+        isOpen={isLoungeOpen}
+        onClose={() => setIsLoungeOpen(false)}
+        loungeTab={loungeTab}
+        setLoungeTab={setLoungeTab}
+        loungePassesUsed={loungePassesUsed}
+        setLoungePassesUsed={setLoungePassesUsed}
+        loungeMilestonesVerified={loungeMilestonesVerified}
+        setLoungeMilestonesVerified={setLoungeMilestonesVerified}
+        kiwiNeonEarnRate={kiwiNeonEarnRate}
+      />
       </AnimatePresence>
 
       <AnimatePresence>
@@ -1242,7 +1580,7 @@ export default function App() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[1000] flex items-center justify-center p-4 md:p-8 bg-black/60 backdrop-blur-xl"
+            className="fixed inset-0 z-[400] flex items-center justify-center p-4 md:p-8 bg-black/60 backdrop-blur-xl"
             onClick={() => setShowOffersOverlay(false)}
           >
             <motion.div
@@ -1251,12 +1589,12 @@ export default function App() {
               exit={{ scale: 0.9, y: 40, opacity: 0 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-lg bg-white/90 backdrop-blur-2xl rounded-[3rem] overflow-hidden shadow-[0_32px_64px_-12px_rgba(0,0,0,0.3)] border border-white/20 relative flex flex-col max-h-[85vh]"
+              className="w-full max-w-lg bg-white/90 dark:bg-gray-900/90 backdrop-blur-2xl rounded-[3rem] overflow-hidden shadow-[0_32px_64px_-12px_rgba(0,0,0,0.3)] dark:shadow-none border border-white/20 dark:border-gray-800 relative flex flex-col max-h-[85vh]"
             >
               {/* Glossy Header */}
               <div className="p-8 pb-6 flex items-center justify-between sticky top-0 z-10">
                 <div className="space-y-1">
-                  <h3 className="text-3xl font-black text-gray-900 leading-none tracking-tight">Card Offers</h3>
+                  <h3 className="text-3xl font-black text-gray-900 dark:text-white leading-none tracking-tight">Card Offers</h3>
                   <div className="flex items-center gap-2">
                     <div className="flex gap-0.5">
                       <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-bounce" />
@@ -1286,7 +1624,7 @@ export default function App() {
                     <motion.div
                       key={offer.id}
                       whileHover={{ y: -8 }}
-                      className="min-w-[85vw] md:min-w-[320px] max-w-[85vw] md:max-w-[320px] min-h-[340px] bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-xl shadow-gray-200/40 snap-center flex flex-col justify-between relative overflow-hidden group border-b-8 border-b-blue-600/10 select-none"
+                      className="min-w-[85vw] md:min-w-[320px] max-w-[85vw] md:max-w-[320px] min-h-[340px] bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-[2.5rem] p-8 shadow-xl shadow-gray-200/40 dark:shadow-none snap-center flex flex-col justify-between relative overflow-hidden group border-b-8 border-b-blue-600/10 dark:border-b-blue-900/30 select-none"
                     >
                       <div className="absolute -top-4 -right-4 w-32 h-32 bg-blue-50/50 rounded-full blur-3xl group-hover:bg-blue-100/50 transition-colors" />
                       <div className="absolute top-6 right-6 text-6xl opacity-20 group-hover:opacity-40 group-hover:scale-110 group-hover:-rotate-12 transition-all duration-500 pointer-events-none select-none">
@@ -1345,7 +1683,7 @@ export default function App() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+            className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
           >
             <motion.div
               initial={{ scale: 0.95 }}
@@ -1405,7 +1743,7 @@ export default function App() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
+            className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
           >
             <motion.div
               initial={{ scale: 0.95, y: 20 }}
@@ -1463,10 +1801,54 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      <footer className="text-center py-6 mt-8 text-xs text-gray-400 font-medium px-6">
-        <p>Crafted by schultz911. Coded with Gemini.</p>
-        <p>For non-commercial use only.</p>
+      <WalletManagerModal
+        isOpen={isWalletOpen}
+        onClose={() => setIsWalletOpen(false)}
+        walletCards={walletCards}
+        setWalletCards={setWalletCards}
+      />
+      <DashboardModal
+        isOpen={isDashboardOpen}
+        onClose={() => setIsDashboardOpen(false)}
+        logs={cashbackLogs}
+        setLogs={setCashbackLogs}
+      />
+
+      <footer className="text-center py-6 mt-8 text-xs text-gray-400 font-medium px-6 flex flex-col items-center gap-3">
+        <div>
+          <p>Crafted by schultz911. Coded with Gemini.</p>
+          <p>For non-commercial use only.</p>
+        </div>
+        <motion.button
+          onClick={handleInstallClick}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          animate={{ y: [0, -5, 0] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          className="flex items-center gap-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-600 dark:text-blue-400 px-5 py-2.5 rounded-full transition-colors font-bold shadow-sm border border-blue-200/50 dark:border-blue-800/50"
+        >
+          <motion.div animate={{ y: [0, 3, 0] }} transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}>
+            <Download className="w-5 h-5" />
+          </motion.div>
+          Install App
+        </motion.button>
       </footer>
+
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 50, scale: 0.9 }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[5000] px-4 py-3 bg-gray-900 border border-gray-700 rounded-2xl shadow-xl flex items-center gap-3 backdrop-blur-xl"
+          >
+            {toast.type === 'success' && <div className="w-6 h-6 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center"><Check className="w-4 h-4" /></div>}
+            {toast.type === 'error' && <div className="w-6 h-6 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center"><AlertCircle className="w-4 h-4" /></div>}
+            {toast.type === 'info' && <div className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center"><Info className="w-4 h-4" /></div>}
+            <span className="text-white text-sm font-semibold tracking-wide pr-2">{toast.message}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

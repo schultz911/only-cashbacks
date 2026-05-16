@@ -80,6 +80,7 @@ export const CardItem: React.FC<CardItemProps> = ({ card, className, isRecommend
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       whileHover={onClick ? { scale: isRecommendation ? 1.08 : 1.03, y: -5 } : {}}
+      whileTap={onClick ? { scale: 0.95 } : {}}
       transition={{ type: "spring", bounce: 0.3, duration: 0.5 }}
       className={cn(
         "relative overflow-hidden rounded-2xl p-6 text-white shadow-xl bg-gradient-to-br flex flex-col justify-between min-h-[200px] group",
@@ -148,9 +149,9 @@ export const CardItem: React.FC<CardItemProps> = ({ card, className, isRecommend
       )}
 
       {isExhausted && (
-        <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] z-20 flex items-center justify-center p-4 transition-all">
-          <div className="bg-white text-black text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded shadow-xl text-center">
-             Accelerated Limit Reached
+        <div className="absolute inset-0 bg-slate-900/60 dark:bg-black/70 backdrop-blur-sm z-20 flex items-center justify-center p-4 transition-all rounded-[inherit]">
+          <div className="bg-red-500/90 text-white text-[10px] md:text-xs font-black uppercase tracking-widest px-4 py-2 rounded-xl shadow-2xl border border-white/20 text-center flex items-center gap-2">
+             Limit Reached
           </div>
         </div>
       )}
