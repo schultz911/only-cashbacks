@@ -69,13 +69,16 @@ export function getRecommendations(
   const searchedDiningPlat = DINING_PLATFORMS.find(p => nameL.includes(p) || (platL && platL.includes(p)));
 
   // Google Play special logic
-  if ((nameL.includes('google') || platL.includes('google')) && !exhaustedCards['sbi-cashback']) {
+  if (nameL.includes('google') || platL.includes('google')) {
+    const isExhausted = exhaustedCards['sbi-cashback'];
     return {
       bestCard: SBI_CASHBACK_CARD,
-      reason: "For Google Play, always buy an Amazon Gift Card with the SBI Cashback card and load using Amazon's Rewards Gold offer of 5% on Google Play recharges.",
-      expectedBenefit: "5% Cashback + 5% Amazon Rewards Gold",
-      netValue: (Math.min(amount, 40000) * 0.05) + (amount * 0.05),
-      cashbackEarned: (Math.min(amount, 40000) * 0.05) + (amount * 0.05),
+      reason: isExhausted
+        ? "Using Amazon Gift Card via SBI Cashback. (Accelerated limit reached, earning base rewards)"
+        : "For Google Play, always buy an Amazon Gift Card with the SBI Cashback card and load using Amazon's Rewards Gold offer of 5% on Google Play recharges.",
+      expectedBenefit: isExhausted ? "5% Amazon Rewards Gold" : "5% Cashback + 5% Amazon Rewards Gold",
+      netValue: (isExhausted ? 0 : Math.min(amount, 40000) * 0.05) + (amount * 0.05),
+      cashbackEarned: (isExhausted ? 0 : Math.min(amount, 40000) * 0.05) + (amount * 0.05),
       feesPaid: 0,
       alternatives: []
     };
@@ -480,7 +483,7 @@ export function getRecommendations(
   });
 
   const validOptions = calculationResults
-    .filter(s => !s.isExcluded && !exhaustedCards[s.card.id] && !(s.netValue <= 0 && s.card.baseRewardRate === 0 && s.card.benefits.length === 0))
+    .filter(s => !s.isExcluded && !(s.netValue <= 0 && s.card.baseRewardRate === 0 && s.card.benefits.length === 0))
     .sort((a, b) => b.netValue - a.netValue);
 
   if (validOptions.length === 0) return null;
@@ -561,6 +564,6 @@ export function getRecommendations(
     cashbackEarned: bestResult.cashbackEarned,
     feesPaid: bestResult.feesPaid,
     alternatives: validOptions.slice(tiedCards.length, tiedCards.length + 3).map(s => ({ card: s.card, benefit: s.benefitText, netValue: s.netValue })),
-    availableOffers: availableOffers.filter(o => !o.cardId || (!exhaustedCards[o.cardId] && !calculationResults.find(r => r.card.id === o.cardId)?.isExcluded))
+    availableOffers: availableOffers.filter(o => !o.cardId || !calculationResults.find(r => r.card.id === o.cardId)?.isExcluded)
   };
 }

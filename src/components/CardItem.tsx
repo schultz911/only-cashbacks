@@ -148,7 +148,7 @@ export const CardItem: React.FC<CardItemProps> = ({ card, className, isRecommend
         </div>
       )}
 
-      {isExhausted && (
+      {isExhausted && !isRecommendation && (
         <div className="absolute inset-0 bg-slate-900/60 dark:bg-black/70 backdrop-blur-sm z-20 flex items-center justify-center p-4 transition-all rounded-[inherit]">
           <div className="bg-red-500/90 text-white text-[10px] md:text-xs font-black uppercase tracking-widest px-4 py-2 rounded-xl shadow-2xl border border-white/20 text-center flex items-center gap-2">
              Limit Reached
