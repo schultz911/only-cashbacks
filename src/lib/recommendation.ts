@@ -14,6 +14,7 @@ const MOVIE_PLATFORMS = ['bookmyshow', 'bms', 'paytm insider', 'townscript', 'me
 const DINING_PLATFORMS = ['dineout', 'eazydiner', 'district', 'magicpin', 'cafe', 'restaurant', 'diner', 'eatery', 'pub', 'bar', 'coffee'];
 const FOOD_PLATFORMS = ['swiggy', 'zomato', 'toing', 'bistro', 'eatsure', 'fresh menu', 'box8', 'eat club', 'uber eats', 'domino', 'pizza hut', 'starbucks', 'mcdonald', 'kfc', 'burger king', 'haldiram', 'bikanervala'];
 const SPECIFIC_PLATFORMS = ['bookmyshow', 'district', 'swiggy', 'zomato', 'dineout', 'eazydiner', 'nykaa', 'cleartrip', 'ajio', 'amazon', 'flipkart'];
+const SBI_CASHBACK_CARD = CARD_DATA.find(c => c.id === 'sbi-cashback')!;
 
 const GROCERY_KEYWORDS = ['grocery', 'groce', 'bigbasket', 'blinkit', 'zepto', 'instamart', 'dunzo', 'jiomart'];
 const FOOD_DELIVERY_KEYWORDS = ['food delivery', 'delivery', 'food', 'swig', 'zomat', ...FOOD_PLATFORMS];
@@ -51,10 +52,10 @@ export function getRecommendations(
 
   // Google Play special logic
   if (nameL.includes('google') || platL.includes('google')) {
-    const sbiCard = CARD_DATA.find(c => c.id === 'sbi-cashback')!;
+
     const isExhausted = exhaustedCards['sbi-cashback'];
     return {
-      bestCard: sbiCard,
+      bestCard: SBI_CASHBACK_CARD,
       reason: isExhausted
         ? "Using Amazon Gift Card via SBI Cashback. (Accelerated limit reached, earning base rewards)"
         : "For Google Play, always buy an Amazon Gift Card with the SBI Cashback card and load using Amazon's Rewards Gold offer of 5% on Google Play recharges.",
