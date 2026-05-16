@@ -74,11 +74,15 @@ export function WalletManagerModal({ isOpen, onClose, walletCards, setWalletCard
                       className={cn(
                         "relative shrink-0 rounded-2xl md:rounded-3xl cursor-pointer overflow-hidden transition-all duration-300 border-2 select-none group snap-center",
                         selected ? "border-white/50 dark:border-gray-600 shadow-lg scale-[0.98]" : "border-transparent shadow-sm hover:scale-[1.02] opacity-50 hover:opacity-100",
-                        "bg-gradient-to-br",
-                        card.gradient || "from-gray-700 to-gray-900",
                         "h-24 md:h-28"
                       )}
                     >
+                      <div 
+                        className={cn(
+                          "absolute inset-0 bg-gradient-to-br -z-10",
+                          card.gradient || "from-gray-700 to-gray-900"
+                        )}
+                      />
                       <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors" />
                       <div className="absolute inset-0 p-4 md:p-5 flex items-center justify-between">
                         <div className="flex flex-col shrink-0 w-[80%] max-w-[80%]">

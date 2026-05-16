@@ -38,9 +38,18 @@ export function BillDateSelector({ date, onChange }: BillDateSelectorProps) {
         onMouseDown={() => startAdjusting(-1)}
         onMouseUp={stopAdjusting}
         onMouseLeave={stopAdjusting}
-        onTouchStart={() => startAdjusting(-1)}
-        onTouchEnd={stopAdjusting}
-        onTouchCancel={stopAdjusting}
+        onTouchStart={(e) => {
+          e.preventDefault();
+          startAdjusting(-1);
+        }}
+        onTouchEnd={(e) => {
+          e.preventDefault();
+          stopAdjusting();
+        }}
+        onTouchCancel={(e) => {
+          e.preventDefault();
+          stopAdjusting();
+        }}
         className="w-8 h-8 rounded-lg outline-none hover:bg-white/10 flex items-center justify-center text-white/70 hover:text-white transition-colors"
       >
         <ChevronLeft className="w-5 h-5" />
@@ -54,9 +63,18 @@ export function BillDateSelector({ date, onChange }: BillDateSelectorProps) {
         onMouseDown={() => startAdjusting(1)}
         onMouseUp={stopAdjusting}
         onMouseLeave={stopAdjusting}
-        onTouchStart={() => startAdjusting(1)}
-        onTouchEnd={stopAdjusting}
-        onTouchCancel={stopAdjusting}
+        onTouchStart={(e) => {
+          e.preventDefault();
+          startAdjusting(1);
+        }}
+        onTouchEnd={(e) => {
+          e.preventDefault();
+          stopAdjusting();
+        }}
+        onTouchCancel={(e) => {
+          e.preventDefault();
+          stopAdjusting();
+        }}
         className="w-8 h-8 rounded-lg outline-none hover:bg-white/10 flex items-center justify-center text-white/70 hover:text-white transition-colors"
       >
         <ChevronRight className="w-5 h-5" />

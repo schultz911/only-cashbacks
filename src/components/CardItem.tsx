@@ -83,13 +83,18 @@ export const CardItem: React.FC<CardItemProps> = ({ card, className, isRecommend
       whileTap={onClick ? { scale: 0.95 } : {}}
       transition={{ type: "spring", bounce: 0.3, duration: 0.5 }}
       className={cn(
-        "relative overflow-hidden rounded-2xl p-6 text-white shadow-xl bg-gradient-to-br flex flex-col justify-between min-h-[200px] group",
-        card.gradient || "from-gray-700 to-gray-900",
+        "relative overflow-hidden rounded-2xl p-6 text-white shadow-xl flex flex-col justify-between min-h-[200px] group",
         isRecommendation ? "scale-105" : "scale-100",
         onClick && "cursor-pointer",
         className
       )}
     >
+      <div 
+        className={cn(
+          "absolute inset-0 bg-gradient-to-br -z-10",
+          card.gradient || "from-gray-700 to-gray-900"
+        )}
+      />
       {onClick && (
         <div className="absolute inset-0 bg-white/0 group-hover:bg-white/5 transition-colors duration-300 pointer-events-none" />
       )}

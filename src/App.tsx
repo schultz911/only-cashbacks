@@ -1056,18 +1056,21 @@ export default function App() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-white/40 backdrop-blur-md"
+            className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/40 dark:bg-black/60 backdrop-blur-md"
             onClick={() => setSelectedCardForDetails(null)}
           >
             <motion.div
               layoutId={`card-${selectedCardForDetails.source}-${selectedCardForDetails.card.id}`}
               onClick={(e) => e.stopPropagation()}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className={cn(
-                "rounded-3xl p-6 max-w-md w-full relative flex flex-col text-white max-h-[85vh] bg-gradient-to-br",
-                selectedCardForDetails.card.gradient || "from-gray-700 to-gray-900"
-              )}
+              className="rounded-3xl p-6 max-w-md w-full relative flex flex-col text-white max-h-[85vh] overflow-hidden"
             >
+              <div 
+                className={cn(
+                  "absolute inset-0 bg-gradient-to-br -z-10",
+                  selectedCardForDetails.card.gradient || "from-gray-700 to-gray-900"
+                )}
+              />
               <div className="absolute inset-0 rounded-3xl shadow-2xl shadow-black/40 pointer-events-none" />
               <button
                 onClick={() => setSelectedCardForDetails(null)}
