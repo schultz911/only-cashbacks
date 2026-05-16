@@ -1104,48 +1104,56 @@ export default function App() {
                             )}
                           >
                             <span className="absolute inset-0 w-full h-full -ml-[100%] bg-gradient-to-r from-transparent via-white/20 to-transparent group-hover:left-[200%] transition-all duration-700 ease-in-out" />
-                            <AnimatePresence mode="wait">
-                              {!isLogged ? (
-                                <motion.div
-                                  key="initial"
-                                  initial={{ opacity: 0 }}
-                                  animate={{ opacity: 1 }}
-                                  exit={{ opacity: 0, scale: 0.95 }}
-                                  transition={{ duration: 0.15 }}
-                                  className="flex items-center justify-center gap-2 relative z-10 w-full"
-                                >
-                                  <Check className="w-5 h-5 -mt-0.5" strokeWidth={2.5} />
-                                  <span className="text-base font-bold whitespace-nowrap">Log Transaction</span>
-                                </motion.div>
-                              ) : (
-                                <motion.div
-                                  key="logged"
-                                  className="flex items-center justify-center relative z-10 w-full h-full"
-                                >
-                                  <motion.div
-                                    initial={{ x: -40, rotate: -20, scale: 1.5, opacity: 0 }}
-                                    animate={{ x: 45, rotate: 0, scale: 1.5, opacity: 1 }}
-                                    transition={{ duration: 0.7, ease: "easeInOut" }}
-                                    className="absolute z-20"
-                                  >
-                                    <Check className="w-6 h-6 drop-shadow-md" strokeWidth={3} />
-                                  </motion.div>
-                                  <div className="flex z-10 relative pr-4">
-                                    {['L', 'o', 'g', 'g', 'e', 'd'].map((char, index) => (
-                                      <motion.span
-                                        key={index}
-                                        initial={{ opacity: 0, scale: 0.8, y: 4 }}
-                                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                                        transition={{ delay: 0.1 + index * 0.1, duration: 0.25, type: 'spring', bounce: 0.5 }}
-                                        className="text-base font-bold"
-                                      >
-                                        {char}
-                                      </motion.span>
-                                    ))}
-                                  </div>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
+                            <div className="flex items-center justify-center relative z-10 w-full h-full">
+                              <motion.div
+                                animate={{ 
+                                  x: isLogged ? 48 : -72,
+                                }}
+                                transition={{ duration: 0.6, ease: "easeInOut" }}
+                                className="absolute z-20"
+                              >
+                                <Check className="w-5 h-5" strokeWidth={3} />
+                              </motion.div>
+
+                              <div className="flex items-center justify-center relative">
+                                <AnimatePresence mode="wait">
+                                  {!isLogged ? (
+                                    <motion.div
+                                      key="initial"
+                                      initial={{ opacity: 0 }}
+                                      animate={{ opacity: 1 }}
+                                      exit={{ opacity: 0, x: 20 }}
+                                      transition={{ duration: 0.2 }}
+                                      className="flex items-center gap-2 ml-6"
+                                    >
+                                      <span className="text-base font-bold whitespace-nowrap">Log Transaction</span>
+                                    </motion.div>
+                                  ) : (
+                                    <motion.div
+                                      key="logged"
+                                      initial={{ opacity: 1 }}
+                                      className="flex items-center mr-7"
+                                    >
+                                      {['L', 'o', 'g', 'g', 'e', 'd'].map((char, index) => (
+                                        <motion.span
+                                          key={index}
+                                          initial={{ opacity: 0, x: -5 }}
+                                          animate={{ opacity: 1, x: 0 }}
+                                          transition={{ 
+                                            delay: index * 0.05 + 0.1, 
+                                            duration: 0.2,
+                                            ease: "easeOut"
+                                          }}
+                                          className="text-base font-bold"
+                                        >
+                                          {char}
+                                        </motion.span>
+                                      ))}
+                                    </motion.div>
+                                  )}
+                                </AnimatePresence>
+                              </div>
+                            </div>
                           </motion.button>
                         </div>
                       </div>
@@ -1269,7 +1277,7 @@ export default function App() {
             <div className="flex items-center gap-3">
               <div className="relative group flex cursor-pointer" onClick={() => setIsDashboardOpen(true)}>
                 <button className="relative overflow-hidden flex items-center justify-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-white/10 transition-colors shadow-sm text-yellow-600 dark:text-yellow-500 px-4 py-1.5 rounded-full text-sm font-bold gap-2 focus:ring-2 ring-gray-200 dark:ring-gray-800 outline-none group/piggy">
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-yellow-600 dark:bg-yellow-500 opacity-0 group-hover/piggy:opacity-0 group-hover/piggy:animate-[coin-drop_0.5s_ease-in_forwards] z-[5]"></span>
+                  <span className="absolute -top-3 left-[70%] w-1.5 h-1.5 rounded-full bg-yellow-600 dark:bg-yellow-500 opacity-0 group-hover/piggy:opacity-0 group-hover/piggy:animate-[coin-drop_0.5s_ease-in_forwards] z-[5]"></span>
                   <PiggyBank className="w-5 h-5 transition-transform group-hover/piggy:scale-110 relative z-10 fill-white dark:fill-gray-800" strokeWidth={2} />
                 </button>
                 <div className="absolute -top-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity bg-gray-900 border border-gray-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg whitespace-nowrap shadow-xl z-50">
