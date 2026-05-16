@@ -1122,7 +1122,7 @@ export default function App() {
                                       key="initial"
                                       initial={{ opacity: 0 }}
                                       animate={{ opacity: 1 }}
-                                      exit={{ opacity: 0, x: 20 }}
+                                      exit={{ opacity: 0, x: 10 }}
                                       transition={{ duration: 0.2 }}
                                       className="flex items-center gap-2 ml-6"
                                     >
