@@ -9,7 +9,7 @@ import { Search, History, Plane, Loader2, Sparkles, Globe, Wallet, QrCode, X, Ch
 import { motion, AnimatePresence } from 'motion/react';
 import { categorizeMerchant } from './services/gemini';
 import { getRecommendations, getCycleForCard } from './lib/recommendation';
-import { Recommendation, MerchantInfo, Card } from './types';
+import { Recommendation, MerchantInfo, Card, CashbackLog } from './types';
 import { CARD_DATA } from './data/cards';
 import { CardItem } from './components/CardItem';
 import { BillReminders } from './components/BillReminders';
@@ -18,6 +18,9 @@ import { LoungeTrackerItem } from './components/LoungeTrackerItem';
 import { LoungeTrackerModal, CustomSelect, parseLoungeBenefit } from './components/LoungeTrackerModal';
 import { WalletManagerModal } from './components/WalletManagerModal';
 import { DashboardModal } from './components/DashboardModal';
+import { Header } from './components/Header';
+import { VoucherSection } from './components/VoucherSection';
+import { SearchSection } from './components/SearchSection';
 import { cn } from './lib/utils';
 import { auth, googleProvider, db, handleFirestoreError, OperationType } from './firebase';
 import { signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut, User } from 'firebase/auth';
@@ -52,6 +55,7 @@ export default function App() {
 
   const [loading, setLoading] = useState(false);
   const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
+  const [lastSearchInfo, setLastSearchInfo] = useState<MerchantInfo | null>(null);
   const [history, setHistory] = useState<MerchantInfo[]>([]);
 
   const [selectedVoucherPortal, setSelectedVoucherPortal] = useState('');
@@ -95,7 +99,7 @@ export default function App() {
   // Feature states
   const [walletCards, setWalletCards] = useState<string[]>(() => getInitialState('oc_walletCards', []));
   const [isWalletOpen, setIsWalletOpen] = useState(false);
-  const [cashbackLogs, setCashbackLogs] = useState<{ amount: number, date: number }[]>(() => getInitialState('oc_cashbackLogs', []));
+  const [cashbackLogs, setCashbackLogs] = useState<CashbackLog[]>(() => getInitialState('oc_cashbackLogs', []));
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark' | 'oled'>(() => {
     const saved = getInitialState('oc_theme', null);
@@ -140,6 +144,19 @@ export default function App() {
     }
     setFocusedSuggestionIndex(-1);
   }, [query, showSuggestions, fuse]);
+
+  // Debounce hook
+  const useDebouncedValue = <T,>(value: T, delay: number): T => {
+    const [debouncedValue, setDebouncedValue] = useState<T>(value);
+    useEffect(() => {
+      const handler = setTimeout(() => setDebouncedValue(value), delay);
+      return () => clearTimeout(handler);
+    }, [value, delay]);
+    return debouncedValue;
+  };
+
+  const debouncedAmount = useDebouncedValue(amount, 300);
+  const debouncedForeignAmount = useDebouncedValue(foreignAmount, 300);
 
   const skipSyncRef = useRef(false);
 
@@ -280,6 +297,24 @@ export default function App() {
     }
   };
 
+  // Consolidated auto-save logic
+  useEffect(() => {
+    if (!user || isAuthLoading || !isDataLoaded || skipSyncRef.current || !isDirty || isSyncing || isSyncPaused) return;
+
+    const timer = setTimeout(() => {
+      saveData();
+    }, 3000); // Auto-save after 3 seconds of inactivity
+
+    return () => clearTimeout(timer);
+  }, [isDirty, user, isAuthLoading, isDataLoaded, isSyncPaused]);
+
+  const markDirty = () => {
+    if (!skipSyncRef.current) setIsDirty(true);
+  };
+
+  // Watch for state changes to mark dirty
+  useEffect(() => markDirty(), [exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, cardBillDates, paidBills, walletCards, cashbackLogs, theme, openRouterApiKey, kiwiNeonEarnRate]);
+
   useEffect(() => {
     if (!isDataLoaded || !walletCards || walletCards.length === 0) return;
 
@@ -332,15 +367,6 @@ export default function App() {
     }
   }, [exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, cardBillDates, paidBills, openRouterApiKey, kiwiNeonEarnRate, walletCards, cashbackLogs, theme, isDataLoaded]);
 
-  useEffect(() => {
-    if (!user || isAuthLoading || !isDataLoaded || skipSyncRef.current || !isDirty || isSyncing || isSyncPaused) return;
-
-    const timer = setTimeout(() => {
-      saveData();
-    }, 2000); // Auto-save after 2 seconds of inactivity
-
-    return () => clearTimeout(timer);
-  }, [isDirty, user, isAuthLoading, isDataLoaded, isSyncPaused]);
 
   const handleLogin = async () => {
     try {
@@ -449,8 +475,8 @@ export default function App() {
   useEffect(() => {
     if (history.length > 0) {
       const info = history[0];
-      const parsedAmount = parseFloat(amount) || 0;
-      const parsedForeign = parseFloat(foreignAmount) || 0;
+      const parsedAmount = parseFloat(debouncedAmount) || 0;
+      const parsedForeign = parseFloat(debouncedForeignAmount) || 0;
 
       let effectiveAmount = 0;
       if (isIntl) {
@@ -470,7 +496,7 @@ export default function App() {
         setRecommendation(null);
       }
     }
-  }, [normalizedExhaustedCards, offerUsage, cardBillDates, amount, foreignAmount, isIntl, isOnline, isScanToPay, kiwiNeonEarnRate, exchangeRates, baseCurrency, walletCards]);
+  }, [normalizedExhaustedCards, offerUsage, cardBillDates, debouncedAmount, debouncedForeignAmount, isIntl, isOnline, isScanToPay, kiwiNeonEarnRate, exchangeRates, baseCurrency, walletCards]);
 
   const formatAmountStr = (val: string) => {
     if (!val) return '';
@@ -481,7 +507,15 @@ export default function App() {
 
   const handleLogTransaction = () => {
     if (recommendation && recommendation.cashbackEarned > 0) {
-      setCashbackLogs(prev => [...prev, { amount: recommendation.cashbackEarned, date: Date.now() }]);
+      const newLog: CashbackLog = {
+        amount: recommendation.cashbackEarned,
+        date: Date.now(),
+        cardId: recommendation.bestCard.id,
+        cardName: recommendation.bestCard.name,
+        merchantName: lastSearchInfo?.name || query || 'Unknown Merchant',
+        category: lastSearchInfo?.category || 'General'
+      };
+      setCashbackLogs(prev => [...prev, newLog]);
       showToast('Transaction logged!', 'success');
     } else {
       showToast('No cashback earned for this transaction.', 'info');
@@ -540,6 +574,7 @@ export default function App() {
     setLoading(true);
     try {
       const info = await categorizeMerchant(activeQuery, openRouterApiKey || undefined);
+      setLastSearchInfo(info);
       const rec = getRecommendations(info, effectiveAmount, isOnline, isIntl, !isOnline && isScanToPay, normalizedExhaustedCards, offerUsage, kiwiNeonEarnRate, walletCards.length > 0 ? walletCards : null, cardBillDates);
       setRecommendation(rec);
       setHistory(prev => {
@@ -556,400 +591,66 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#F5F5F7] text-[#1D1D1F] font-sans selection:bg-blue-100 pb-12">
       {/* Header */}
-      <header className="sticky top-0 z-[200] bg-white/80 backdrop-blur-md border-b border-gray-100 px-6 py-4">
-        <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 shrink-0 bg-[#0095f6] rounded-full flex items-center justify-center shadow-md relative overflow-hidden">
-              <svg viewBox="0 0 100 100" className="w-[85%] h-[85%] mt-0.5 ml-0.5" fill="white" xmlns="http://www.w3.org/2000/svg">
-                {/* Outer circle shape similar to the 'O' in OF */}
-                <path d="M 50 15 A 35 35 0 1 0 50 85 A 35 35 0 0 0 50 15 Z M 50 35 A 15 15 0 1 1 50 65 A 15 15 0 0 1 50 35 Z" />
-                {/* Winged 'B' mimicking the OF wing (roughly) intersecting the O */}
-                <path d="M 68 35 C 75 35 85 40 90 30 C 88 45 80 50 72 50 C 82 50 95 60 92 75 C 80 75 70 65 65 60 L 65 35 Z" />
-              </svg>
-            </div>
-            <div className="flex flex-col">
-              <h1 className="text-base sm:text-xl md:text-2xl font-black tracking-tight text-gray-900 dark:text-white leading-none pb-1">
-                OnlyCashbacks
-              </h1>
-              <p className="text-[8px] sm:text-[10px] md:text-xs font-bold tracking-widest text-[#0095f6] uppercase leading-tight">
-                Make Your Credit <br className="sm:hidden" /> Cards Pay
-              </p>
-            </div>
-          </div>
-          {isAuthLoading ? (
-            <div className="w-9 h-9 flex items-center justify-center">
-              <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
-            </div>
-          ) : user ? (
-            <div className="flex items-center gap-3">
-              {(!openRouterApiKey) && (
-                <div className="relative group flex items-center">
-                  <button aria-label="Open API settings" onClick={() => { setTempApiKey(openRouterApiKey); setIsApiModalOpen(true); }} className="flex items-center justify-center bg-amber-100 text-amber-700 p-2 rounded-full hover:bg-amber-200 transition-colors shadow-sm">
-                    <AlertCircle className="w-5 h-5" />
-                  </button>
-                  <div className="absolute top-full right-0 mt-2 w-max max-w-[200px] bg-gray-900 border border-gray-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-xl text-center">
-                    API not set. Live verification is unavailable. Using local database. Click to set.
-                  </div>
-                </div>
-              )}
-              <div className="hidden sm:flex flex-col items-end">
-                <span className="text-sm font-bold text-gray-900">{user.displayName}</span>
-                <button
-                  onClick={() => !isSyncing && saveData()}
-                  disabled={isSyncing}
-                  className={cn(
-                    "flex items-center gap-1 text-[10px] uppercase font-bold tracking-widest transition-all hover:opacity-80 disabled:opacity-50",
-                    syncError ? "text-amber-600" : isDirty ? "text-blue-600" : "text-green-600"
-                  )}
-                >
-                  {isSyncing ? (
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                  ) : syncError ? (
-                    <RefreshCw className="w-3 h-3" />
-                  ) : isDirty ? (
-                    <div className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />
-                  ) : (
-                    <Check className="w-3 h-3" />
-                  )}
-                  {isSyncing ? 'Syncing...' : syncError ? 'Sync Now' : isDirty ? 'Pending Save' : 'Synced'}
-                </button>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <div className="relative group flex">
-                  <button
-                    onClick={() => setIsSyncPaused(!isSyncPaused)}
-                    className="w-10 h-10 rounded-full flex items-center justify-center bg-gray-100 hover:bg-white dark:bg-gray-800 dark:hover:bg-gray-700 transition-all shadow-sm hover:shadow-md text-gray-600 hover:scale-105 active:scale-95"
-                    aria-label={isSyncPaused ? "Enable Cloud Sync" : "Enable Offline Mode"}
-                  >
-                    {isSyncPaused ? <CloudOff className="w-5 h-5 text-amber-500 transition-transform group-hover:scale-110" /> : <Cloud className={cn("w-5 h-5 transition-transform group-hover:scale-110", isDirty ? "text-blue-500 group-hover:text-blue-400" : "text-emerald-500 group-hover:text-emerald-400")} />}
-                  </button>
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity bg-gray-900 border border-gray-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg whitespace-nowrap shadow-xl z-50">
-                    {isSyncPaused ? "Enable Cloud Sync" : (isDirty ? "Cloud Sync: Pending" : "Cloud Sync: Saved")}
-                  </div>
-                </div>
-
-                <div className="relative group flex">
-                  <button
-                    onClick={() => {
-                      setTheme(prev => prev === 'light' ? 'dark' : prev === 'dark' ? 'oled' : 'light');
-                    }}
-                    className="w-10 h-10 rounded-full flex items-center justify-center bg-gray-100 hover:bg-white dark:bg-gray-800 dark:hover:bg-gray-700 transition-all shadow-sm hover:shadow-md text-gray-600 hover:scale-105 active:scale-95"
-                    aria-label="Switch Theme"
-                  >
-                    {theme === 'oled' ? <Moon className="w-5 h-5 text-amber-500 fill-amber-500 transition-transform group-hover:rotate-12" /> : theme === 'dark' ? <Moon className="w-5 h-5 text-amber-500 transition-transform group-hover:-rotate-12" /> : <Sun className="w-5 h-5 text-amber-500 transition-transform group-hover:rotate-45" />}
-                  </button>
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity bg-gray-900 border border-gray-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg whitespace-nowrap shadow-xl z-50">
-                    {theme === 'light' ? "Switch to Dark Mode" : theme === 'dark' ? "Switch to OLED Mode" : "Switch to Light Mode"}
-                  </div>
-                </div>
-              </div>
-
-              <div className="relative" ref={profileMenuRef}>
-                <button
-                  aria-label="Toggle profile menu"
-                  onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                  className="w-10 h-10 rounded-full overflow-hidden border-2 border-white shadow-sm ring-2 ring-gray-100 hover:ring-blue-100 transition-all flex items-center justify-center bg-gray-50 text-gray-500"
-                >
-                  {user.photoURL ? (
-                    <img src={user.photoURL} alt={user.displayName || 'User'} className="w-full h-full object-cover" />
-                  ) : (
-                    <UserCircle className="w-6 h-6" />
-                  )}
-                </button>
-
-                <AnimatePresence>
-                  {isProfileMenuOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      className="absolute right-0 mt-2 w-48 bg-white/90 backdrop-blur-xl border border-gray-100 shadow-2xl rounded-2xl overflow-hidden z-[200] py-1.5"
-                    >
-                      <button
-                        onClick={handleLogout}
-                        className="w-full px-4 py-2 text-left text-sm font-semibold text-gray-700 hover:bg-gray-50 flex items-center gap-3 transition-colors"
-                      >
-                        <LogOut className="w-4 h-4 text-gray-400" />
-                        Sign Out
-                      </button>
-                      <div className="h-px bg-gray-100 my-1" />
-                      <button
-                        onClick={() => setShowDeleteConfirm(true)}
-                        className="w-full px-4 py-2 text-left text-sm font-semibold text-red-600 hover:bg-red-50 flex items-center gap-3 transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        Delete all data
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-center gap-4">
-              <div className="hidden sm:flex flex-col items-end">
-                <span className="text-sm font-bold text-gray-900">Guest</span>
-                <div className="flex items-center gap-1 text-[10px] uppercase font-bold tracking-widest text-gray-400">
-                  <div className="w-1.5 h-1.5 rounded-full bg-gray-400" />
-                  Local
-                </div>
-              </div>
-              <button
-                onClick={handleLogin}
-                className="flex items-center gap-2 bg-white text-gray-700 px-4 py-2 border border-gray-200 rounded-full font-semibold text-sm hover:bg-gray-50 transition-colors shadow-sm"
-              >
-                <svg className="w-4 h-4" viewBox="0 0 24 24">
-                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-                </svg>
-                Sign In
-              </button>
-            </div>
-          )}
-        </div>
-      </header>
+      <Header
+        isAuthLoading={isAuthLoading}
+        user={user}
+        openRouterApiKey={openRouterApiKey}
+        setTempApiKey={setTempApiKey}
+        setIsApiModalOpen={setIsApiModalOpen}
+        isSyncing={isSyncing}
+        saveData={saveData}
+        syncError={syncError}
+        isDirty={isDirty}
+        isSyncPaused={isSyncPaused}
+        setIsSyncPaused={setIsSyncPaused}
+        theme={theme}
+        setTheme={setTheme}
+        setIsProfileMenuOpen={setIsProfileMenuOpen}
+        isProfileMenuOpen={isProfileMenuOpen}
+        profileMenuRef={profileMenuRef}
+        handleLogout={handleLogout}
+        handleLogin={handleLogin}
+        setShowDeleteConfirm={setShowDeleteConfirm}
+      />
 
       <main className="max-w-6xl mx-auto px-6 pt-8">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
           {/* Left Column - Input */}
           <div className="md:col-span-5 lg:col-span-4 lg:landscape:col-span-5 xl:col-span-5 space-y-8 md:sticky md:top-24 relative z-50">
-            <section className="space-y-4">
-              <div className="space-y-1">
-                <h2 className="text-2xl font-bold tracking-tight">Where are you spending?</h2>
-                <p className="text-gray-500 text-sm">Enter a merchant, category, or item.</p>
-              </div>
+            <SearchSection
+              query={query}
+              setQuery={setQuery}
+              amount={amount}
+              setAmount={setAmount}
+              foreignAmount={foreignAmount}
+              setForeignAmount={setForeignAmount}
+              baseCurrency={baseCurrency}
+              setBaseCurrency={setBaseCurrency}
+              isIntl={isIntl}
+              setIsIntl={setIsIntl}
+              isOnline={isOnline}
+              setIsOnline={setIsOnline}
+              isScanToPay={isScanToPay}
+              setIsScanToPay={setIsScanToPay}
+              handleSearch={handleSearch}
+              loading={loading}
+              suggestions={suggestions}
+              showSuggestions={showSuggestions}
+              setShowSuggestions={setShowSuggestions}
+              focusedSuggestionIndex={focusedSuggestionIndex}
+              setFocusedSuggestionIndex={setFocusedSuggestionIndex}
+              history={history}
+              suggestionRef={suggestionRef}
+              formatAmountStr={formatAmountStr}
+            />
 
-              <form onSubmit={handleSearch} className="space-y-4 relative z-[120]">
-                <div className="relative group z-[110]" ref={suggestionRef}>
-                  <input
-                    type="text"
-                    value={query}
-                    onChange={(e) => {
-                      setQuery(e.target.value);
-                      setShowSuggestions(true);
-                    }}
-                    onFocus={() => setShowSuggestions(true)}
-                    onKeyDown={(e) => {
-                      if (!showSuggestions || suggestions.length === 0) return;
-                      if (e.key === 'ArrowDown') {
-                        e.preventDefault();
-                        setFocusedSuggestionIndex(prev => (prev < suggestions.length - 1 ? prev + 1 : prev));
-                      } else if (e.key === 'ArrowUp') {
-                        e.preventDefault();
-                        setFocusedSuggestionIndex(prev => (prev > 0 ? prev - 1 : -1));
-                      } else if (e.key === 'Enter') {
-                        if (focusedSuggestionIndex >= 0) {
-                          e.preventDefault();
-                          setQuery(suggestions[focusedSuggestionIndex]);
-                          setShowSuggestions(false);
-                          setFocusedSuggestionIndex(-1);
-                        }
-                      }
-                    }}
-                    placeholder="e.g. Swiggy, Groceries, iPhone..."
-                    className="w-full bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-white border border-gray-200 rounded-2xl py-4 pl-12 pr-12 shadow-sm focus:ring-2 ring-blue-500 transition-all outline-none text-lg font-medium"
-                    autoComplete="off"
-                  />
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
-                  {query && (
-                    <button type="button" onClick={() => { setQuery(''); setShowSuggestions(false); }} className="absolute right-4 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 bg-gray-100 rounded-full transition-colors">
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
+            <VoucherSection
+              className="space-y-4 hidden md:block relative z-[100]"
+              selectedVoucherPortal={selectedVoucherPortal}
+              setSelectedVoucherPortal={setSelectedVoucherPortal}
+              voucherPortals={VOUCHER_PORTALS}
+            />
 
-                  {/* Suggestions Dropdown */}
-                  <AnimatePresence>
-                    {showSuggestions && suggestions.length > 0 && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -10, scale: 0.98 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -10, scale: 0.98 }}
-                        transition={{ duration: 0.15 }}
-                        className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden z-50"
-                      >
-                        {suggestions.map((s, idx) => (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={() => {
-                              setQuery(s);
-                              setShowSuggestions(false);
-                            }}
-                            className={cn("w-full px-5 py-3 text-left flex items-center gap-3 transition-colors text-gray-700 dark:text-gray-200 font-medium border-b border-gray-50 dark:border-gray-700/50 last:border-0", focusedSuggestionIndex === idx ? "bg-gray-100 dark:bg-white/10" : "hover:bg-gray-50 dark:hover:bg-white/10")}
-                          >
-                            <Search className="w-4 h-4 text-gray-400 dark:text-gray-500" />
-                            {s}
-                          </button>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                <div className="flex gap-2 relative z-[100]">
-                  {isIntl && (
-                    <div className="absolute left-1 top-1/2 -translate-y-1/2 flex items-center pr-3 border-r border-gray-200 border-dashed z-50">
-                      <CustomSelect
-                        value={baseCurrency}
-                        onChange={setBaseCurrency}
-                        options={['USD', 'EUR', 'GBP', 'AED', 'SGD', 'THB', 'AUD', 'CAD', 'OMR'].map(c => ({ label: c, value: c }))}
-                        className="bg-transparent text-gray-500 font-bold z-10 w-[84px]"
-                        dropdownClassName="w-28 top-full left-0 mt-4"
-                      />
-                    </div>
-                  )}
-                  {!isIntl && <span className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500 font-bold">₹</span>}
-                  <input
-                    type="text"
-                    inputMode="decimal"
-                    value={formatAmountStr(isIntl ? foreignAmount : amount)}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/,/g, '').replace(/[^0-9.]/g, '');
-                      isIntl ? setForeignAmount(val) : setAmount(val);
-                    }}
-                    className={cn("w-full bg-white border border-gray-200 rounded-2xl py-4 pr-24 shadow-sm focus:ring-2 ring-blue-500 transition-all outline-none font-bold text-lg", isIntl ? "pl-[120px]" : "pl-10")}
-                  />
-                  <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    disabled={loading}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-[#0095f6] text-white rounded-xl px-4 py-2 text-sm font-semibold hover:bg-blue-600 transition-colors disabled:opacity-50 shadow"
-                  >
-                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Check'}
-                  </motion.button>
-                </div>
-
-                <div className="flex flex-nowrap md:portrait:flex-wrap items-center justify-between xl:justify-start gap-2 md:gap-3 px-3 md:px-4 py-3 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm w-full overflow-x-auto scrollbar-hide">
-                  <div className="flex items-center gap-2 md:gap-3 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => { setIsOnline(!isOnline); setIsScanToPay(false); }}
-                      className={cn(
-                        "flex items-center gap-1.5 md:gap-1 px-3 md:px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0",
-                        isOnline
-                          ? "bg-blue-600 text-white"
-                          : "bg-gray-50 dark:bg-white/5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/30 dark:hover:border-white/60 dark:hover:text-white hover:scale-[1.03] active:scale-95 transition-all duration-200"
-                      )}
-                    >
-                      <Globe className="w-4 h-4 shrink-0" />
-                      <span className="whitespace-nowrap">Online</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsIntl(!isIntl);
-                        if (!isIntl) { setIsScanToPay(false); }
-                      }}
-                      className={cn(
-                        "flex items-center gap-1.5 md:gap-1 px-3 md:px-3 py-2 -ml-1 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0",
-                        isIntl
-                          ? "bg-indigo-600 text-white"
-                          : "bg-gray-50 dark:bg-white/5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/30 dark:hover:border-white/60 dark:hover:text-white hover:scale-[1.03] active:scale-95 transition-all duration-200"
-                      )}
-                    >
-                      <Plane className="w-4 h-4 shrink-0" />
-                      <span className="whitespace-nowrap">International</span>
-                    </button>
-                  </div>
-
-                  {!isOnline && !isIntl && (
-                    <motion.button
-                      type="button"
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      onClick={() => { setIsScanToPay(!isScanToPay); setIsOnline(false); }}
-                      className={cn(
-                        "flex items-center justify-center lg:ml-auto gap-2 px-3 md:px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0 md:portrait:w-full lg:w-auto",
-                        isScanToPay
-                          ? "bg-emerald-600 text-white"
-                          : "bg-gray-50 dark:bg-white/5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/30 dark:hover:border-white/60 dark:hover:text-white hover:scale-[1.03] active:scale-95 transition-all duration-200"
-                      )}
-                    >
-                      <QrCode className="w-4 h-4 shrink-0" />
-                      <span className="hidden max-md:landscape:inline md:portrait:inline xl:inline whitespace-nowrap">Scan & Pay</span>
-                    </motion.button>
-                  )}
-                  {isOnline && !isIntl && (
-                    <motion.button
-                      type="button"
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      onClick={() => { setIsOnline(false); setIsScanToPay(false); }}
-                      className={cn(
-                        "flex items-center justify-center lg:ml-auto gap-2 px-3 md:px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0 md:portrait:w-full lg:w-auto",
-                        !isOnline && !isScanToPay && !isIntl
-                          ? "bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-900"
-                          : "bg-gray-50 dark:bg-white/5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/30 dark:hover:border-white/60 dark:hover:text-white hover:scale-[1.03] active:scale-95 transition-all duration-200"
-                      )}
-                    >
-                      <Store className="w-4 h-4 shrink-0" />
-                      <span className="hidden max-md:landscape:inline md:portrait:inline xl:inline whitespace-nowrap">In-Store</span>
-                    </motion.button>
-                  )}
-                </div>
-              </form>
-
-              {/* Recent History Shortcuts */}
-              {history.length > 0 && (
-                <div className="space-y-3 pt-4 border-t border-gray-100">
-                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest pl-1">Recent Searches</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {history.slice(0, 4).map((item, idx) => (
-                      <button
-                        key={`${item.name}-${idx}`}
-                        onClick={() => {
-                          setIsOnline(true);
-                          setIsIntl(false);
-                          handleSearch(undefined, item.name, amount);
-                        }}
-                        className="flex items-center gap-1.5 px-3 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-gray-700/50 rounded-xl text-sm font-medium hover:border-blue-300 dark:hover:border-white/60 hover:bg-gray-100 dark:hover:bg-white/30 hover:text-blue-600 dark:hover:text-white transition-all text-gray-600 dark:text-gray-300 text-left hover:scale-[1.03] active:scale-95"
-                      >
-                        <History className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
-                        <span>{item.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </section>
-
-            {/* Vouchers (Desktop) */}
-            <section className="space-y-4 hidden md:block relative z-[100]">
-              <div className="space-y-1">
-                <h2 className="text-xl font-bold tracking-tight">Voucher Portals</h2>
-                <p className="text-gray-500 text-xs">Select your portal to check card pairing.</p>
-              </div>
-              <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl p-5 rounded-3xl border border-gray-200/60 dark:border-gray-800 shadow-sm flex flex-col gap-4 min-h-[180px] relative group z-20">
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-transparent pointer-events-none rounded-3xl overflow-hidden" />
-                <div className="relative z-50 bg-gray-50 dark:bg-gray-800/80 rounded-2xl border border-gray-200 dark:border-gray-700/50 focus-within:ring-2 focus-within:ring-purple-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors shadow-inner">
-                    <CustomSelect
-                      value={selectedVoucherPortal}
-                      onChange={setSelectedVoucherPortal}
-                      options={Object.keys(VOUCHER_PORTALS).map(portal => ({ label: portal === 'tata neu' ? 'Tata Neu' : portal.charAt(0).toUpperCase() + portal.slice(1), value: portal }))}
-                      placeholder="Select a portal..."
-                      className="w-full px-4 py-3 font-medium text-gray-800 dark:text-gray-200"
-                      dropdownClassName="w-full left-0 right-0 top-full"
-                      fullOpacity={true}
-                    />
-                </div>
-                <div className="p-4 bg-purple-50/80 dark:bg-purple-900/20 backdrop-blur-sm border border-purple-100/50 dark:border-purple-800/30 rounded-2xl flex items-center justify-between mt-auto gap-3 flex-wrap relative z-10">
-                  <span className="text-sm font-semibold text-purple-900 dark:text-purple-300 shrink-0">Best Card:</span>
-                  {selectedVoucherPortal ? (
-                    <span className="text-sm font-bold text-purple-700 dark:text-purple-200 bg-white/90 dark:bg-purple-900/50 px-3 py-1 rounded-xl shadow-sm text-right border border-purple-100 dark:border-purple-800/50 backdrop-blur-md">
-                      {VOUCHER_PORTALS[selectedVoucherPortal]}
-                    </span>
-                  ) : (
-                    <span className="text-sm font-medium text-purple-700/60 dark:text-purple-300/50 italic">
-                      Pending selection
-                    </span>
-                  )}
-                </div>
-              </div>
-            </section>
 
             {/* Deprecated Quick Categories shortcut area */}
           </div>
@@ -1229,38 +930,12 @@ export default function App() {
 
             <div className="w-full flex flex-col gap-8 md:gap-6">
               {/* Vouchers (Mobile) */}
-              <section className="space-y-4 md:hidden relative z-[100]">
-                <div className="space-y-1">
-                  <h2 className="text-xl font-bold tracking-tight">Voucher Portals</h2>
-                  <p className="text-gray-500 text-xs">Select your portal to check card pairing.</p>
-                </div>
-                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl p-5 rounded-3xl border border-gray-200/60 dark:border-gray-800 shadow-sm flex flex-col gap-4 min-h-[180px] relative group z-20">
-                  <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-transparent pointer-events-none rounded-3xl overflow-hidden" />
-                  <div className="relative z-50 bg-gray-50 dark:bg-gray-800/80 rounded-2xl border border-gray-200 dark:border-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors shadow-inner">
-                    <CustomSelect
-                      value={selectedVoucherPortal}
-                      onChange={setSelectedVoucherPortal}
-                      options={Object.keys(VOUCHER_PORTALS).map(portal => ({ label: portal === 'tata neu' ? 'Tata Neu' : portal.charAt(0).toUpperCase() + portal.slice(1), value: portal }))}
-                      placeholder="Select a portal..."
-                      className="w-full px-4 py-3 font-medium text-gray-800 dark:text-gray-200"
-                      dropdownClassName="w-full left-0 right-0 top-full"
-                      fullOpacity={true}
-                    />
-                  </div>
-                  <div className="p-4 bg-purple-50/80 dark:bg-purple-900/20 backdrop-blur-sm border border-purple-100/50 dark:border-purple-800/30 rounded-2xl flex items-center justify-between mt-auto gap-3 flex-wrap relative z-10">
-                    <span className="text-sm font-semibold text-purple-900 dark:text-purple-300 shrink-0">Best Card:</span>
-                    {selectedVoucherPortal ? (
-                      <span className="text-sm font-bold text-purple-700 dark:text-purple-200 bg-white/90 dark:bg-purple-900/50 px-3 py-1 rounded-xl shadow-sm text-right border border-purple-100 dark:border-purple-800/50 backdrop-blur-md">
-                        {VOUCHER_PORTALS[selectedVoucherPortal]}
-                      </span>
-                    ) : (
-                      <span className="text-sm font-medium text-purple-700/60 dark:text-purple-300/50 italic">
-                        Pending selection
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </section>
+              <VoucherSection
+                className="space-y-4 md:hidden relative z-[100]"
+                selectedVoucherPortal={selectedVoucherPortal}
+                setSelectedVoucherPortal={setSelectedVoucherPortal}
+                voucherPortals={VOUCHER_PORTALS}
+              />
 
               {/* Lounge Access Tip */}
               <section className="bg-gray-900/95 dark:bg-black/80 backdrop-blur-xl rounded-3xl p-6 py-6 md:py-8 text-white overflow-hidden relative shadow-lg min-h-[140px] flex flex-col sm:flex-row sm:items-center justify-between border border-gray-800 dark:border-gray-700/50 group">
@@ -1319,8 +994,8 @@ export default function App() {
 
           {/* We turn this into a horizontal scrolling container with a fade mask on the edges if there's overflow, or just a nice grid */}
           <div className="relative">
-            <div className={cn("absolute top-0 left-0 bottom-0 w-4 bg-gradient-to-r to-transparent z-10 pointer-events-none sm:hidden", theme === 'light' ? 'from-[#F5F5F7]' : theme === 'dark' ? 'from-[#0f172a]' : 'from-black')}></div>
-            <div className={cn("absolute top-0 right-0 bottom-0 w-4 bg-gradient-to-l to-transparent z-10 pointer-events-none sm:hidden", theme === 'light' ? 'from-[#F5F5F7]' : theme === 'dark' ? 'from-[#0f172a]' : 'from-black')}></div>
+            <div className={cn("absolute top-0 left-0 bottom-0 w-1 bg-gradient-to-r to-transparent z-10 pointer-events-none sm:hidden", theme === 'light' ? 'from-[#F5F5F7]' : theme === 'dark' ? 'from-[#0f172a]' : 'from-black')}></div>
+            <div className={cn("absolute top-0 right-0 bottom-0 w-1 bg-gradient-to-l to-transparent z-10 pointer-events-none sm:hidden", theme === 'light' ? 'from-[#F5F5F7]' : theme === 'dark' ? 'from-[#0f172a]' : 'from-black')}></div>
             <div className="flex sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 overflow-x-auto pt-8 pb-4 px-1 snap-x scrollbar-hide">
               {(walletCards.length > 0 ? CARD_DATA.filter(c => walletCards.includes(c.id) && !c.isDummy) : CARD_DATA.filter(c => !c.isDummy)).map((card) => (
                 <div key={card.id} className={cn("snap-start shrink-0 w-72 sm:w-auto transition-opacity duration-200", selectedCardForDetails?.card.id === card.id ? "opacity-0 pointer-events-none" : "opacity-100")}>

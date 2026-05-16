@@ -66,3 +66,12 @@ export interface Recommendation {
     category: string;
   }[];
 }
+
+export interface CashbackLog {
+  amount: number;
+  date: number;
+  cardId: string;
+  cardName: string;
+  merchantName: string;
+  category: string;
+}

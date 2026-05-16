@@ -22,6 +22,8 @@ const FOOD_DELIVERY_EXCLUSIONS = ['dineout', 'district', 'eazydiner'];
 const DINING_KEYWORDS = ['dining', 'dine', 'restaurant', 'eatery', 'cafe', 'district', 'dineout', 'eazydiner'];
 const MOVIE_KEYWORDS = ['movie', ...MOVIE_PLATFORMS];
 
+const round2 = (num: number) => Math.round((num + Number.EPSILON) * 100) / 100;
+
 
 
 const hasKeyword = (targets: string[], keywords: string[]) =>
@@ -77,8 +79,8 @@ export function getRecommendations(
         ? "Using Amazon Gift Card via SBI Cashback. (Accelerated limit reached, earning base rewards)"
         : "For Google Play, always buy an Amazon Gift Card with the SBI Cashback card and load using Amazon's Rewards Gold offer of 5% on Google Play recharges.",
       expectedBenefit: isExhausted ? "5% Amazon Rewards Gold" : "5% Cashback + 5% Amazon Rewards Gold",
-      netValue: (isExhausted ? 0 : Math.min(amount, 40000) * 0.05) + (amount * 0.05),
-      cashbackEarned: (isExhausted ? 0 : Math.min(amount, 40000) * 0.05) + (amount * 0.05),
+      netValue: round2((isExhausted ? 0 : Math.min(amount, 40000) * 0.05) + (amount * 0.05)),
+      cashbackEarned: round2((isExhausted ? 0 : Math.min(amount, 40000) * 0.05) + (amount * 0.05)),
       feesPaid: 0,
       alternatives: []
     };
@@ -473,12 +475,12 @@ export function getRecommendations(
 
     // Forex loading
     const loadedForexMarkup = card.forexMarkup * 1.18;
-    const forexFee = isIntl ? (amount * loadedForexMarkup / 100) : 0;
+    const forexFee = isIntl ? round2(amount * loadedForexMarkup / 100) : 0;
 
-    const netValue = isExcluded ? -forexFee : (cashbackAmount - forexFee);
+    const netValue = isExcluded ? -forexFee : round2(cashbackAmount - forexFee);
 
     return {
-      card: cardToUse, netValue, cashbackEarned: isExcluded ? 0 : cashbackAmount, feesPaid: forexFee, benefitText, isExcluded
+      card: cardToUse, netValue, cashbackEarned: isExcluded ? 0 : round2(cashbackAmount), feesPaid: forexFee, benefitText, isExcluded
     };
   });
 
@@ -563,7 +565,7 @@ export function getRecommendations(
     netValue: bestResult.netValue,
     cashbackEarned: bestResult.cashbackEarned,
     feesPaid: bestResult.feesPaid,
-    alternatives: validOptions.slice(tiedCards.length, tiedCards.length + 3).map(s => ({ card: s.card, benefit: s.benefitText, netValue: s.netValue })),
+    alternatives: validOptions.slice(tiedCards.length, tiedCards.length + 3).map(s => ({ card: s.card, benefit: s.benefitText, netValue: round2(s.netValue) })),
     availableOffers: availableOffers.filter(o => !o.cardId || !calculationResults.find(r => r.card.id === o.cardId)?.isExcluded)
   };
 }

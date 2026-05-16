@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, TrendingUp, Undo2, RotateCcw, AlertTriangle } from 'lucide-react';
+import { CashbackLog } from '../types';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  logs: { amount: number; date: number }[];
-  setLogs: React.Dispatch<React.SetStateAction<{ amount: number; date: number }[]>>;
+  logs: CashbackLog[];
+  setLogs: React.Dispatch<React.SetStateAction<CashbackLog[]>>;
 }
 
 export function DashboardModal({ isOpen, onClose, logs, setLogs }: Props) {
