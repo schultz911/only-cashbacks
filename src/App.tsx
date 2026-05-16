@@ -151,6 +151,27 @@ export default function App() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const profileMenuRef = useRef<HTMLDivElement>(null);
+  const offersScrollRef = useRef<HTMLDivElement>(null);
+  const [carouselConstraint, setCarouselConstraint] = useState(0);
+
+  useEffect(() => {
+    const updateConstraint = () => {
+      if (offersScrollRef.current) {
+        setCarouselConstraint(
+          Math.min(0, offersScrollRef.current.offsetWidth - offersScrollRef.current.scrollWidth)
+        );
+      }
+    };
+    
+    // Slight delay to ensure DOM has painted the w-max width before measuring
+    const timeout = setTimeout(updateConstraint, 50);
+    window.addEventListener('resize', updateConstraint);
+    
+    return () => {
+      clearTimeout(timeout);
+      window.removeEventListener('resize', updateConstraint);
+    };
+  }, [recommendation?.availableOffers?.length, showOffersOverlay]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -1254,18 +1275,18 @@ export default function App() {
                 </button>
               </div>
 
-              <div className="flex-1 overflow-hidden cursor-grab active:cursor-grabbing px-8 pb-12 pt-2">
+              <div ref={offersScrollRef} className="flex-1 overflow-hidden cursor-grab active:cursor-grabbing px-8 pb-12 pt-2">
                 <motion.div
                   drag="x"
-                  dragConstraints={{ right: 0, left: -(recommendation.availableOffers.length * 280) }} // Estimated constraints
+                  dragConstraints={{ right: 0, left: carouselConstraint }}
                   dragElastic={0.1}
-                  className="flex gap-6 h-full"
+                  className="flex gap-6 h-full w-max"
                 >
                   {recommendation.availableOffers.map((offer) => (
                     <motion.div
                       key={offer.id}
                       whileHover={{ y: -8 }}
-                      className="min-w-[85%] md:min-w-[320px] min-h-[340px] bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-xl shadow-gray-200/40 snap-center flex flex-col justify-between relative overflow-hidden group border-b-8 border-b-blue-600/10 select-none"
+                      className="min-w-[85vw] md:min-w-[320px] max-w-[85vw] md:max-w-[320px] min-h-[340px] bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-xl shadow-gray-200/40 snap-center flex flex-col justify-between relative overflow-hidden group border-b-8 border-b-blue-600/10 select-none"
                     >
                       <div className="absolute -top-4 -right-4 w-32 h-32 bg-blue-50/50 rounded-full blur-3xl group-hover:bg-blue-100/50 transition-colors" />
                       <div className="absolute top-6 right-6 text-6xl opacity-20 group-hover:opacity-40 group-hover:scale-110 group-hover:-rotate-12 transition-all duration-500 pointer-events-none select-none">
