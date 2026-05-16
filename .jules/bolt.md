@@ -1,0 +1,3 @@
+## 2024-05-24 - Pre-calculate Regular Expressions outside loops
+**Learning:** Instantiating regular expressions inline, especially inside `.map()` loops and conditionals, requires JS engine to compile them repeatedly, hurting performance. Additionally, string `.match()` is significantly slower than regex `.test()` when you only need a boolean.
+**Action:** Extract literal regex strings to module-scoped constants and use `.test()` instead of `.match()`. Additionally, if checking against constant values within a function (like `nameL`), compute the boolean flag once before looping over variables (like `cardsToEvaluate.map()`) to avoid O(N) evaluation.
