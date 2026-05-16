@@ -69,6 +69,7 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
         <div className="relative group z-[110]" ref={suggestionRef}>
           <input
             type="text"
+            aria-label="Search merchant, category, or item"
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
@@ -100,8 +101,10 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
           {query && (
             <button 
               type="button" 
+              aria-label="Clear search"
+              title="Clear search"
               onClick={() => { setQuery(''); setShowSuggestions(false); }} 
-              className="absolute right-4 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 bg-gray-100 dark:bg-gray-700 rounded-full transition-colors"
+              className="absolute right-4 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 bg-gray-100 dark:bg-gray-700 rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
             >
               <X className="w-4 h-4" />
             </button>
@@ -154,6 +157,7 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
           {!isIntl && <span className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-bold">₹</span>}
           <input
             type="text"
+            aria-label="Amount"
             inputMode="decimal"
             value={formatAmountStr(isIntl ? foreignAmount : amount)}
             onChange={(e) => {
