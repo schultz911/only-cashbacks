@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect, useRef } from 'react';
-import { Search, History, Plane, Loader2, Sparkles, Globe, Wallet, QrCode, X, ChevronDown, Check, UserCircle, LogOut, AlertCircle, Ticket, Tag, CreditCard, Info, RefreshCw, Trash2 } from 'lucide-react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { Search, History, Plane, Loader2, Sparkles, Globe, Wallet, QrCode, X, ChevronDown, Check, UserCircle, LogOut, AlertCircle, Ticket, Tag, Info, RefreshCw, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { categorizeMerchant } from './services/gemini';
 import { getRecommendations } from './lib/recommendation';
@@ -15,7 +15,7 @@ import { LoungeTrackerItem } from './components/LoungeTrackerItem';
 import { cn } from './lib/utils';
 import { auth, googleProvider, db, handleFirestoreError, OperationType } from './firebase';
 import { signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut, User } from 'firebase/auth';
-import { doc, getDoc, setDoc, onSnapshot, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 
 const CustomSelect = ({ value, onChange, options, placeholder, className, dropdownClassName }: any) => {
   const [isOpen, setIsOpen] = useState(false);
