@@ -7,3 +7,7 @@
 2.  **Bypass logic flaws:** A non-string or whitespace-only value could cause downstream failures or unexpected behaviors in the prompt execution.
 
 **Prevention:** Always validate all user input on API endpoints (length checks, type checks, and content sanitation) before processing, especially before injecting into LLM contexts or making third party external API requests. Added `express.json({ limit: "10kb" })` for base payload protection and explicit bounds checking on `merchantName` and `apiKey`.
+## 2026-05-16 - Missing Security Headers in Express
+**Vulnerability:** The API server was lacking standard security headers and was exposing its technology stack via the `x-powered-by` header, which could help an attacker tailor attacks specifically for Express applications.
+**Learning:** Implementing security headers such as `X-Content-Type-Options`, `X-Frame-Options`, `X-XSS-Protection`, and `Strict-Transport-Security` significantly enhances the defense in depth of a web application without needing heavy third-party dependencies.
+**Prevention:** Always implement basic security headers via custom middleware (or approved libraries if explicitly allowed) when initializing an Express server.
