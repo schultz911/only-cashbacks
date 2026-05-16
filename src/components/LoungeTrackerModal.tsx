@@ -2,12 +2,13 @@ import { Plane, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CARD_DATA } from '../data/cards';
 import { LoungeTrackerItem } from './LoungeTrackerItem';
+import { cn } from '../lib/utils';
 
 // Reusable Select Component 
 import { useState, useRef, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
 
-export const CustomSelect = ({ value, onChange, options, placeholder, className, dropdownClassName }: any) => {
+export const CustomSelect = ({ value, onChange, options, placeholder, className, dropdownClassName, fullOpacity }: any) => {
   const [isOpen, setIsOpen] = useState(false);
   const selectRef = useRef<HTMLDivElement>(null);
 
@@ -39,9 +40,15 @@ export const CustomSelect = ({ value, onChange, options, placeholder, className,
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -5, scale: 0.98 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className={`absolute z-[50] bg-white/90 dark:bg-gray-800/95 backdrop-blur-xl border border-gray-100/80 dark:border-gray-700 shadow-2xl rounded-2xl mt-2 overflow-hidden ring-1 ring-black/5 dark:ring-white/10 ${dropdownClassName}`}
+            className={cn(
+              "absolute z-[50] border rounded-2xl mt-2 overflow-hidden",
+              fullOpacity 
+                ? "bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700" 
+                : "bg-white/90 dark:bg-gray-800/95 backdrop-blur-xl border-gray-100/80 dark:border-gray-700",
+              dropdownClassName
+            )}
           >
-            <div className="max-h-64 overflow-y-auto p-1.5 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-600 space-y-0.5">
+            <div className="max-h-64 overflow-y-auto p-1.5 scrollbar-hide space-y-0.5">
               {options.map((option: any) => (
                 <button
                   key={option.value}

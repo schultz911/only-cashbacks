@@ -12,6 +12,17 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Hide scrollbar on mobile for a native app feel */
+@media (max-width: 768px) {
+  html, body {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  html::-webkit-scrollbar, body::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 /* Global Dark Mode Overrides */
 html.dark body, html.dark .bg-\[\#F5F5F7\] {
   background-color: #0f172a !important;

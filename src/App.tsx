@@ -31,7 +31,7 @@ export default function App() {
     try {
       const stored = localStorage.getItem(key);
       if (stored) return JSON.parse(stored);
-    } catch {}
+    } catch { }
     return defaultValue;
   };
 
@@ -58,9 +58,9 @@ export default function App() {
   const [isLoungeOpen, setIsLoungeOpen] = useState(false);
   const [showOffersOverlay, setShowOffersOverlay] = useState(false);
   const [selectedCardForDetails, setSelectedCardForDetails] = useState<{ card: Card, source: string } | null>(null);
-  
+
   // Toast Notification State
-  const [toast, setToast] = useState<{message: string, type: 'success' | 'error' | 'info'} | null>(null);
+  const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' | 'info' } | null>(null);
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
     setToast({ message, type });
@@ -95,7 +95,7 @@ export default function App() {
   // Feature states
   const [walletCards, setWalletCards] = useState<string[]>(() => getInitialState('oc_walletCards', []));
   const [isWalletOpen, setIsWalletOpen] = useState(false);
-  const [cashbackLogs, setCashbackLogs] = useState<{amount: number, date: number}[]>(() => getInitialState('oc_cashbackLogs', []));
+  const [cashbackLogs, setCashbackLogs] = useState<{ amount: number, date: number }[]>(() => getInitialState('oc_cashbackLogs', []));
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark' | 'oled'>(() => {
     const saved = getInitialState('oc_theme', null);
@@ -162,11 +162,11 @@ export default function App() {
         );
       }
     };
-    
+
     // Slight delay to ensure DOM has painted the w-max width before measuring
     const timeout = setTimeout(updateConstraint, 50);
     window.addEventListener('resize', updateConstraint);
-    
+
     return () => {
       clearTimeout(timeout);
       window.removeEventListener('resize', updateConstraint);
@@ -282,7 +282,7 @@ export default function App() {
 
   useEffect(() => {
     if (!isDataLoaded || !walletCards || walletCards.length === 0) return;
-    
+
     // Use a small timeout to avoid showing immediately on load
     const timer = setTimeout(() => {
       let hasUnpaidPastDue = false;
@@ -290,11 +290,11 @@ export default function App() {
       for (const cardId of walletCards) {
         const card = CARD_DATA.find(c => c.id === cardId);
         if (!card || card.isDummy || card.type !== 'Credit') continue;
-        
+
         const billDay = cardBillDates[cardId] || 1;
         const cycle = getCycleForCard(cardId, cardBillDates);
         const isPaid = paidBills[cardId] === cycle;
-        
+
         if (!isPaid) {
           if (today.getDate() >= billDay + 2) {
             hasUnpaidPastDue = true;
@@ -302,12 +302,12 @@ export default function App() {
           }
         }
       }
-      
+
       if (hasUnpaidPastDue) {
         showToast('You have unpaid credit card bills past their billing dates.', 'info');
       }
     }, 2000);
-    
+
     return () => clearTimeout(timer);
   }, [isDataLoaded, walletCards, paidBills, cardBillDates]);
 
@@ -373,11 +373,11 @@ export default function App() {
 
   const handleDeleteData = async () => {
     if (deleteConfirmText !== 'DELETE' || !user) return;
-    
+
     try {
       const docRef = doc(db, 'users', user.uid);
       await deleteDoc(docRef);
-      
+
       // Reset local state
       skipSyncRef.current = true;
       setExhaustedCards({});
@@ -386,13 +386,13 @@ export default function App() {
       setOfferUsage({});
       setOpenRouterApiKey('');
       setKiwiNeonEarnRate(2);
-      
+
       setShowDeleteConfirm(false);
       setDeleteConfirmText('');
       setIsProfileMenuOpen(false);
       setSyncError(null);
       setIsDirty(false);
-      
+
       showToast('All user data deleted permanently.', 'info');
 
       setTimeout(() => { skipSyncRef.current = false; }, 500);
@@ -515,12 +515,12 @@ export default function App() {
     if (e) e.preventDefault();
     const activeQuery = directQuery !== undefined ? directQuery : query;
     let activeAmountRaw = prefilledAmount !== undefined ? prefilledAmount : (isIntl ? foreignAmount : amount);
-    
+
     // We shouldn't enforce amount = 0 fail if user is just clicking a quick pill might have no amount
     // But if there is no amount we default to what's in the state.
     const parsedAmount = parseFloat(prefilledAmount !== undefined ? prefilledAmount : amount) || 0;
     const parsedForeign = parseFloat(prefilledAmount !== undefined ? prefilledAmount : foreignAmount) || 0;
-    
+
     if (!activeQuery.trim() || (isIntl ? parsedForeign <= 0 : parsedAmount <= 0)) {
       setRecommendation(null);
       return;
@@ -568,10 +568,12 @@ export default function App() {
               </svg>
             </div>
             <div className="flex flex-col">
-              <h1 className="text-sm sm:text-xl md:text-2xl font-black tracking-tight text-gray-900 leading-none pb-0.5">
+              <h1 className="text-base sm:text-xl md:text-2xl font-black tracking-tight text-gray-900 dark:text-white leading-none pb-1">
                 OnlyCashbacks
               </h1>
-              <p className="text-[7px] sm:text-[10px] md:text-xs font-bold tracking-widest text-[#0095f6] uppercase">Make Your Credit Cards Pay</p>
+              <p className="text-[8px] sm:text-[10px] md:text-xs font-bold tracking-widest text-[#0095f6] uppercase leading-tight">
+                Make Your Credit <br className="sm:hidden" /> Cards Pay
+              </p>
             </div>
           </div>
           {isAuthLoading ? (
@@ -592,7 +594,7 @@ export default function App() {
               )}
               <div className="hidden sm:flex flex-col items-end">
                 <span className="text-sm font-bold text-gray-900">{user.displayName}</span>
-                <button 
+                <button
                   onClick={() => !isSyncing && saveData()}
                   disabled={isSyncing}
                   className={cn(
@@ -612,7 +614,7 @@ export default function App() {
                   {isSyncing ? 'Syncing...' : syncError ? 'Sync Now' : isDirty ? 'Pending Save' : 'Synced'}
                 </button>
               </div>
-              
+
               <div className="flex items-center gap-2">
                 <div className="relative group flex">
                   <button
@@ -757,7 +759,7 @@ export default function App() {
                       <X className="w-4 h-4" />
                     </button>
                   )}
-                  
+
                   {/* Suggestions Dropdown */}
                   <AnimatePresence>
                     {showSuggestions && suggestions.length > 0 && (
@@ -823,8 +825,13 @@ export default function App() {
                   <div className="flex items-center gap-2 md:gap-3 shrink-0">
                     <button
                       type="button"
-                      onClick={() => { setIsOnline(true); setIsScanToPay(false); }}
-                      className={cn("flex items-center gap-1.5 md:gap-1 px-3 md:px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0", isOnline ? "bg-blue-600 text-white shadow-md shadow-blue-600/20" : "bg-gray-50 dark:bg-gray-800/60 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10")}
+                      onClick={() => { setIsOnline(!isOnline); setIsScanToPay(false); }}
+                      className={cn(
+                        "flex items-center gap-1.5 md:gap-1 px-3 md:px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0",
+                        isOnline
+                          ? "bg-blue-600 text-white"
+                          : "bg-gray-50 dark:bg-white/5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/30 dark:hover:border-white/60 dark:hover:text-white hover:scale-[1.03] active:scale-95 transition-all duration-200"
+                      )}
                     >
                       <Globe className="w-4 h-4 shrink-0" />
                       <span className="whitespace-nowrap">Online</span>
@@ -835,7 +842,12 @@ export default function App() {
                         setIsIntl(!isIntl);
                         if (!isIntl) { setIsScanToPay(false); }
                       }}
-                      className={cn("flex items-center gap-1.5 md:gap-1 px-3 md:px-3 py-2 -ml-1 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0", isIntl ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20" : "bg-gray-50 dark:bg-gray-800/60 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10")}
+                      className={cn(
+                        "flex items-center gap-1.5 md:gap-1 px-3 md:px-3 py-2 -ml-1 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0",
+                        isIntl
+                          ? "bg-indigo-600 text-white"
+                          : "bg-gray-50 dark:bg-white/5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/30 dark:hover:border-white/60 dark:hover:text-white hover:scale-[1.03] active:scale-95 transition-all duration-200"
+                      )}
                     >
                       <Plane className="w-4 h-4 shrink-0" />
                       <span className="whitespace-nowrap">International</span>
@@ -849,7 +861,12 @@ export default function App() {
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.95 }}
                       onClick={() => { setIsScanToPay(!isScanToPay); setIsOnline(false); }}
-                      className={cn("flex items-center justify-center lg:ml-auto gap-2 px-3 md:px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0 md:portrait:w-full lg:w-auto", isScanToPay ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/20" : "bg-gray-50 dark:bg-gray-800/60 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10")}
+                      className={cn(
+                        "flex items-center justify-center lg:ml-auto gap-2 px-3 md:px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0 md:portrait:w-full lg:w-auto",
+                        isScanToPay
+                          ? "bg-emerald-600 text-white"
+                          : "bg-gray-50 dark:bg-white/5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/30 dark:hover:border-white/60 dark:hover:text-white hover:scale-[1.03] active:scale-95 transition-all duration-200"
+                      )}
                     >
                       <QrCode className="w-4 h-4 shrink-0" />
                       <span className="hidden max-md:landscape:inline md:portrait:inline xl:inline whitespace-nowrap">Scan & Pay</span>
@@ -862,7 +879,12 @@ export default function App() {
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.95 }}
                       onClick={() => { setIsOnline(false); setIsScanToPay(false); }}
-                      className={cn("flex items-center justify-center lg:ml-auto gap-2 px-3 md:px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0 md:portrait:w-full lg:w-auto", !isOnline && !isScanToPay && !isIntl ? "bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-900 shadow-md shadow-gray-800/20 dark:shadow-gray-200/20" : "bg-gray-50 dark:bg-gray-800/60 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10")}
+                      className={cn(
+                        "flex items-center justify-center lg:ml-auto gap-2 px-3 md:px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0 md:portrait:w-full lg:w-auto",
+                        !isOnline && !isScanToPay && !isIntl
+                          ? "bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-900"
+                          : "bg-gray-50 dark:bg-white/5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/30 dark:hover:border-white/60 dark:hover:text-white hover:scale-[1.03] active:scale-95 transition-all duration-200"
+                      )}
                     >
                       <Store className="w-4 h-4 shrink-0" />
                       <span className="hidden max-md:landscape:inline md:portrait:inline xl:inline whitespace-nowrap">In-Store</span>
@@ -884,7 +906,7 @@ export default function App() {
                           setIsIntl(false);
                           handleSearch(undefined, item.name, amount);
                         }}
-                        className="flex items-center gap-1.5 px-3 py-2 bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700/50 rounded-xl text-sm font-medium hover:border-blue-300 dark:hover:border-blue-500/50 hover:bg-gray-100 dark:hover:bg-white/10 hover:shadow-sm hover:text-blue-600 dark:hover:text-blue-300 transition-all text-gray-600 dark:text-gray-300 text-left"
+                        className="flex items-center gap-1.5 px-3 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-gray-700/50 rounded-xl text-sm font-medium hover:border-blue-300 dark:hover:border-white/60 hover:bg-gray-100 dark:hover:bg-white/30 hover:text-blue-600 dark:hover:text-white transition-all text-gray-600 dark:text-gray-300 text-left hover:scale-[1.03] active:scale-95"
                       >
                         <History className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
                         <span>{item.name}</span>
@@ -904,14 +926,15 @@ export default function App() {
               <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl p-5 rounded-3xl border border-gray-200/60 dark:border-gray-800 shadow-sm flex flex-col gap-4 min-h-[180px] relative group z-20">
                 <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-transparent pointer-events-none rounded-3xl overflow-hidden" />
                 <div className="relative z-50 bg-gray-50 dark:bg-gray-800/80 rounded-2xl border border-gray-200 dark:border-gray-700/50 focus-within:ring-2 focus-within:ring-purple-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors shadow-inner">
-                  <CustomSelect
-                    value={selectedVoucherPortal}
-                    onChange={setSelectedVoucherPortal}
-                    options={Object.keys(VOUCHER_PORTALS).map(portal => ({ label: portal === 'tata neu' ? 'Tata Neu' : portal.charAt(0).toUpperCase() + portal.slice(1), value: portal }))}
-                    placeholder="Select a portal..."
-                    className="w-full px-4 py-3 font-medium text-gray-800 dark:text-gray-200"
-                    dropdownClassName="w-full left-0 right-0 top-full"
-                  />
+                    <CustomSelect
+                      value={selectedVoucherPortal}
+                      onChange={setSelectedVoucherPortal}
+                      options={Object.keys(VOUCHER_PORTALS).map(portal => ({ label: portal === 'tata neu' ? 'Tata Neu' : portal.charAt(0).toUpperCase() + portal.slice(1), value: portal }))}
+                      placeholder="Select a portal..."
+                      className="w-full px-4 py-3 font-medium text-gray-800 dark:text-gray-200"
+                      dropdownClassName="w-full left-0 right-0 top-full"
+                      fullOpacity={true}
+                    />
                 </div>
                 <div className="p-4 bg-purple-50/80 dark:bg-purple-900/20 backdrop-blur-sm border border-purple-100/50 dark:border-purple-800/30 rounded-2xl flex items-center justify-between mt-auto gap-3 flex-wrap relative z-10">
                   <span className="text-sm font-semibold text-purple-900 dark:text-purple-300 shrink-0">Best Card:</span>
@@ -1009,7 +1032,7 @@ export default function App() {
                     <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200/60 dark:border-gray-800 rounded-3xl p-6 shadow-sm space-y-5 flex flex-col justify-between relative overflow-hidden group">
                       <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-transparent rounded-bl-full pointer-events-none" />
                       <div className="space-y-4 relative z-10">
-                        <div className="flex bg-blue-50/50 dark:bg-blue-900/20 backdrop-blur-sm rounded-2xl p-4 items-center justify-between border border-blue-100/50 dark:border-blue-800/30 shadow-inner">
+                        <div className="flex bg-blue-50/50 dark:bg-blue-900/20 backdrop-blur-sm rounded-2xl p-4 items-center justify-between border border-blue-100/50 dark:border-blue-800/30 shadow-inner relative">
                           <div className="flex flex-col">
                             <span className="text-[10px] uppercase font-black tracking-widest text-blue-500 dark:text-blue-400 mb-1">Net Value</span>
                             <span className="text-3xl font-black text-blue-900 dark:text-blue-100 drop-shadow-sm">
@@ -1017,8 +1040,8 @@ export default function App() {
                             </span>
                           </div>
                           {recommendation.feesPaid > 0 && (
-                            <div className="text-xs text-right font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/40 rounded-xl px-3 py-2 shadow-sm border border-red-100 dark:border-red-900/50 flex items-center justify-center">
-                              <div className="font-bold">Fee: ₹{recommendation.feesPaid.toFixed(2)}</div>
+                            <div className="absolute top-2 right-2 text-[8px] font-black text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/40 rounded-lg px-1.5 py-0.5 shadow-sm border border-red-100 dark:border-red-900/50 flex items-center justify-center uppercase tracking-tighter">
+                              <div>Fee: ₹{recommendation.feesPaid.toFixed(2)}</div>
                             </div>
                           )}
                         </div>
@@ -1060,27 +1083,27 @@ export default function App() {
                             </motion.div>
                           </motion.button>
                         )}
-                        
+
                         <div className="pt-2 relative">
                           <motion.button
                             onClick={(e) => {
                               if (isLogged) return;
                               setIsLogged(true);
-                              
+
                               for (let i = 0; i < 15; i++) {
                                 const confetti = document.createElement('div');
                                 confetti.innerHTML = '🪙';
                                 confetti.className = 'fixed pointer-events-none z-[400] text-xl drop-shadow-md';
-                                
+
                                 confetti.style.left = `${e.clientX}px`;
                                 confetti.style.top = `${e.clientY}px`;
                                 document.body.appendChild(confetti);
-                                
+
                                 const angle = Math.random() * Math.PI * 2;
                                 const velocity = 40 + Math.random() * 80;
                                 const tx = Math.cos(angle) * velocity;
                                 const ty = Math.sin(angle) * velocity - 60;
-                                
+
                                 confetti.animate([
                                   { transform: 'translate(-50%, -50%) scale(0.5) rotate(0deg)', opacity: 1 },
                                   { transform: `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px)) scale(1.5) rotate(${Math.random() * 180}deg)`, opacity: 0 }
@@ -1098,15 +1121,15 @@ export default function App() {
                             whileTap={{ scale: 0.95 }}
                             className={cn(
                               "w-full h-12 relative overflow-hidden group text-white font-bold rounded-2xl transition-all duration-300 flex items-center justify-center gap-2",
-                              isLogged 
-                                ? "bg-gradient-to-r from-emerald-500 to-emerald-600 shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_20px_rgba(16,185,129,0.3)]" 
-                                : "bg-gradient-to-r from-blue-600 to-indigo-600 shadow-[0_0_20px_rgba(79,70,229,0.3)] hover:shadow-[0_0_25px_rgba(79,70,229,0.5)]"
+                              isLogged
+                                ? "bg-gradient-to-r from-emerald-500 to-emerald-600"
+                                : "bg-gradient-to-r from-blue-600 to-indigo-600"
                             )}
                           >
                             <span className="absolute inset-0 w-full h-full -ml-[100%] bg-gradient-to-r from-transparent via-white/20 to-transparent group-hover:left-[200%] transition-all duration-700 ease-in-out" />
                             <div className="flex items-center justify-center relative z-10 w-full h-full">
                               <motion.div
-                                animate={{ 
+                                animate={{
                                   x: isLogged ? 48 : -82,
                                 }}
                                 transition={{ duration: 0.6, ease: "easeInOut" }}
@@ -1139,8 +1162,8 @@ export default function App() {
                                           key={index}
                                           initial={{ opacity: 0, x: -5 }}
                                           animate={{ opacity: 1, x: 0 }}
-                                          transition={{ 
-                                            delay: index * 0.05 + 0.1, 
+                                          transition={{
+                                            delay: index * 0.05 + 0.1,
                                             duration: 0.2,
                                             ease: "easeOut"
                                           }}
@@ -1198,7 +1221,7 @@ export default function App() {
                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto text-gray-400">
                       <Search className="w-6 h-6" />
                     </div>
-                    <p className="text-gray-500 font-medium">Enter an item, merchant or merchant type, <br /> and amount to get recommendations.</p>
+                    <p className="text-gray-500 font-medium">Start a search to find the best card.</p>
                   </div>
                 </div>
               )}
@@ -1213,7 +1236,7 @@ export default function App() {
                 </div>
                 <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl p-5 rounded-3xl border border-gray-200/60 dark:border-gray-800 shadow-sm flex flex-col gap-4 min-h-[180px] relative group z-20">
                   <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-transparent pointer-events-none rounded-3xl overflow-hidden" />
-                  <div className="relative z-50 bg-gray-50 dark:bg-gray-800/80 rounded-2xl border border-gray-200 dark:border-gray-700/50 focus-within:ring-2 focus-within:ring-purple-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors shadow-inner">
+                  <div className="relative z-50 bg-gray-50 dark:bg-gray-800/80 rounded-2xl border border-gray-200 dark:border-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors shadow-inner">
                     <CustomSelect
                       value={selectedVoucherPortal}
                       onChange={setSelectedVoucherPortal}
@@ -1221,6 +1244,7 @@ export default function App() {
                       placeholder="Select a portal..."
                       className="w-full px-4 py-3 font-medium text-gray-800 dark:text-gray-200"
                       dropdownClassName="w-full left-0 right-0 top-full"
+                      fullOpacity={true}
                     />
                   </div>
                   <div className="p-4 bg-purple-50/80 dark:bg-purple-900/20 backdrop-blur-sm border border-purple-100/50 dark:border-purple-800/30 rounded-2xl flex items-center justify-between mt-auto gap-3 flex-wrap relative z-10">
@@ -1239,7 +1263,7 @@ export default function App() {
               </section>
 
               {/* Lounge Access Tip */}
-                  <section className="bg-gray-900/95 dark:bg-black/80 backdrop-blur-xl rounded-3xl p-6 py-6 md:py-8 text-white overflow-hidden relative shadow-lg min-h-[140px] flex flex-col sm:flex-row sm:items-center justify-between border border-gray-800 dark:border-gray-700/50 group">
+              <section className="bg-gray-900/95 dark:bg-black/80 backdrop-blur-xl rounded-3xl p-6 py-6 md:py-8 text-white overflow-hidden relative shadow-lg min-h-[140px] flex flex-col sm:flex-row sm:items-center justify-between border border-gray-800 dark:border-gray-700/50 group">
                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-500/20 via-transparent to-transparent pointer-events-none opacity-50 group-hover:opacity-100 transition-opacity duration-500" />
                 <div className="space-y-3 relative z-10 sm:max-w-[70%]">
                   <div className="flex items-center gap-3">
@@ -1295,8 +1319,8 @@ export default function App() {
 
           {/* We turn this into a horizontal scrolling container with a fade mask on the edges if there's overflow, or just a nice grid */}
           <div className="relative">
-            <div className="absolute top-0 left-0 bottom-0 w-0.5 bg-gradient-to-r from-[#F5F5F7] to-transparent z-10 pointer-events-none sm:hidden"></div>
-            <div className="absolute top-0 right-0 bottom-0 w-0.5 bg-gradient-to-l from-[#F5F5F7] to-transparent z-10 pointer-events-none sm:hidden"></div>
+            <div className={cn("absolute top-0 left-0 bottom-0 w-4 bg-gradient-to-r to-transparent z-10 pointer-events-none sm:hidden", theme === 'light' ? 'from-[#F5F5F7]' : theme === 'dark' ? 'from-[#0f172a]' : 'from-black')}></div>
+            <div className={cn("absolute top-0 right-0 bottom-0 w-4 bg-gradient-to-l to-transparent z-10 pointer-events-none sm:hidden", theme === 'light' ? 'from-[#F5F5F7]' : theme === 'dark' ? 'from-[#0f172a]' : 'from-black')}></div>
             <div className="flex sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 overflow-x-auto pt-8 pb-4 px-1 snap-x scrollbar-hide">
               {(walletCards.length > 0 ? CARD_DATA.filter(c => walletCards.includes(c.id) && !c.isDummy) : CARD_DATA.filter(c => !c.isDummy)).map((card) => (
                 <div key={card.id} className={cn("snap-start shrink-0 w-72 sm:w-auto transition-opacity duration-200", selectedCardForDetails?.card.id === card.id ? "opacity-0 pointer-events-none" : "opacity-100")}>
@@ -1319,7 +1343,7 @@ export default function App() {
           {/* Redemption Reminder Section */}
           <section className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200/60 dark:border-gray-800 rounded-3xl p-6 shadow-sm flex flex-col justify-between h-full relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-pink-500/10 to-transparent rounded-bl-full pointer-events-none" />
-            
+
             <div>
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-900/40 dark:to-pink-900/20 flex items-center justify-center border border-pink-200/50 shadow-sm relative z-10">
@@ -1330,7 +1354,7 @@ export default function App() {
                   <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">Don't let balances expire</p>
                 </div>
               </div>
-              
+
               <ul className="space-y-2 mt-6 relative z-10">
                 {[
                   { name: 'Kiwi Neon', type: 'Kiwis' },
@@ -1469,7 +1493,7 @@ export default function App() {
                 {selectedCardForDetails.card.benefits.filter(b => b.type !== 'exclusion' && b.type !== 'lounge' && !b.isHidden).length === 0 && (
                   <div className="text-white/60 text-sm py-4 text-center font-medium">No quick-view benefits available.</div>
                 )}
-                
+
                 {selectedCardForDetails.card.type === 'Credit' && (
                   <div className="mt-2 border-t border-white/20 pt-4">
                     <div className="flex justify-between items-center mb-2">
@@ -1485,7 +1509,7 @@ export default function App() {
               </div>
 
               {/* Kiwi Neon Slider */}
-                  {selectedCardForDetails.card.id === 'kiwi-neon' && (
+              {selectedCardForDetails.card.id === 'kiwi-neon' && (
                 <div className="mt-2 pt-4 border-t border-white/20 relative z-10 flex flex-col gap-2">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-extrabold tracking-widest uppercase text-white/90">Current Milestone</span>
@@ -1569,17 +1593,17 @@ export default function App() {
       </AnimatePresence>
 
       <AnimatePresence>
-      <LoungeTrackerModal
-        isOpen={isLoungeOpen}
-        onClose={() => setIsLoungeOpen(false)}
-        loungeTab={loungeTab}
-        setLoungeTab={setLoungeTab}
-        loungePassesUsed={loungePassesUsed}
-        setLoungePassesUsed={setLoungePassesUsed}
-        loungeMilestonesVerified={loungeMilestonesVerified}
-        setLoungeMilestonesVerified={setLoungeMilestonesVerified}
-        kiwiNeonEarnRate={kiwiNeonEarnRate}
-      />
+        <LoungeTrackerModal
+          isOpen={isLoungeOpen}
+          onClose={() => setIsLoungeOpen(false)}
+          loungeTab={loungeTab}
+          setLoungeTab={setLoungeTab}
+          loungePassesUsed={loungePassesUsed}
+          setLoungePassesUsed={setLoungePassesUsed}
+          loungeMilestonesVerified={loungeMilestonesVerified}
+          setLoungeMilestonesVerified={setLoungeMilestonesVerified}
+          kiwiNeonEarnRate={kiwiNeonEarnRate}
+        />
       </AnimatePresence>
 
       <AnimatePresence>
@@ -1759,14 +1783,14 @@ export default function App() {
               exit={{ scale: 0.95, y: 20 }}
               className="bg-white rounded-[2.5rem] p-8 w-full max-w-md shadow-2xl relative border border-red-100"
             >
-              <button 
+              <button
                 aria-label="Close delete confirmation modal"
-                onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmText(''); }} 
+                onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmText(''); }}
                 className="absolute top-6 right-6 p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400"
               >
                 <X className="w-5 h-5" />
               </button>
-              
+
               <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mb-6">
                 <Trash2 className="w-8 h-8 text-red-600" />
               </div>
@@ -1824,7 +1848,7 @@ export default function App() {
 
       <footer className="text-center py-6 mt-8 text-xs text-gray-400 font-medium px-6 flex flex-col items-center gap-3">
         <div>
-          <p>Crafted by schultz911. Coded with Gemini.</p>
+          <p>Crafted by Kiran Saldanha. Coded with Gemini.</p>
           <p>For non-commercial use only.</p>
         </div>
         <motion.button
