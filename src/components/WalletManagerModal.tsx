@@ -79,7 +79,7 @@ export function WalletManagerModal({ isOpen, onClose, walletCards, setWalletCard
                     >
                       <div 
                         className={cn(
-                          "absolute inset-0 bg-gradient-to-br -z-10",
+                          "absolute inset-0 bg-gradient-to-br z-0",
                           card.gradient || "from-gray-700 to-gray-900"
                         )}
                       />

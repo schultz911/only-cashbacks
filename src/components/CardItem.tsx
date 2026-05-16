@@ -91,7 +91,7 @@ export const CardItem: React.FC<CardItemProps> = ({ card, className, isRecommend
     >
       <div 
         className={cn(
-          "absolute inset-0 bg-gradient-to-br -z-10",
+          "absolute inset-0 bg-gradient-to-br z-0",
           card.gradient || "from-gray-700 to-gray-900"
         )}
       />
