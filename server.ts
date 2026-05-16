@@ -11,14 +11,27 @@ async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT) || 3000;
 
-  app.use(express.json());
+  app.use(express.json({ limit: "10kb" })); // Add payload size limit for security
 
   // API Route for categorization
   app.post("/api/categorize", async (req, res) => {
     console.log("--- Categorization Request Received ---");
     try {
       const { merchantName, apiKey } = req.body;
-      console.log(`Merchant to categorize: "${merchantName}"`);
+
+      // Security: Validate input to prevent DoS, huge prompts, or prompt injection risks
+      if (!merchantName || typeof merchantName !== 'string' || merchantName.trim().length === 0) {
+        return res.status(400).json({ error: "Valid merchantName is required" });
+      }
+      if (merchantName.length > 100) {
+        return res.status(400).json({ error: "merchantName exceeds maximum length of 100 characters" });
+      }
+      if (apiKey && typeof apiKey !== 'string') {
+        return res.status(400).json({ error: "Invalid API key format" });
+      }
+
+      const sanitizedMerchantName = merchantName.trim();
+      console.log(`Merchant to categorize: "${sanitizedMerchantName}"`);
 
       // Determine which API to use
       const userOpenRouterKey = apiKey;
@@ -58,7 +71,7 @@ Output strictly a JSON object matching this TypeScript interface:
             responseFormat: { type: "json_object" },
             messages: [
               { role: "system", content: systemPrompt },
-              { role: "user", content: merchantName }
+              { role: "user", content: sanitizedMerchantName }
             ]
           }
         });
@@ -69,7 +82,7 @@ Output strictly a JSON object matching this TypeScript interface:
         const ai = new GoogleGenAI({ apiKey: envGeminiKey });
         const response = await ai.models.generateContent({
           model: 'gemini-2.5-flash',
-          contents: merchantName,
+          contents: sanitizedMerchantName,
           config: {
             systemInstruction: systemPrompt,
             temperature: 0,
