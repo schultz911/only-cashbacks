@@ -82,19 +82,19 @@ export const CardItem: React.FC<CardItemProps> = ({ card, className, isRecommend
       whileHover={onClick ? { scale: isRecommendation ? 1.08 : 1.03, y: -5 } : {}}
       whileTap={onClick ? { scale: 0.95 } : {}}
       transition={{ type: "spring", bounce: 0.3, duration: 0.5 }}
+      style={{
+        WebkitBackfaceVisibility: 'hidden',
+        backfaceVisibility: 'hidden',
+        transform: 'translateZ(0)'
+      }}
       className={cn(
-        "relative overflow-hidden rounded-2xl p-6 text-white shadow-xl flex flex-col justify-between min-h-[200px] group",
+        "relative overflow-hidden rounded-2xl p-6 text-white shadow-xl flex flex-col justify-between min-h-[200px] group bg-gradient-to-br",
+        card.gradient || "from-gray-700 to-gray-900",
         isRecommendation ? "scale-105" : "scale-100",
         onClick && "cursor-pointer",
         className
       )}
     >
-      <div 
-        className={cn(
-          "absolute inset-0 bg-gradient-to-br z-0",
-          card.gradient || "from-gray-700 to-gray-900"
-        )}
-      />
       {onClick && (
         <div className="absolute inset-0 bg-white/0 group-hover:bg-white/5 transition-colors duration-300 pointer-events-none" />
       )}
@@ -115,10 +115,8 @@ export const CardItem: React.FC<CardItemProps> = ({ card, className, isRecommend
               <span className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-emerald-500/20 text-emerald-100 border border-emerald-500/30 whitespace-nowrap">Forex+</span>
             )}
           </div>
-          <div 
-             className="relative w-full"
-          >
-             <h3 className="text-lg font-bold pr-2 whitespace-nowrap overflow-hidden" style={{ maskImage: 'linear-gradient(to right, white 80%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to right, white 80%, transparent 100%)' }}>
+          <div className="relative w-full overflow-hidden">
+             <h3 className="text-lg font-bold pr-2 whitespace-nowrap overflow-hidden text-ellipsis">
                {card.name}
              </h3>
           </div>

@@ -1064,14 +1064,16 @@ export default function App() {
               layoutId={`card-${selectedCardForDetails.source}-${selectedCardForDetails.card.id}`}
               onClick={(e) => e.stopPropagation()}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="rounded-3xl p-6 max-w-md w-full relative flex flex-col text-white max-h-[85vh] overflow-hidden"
+              style={{
+                WebkitBackfaceVisibility: 'hidden',
+                backfaceVisibility: 'hidden',
+                transform: 'translateZ(0)'
+              }}
+              className={cn(
+                "rounded-3xl p-6 max-w-md w-full relative flex flex-col text-white max-h-[85vh] overflow-hidden bg-gradient-to-br z-0",
+                selectedCardForDetails.card.gradient || "from-gray-700 to-gray-900"
+              )}
             >
-              <div 
-                className={cn(
-                  "absolute inset-0 bg-gradient-to-br z-0",
-                  selectedCardForDetails.card.gradient || "from-gray-700 to-gray-900"
-                )}
-              />
               <div className="absolute inset-0 rounded-3xl shadow-2xl shadow-black/40 pointer-events-none" />
               <button
                 onClick={() => setSelectedCardForDetails(null)}
