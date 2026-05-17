@@ -275,12 +275,12 @@ export function getRecommendations(
       if (isIntl) {
         cashbackAmount = Math.min(amount * 0.05, 100);
         benefitText = '5% Cashback';
-      } else if (isMovie && isOnline && movieUsed < 1 && amount > 399) {
+      } else if ((isMovie || nameL.includes('bookmyshow') || nameL.includes('bms')) && isOnline && movieUsed < 1 && amount > 399) {
         discountAmount = Math.min(amount * 0.5, 300);
         const remaining = amount - discountAmount;
         cashbackAmount = discountAmount + Math.min(remaining * 0.05, 100);
         benefitText = '1+1 Movie on BookMyShow + 5% Cashback';
-      } else if (((isDining || nameL.includes('district')) && amount > 1999) && isOnline && diningUsed < 1) {
+      } else if ((isDining || nameL.includes('district')) && isOnline && diningUsed < 1 && amount > 1999) {
         discountAmount = Math.min(amount * 0.20, 750); // Assuming 20% up to 750 for District
         const remaining = amount - discountAmount;
         cashbackAmount = discountAmount + Math.min(remaining * 0.05, 100);
@@ -321,20 +321,70 @@ export function getRecommendations(
             const isDiningOffer = benefit.category.toLowerCase().includes('dining') || benefit.category.toLowerCase().includes('swiggy') || benefit.category.toLowerCase().includes('zomato');
 
             let skip = false;
+            let isCustomMatched = false;
 
-            for (const plat of SPECIFIC_PLATFORMS) {
-              if (descL.includes(plat) || valLower.includes(plat)) {
-                if (!nameL.includes(plat) && !(platL && platL.includes(plat))) {
-                  skip = true;
+            // 1. Axis Swiggy 120 discount
+            if ((card.id === 'axis-myzone' && benefit.category === 'Food' && benefit.value === 'Swiggy') && amount > 499) {
+              isCustomMatched = true;
+              if (!isFoodDelivery || isDining) {
+                skip = true;
+              } else {
+                skip = false;
+              }
+            }
+            // 2. Axis EazyDiner
+            else if ((card.id === 'axis-myzone' && benefit.category === 'Dining' && benefit.value === 'EazyDiner') && amount > 2499) {
+              isCustomMatched = true;
+              if (!isDining || isFoodDelivery || nameL.includes('food')) {
+                skip = true;
+              } else {
+                skip = false;
+              }
+            }
+            // 3. HDFC Imperia food
+            else if (card.id === 'hdfc-imperia' && benefit.category === 'Food' && benefit.value === 'Swiggy') {
+              isCustomMatched = true;
+              if (!isFoodDelivery || isDining) {
+                skip = true;
+              } else {
+                skip = false;
+              }
+            }
+            // 4. HDFC Imperia Movies
+            else if (card.id === 'hdfc-imperia' && benefit.category === 'Movies' && benefit.value === 'BookMyShow') {
+              isCustomMatched = true;
+              if (!isMovie) {
+                skip = true;
+              } else {
+                skip = false;
+              }
+            }
+            //5. Axis District
+            else if (card.id === 'axis-myzone' && benefit.category === 'Movies' && benefit.value === 'District') {
+              isCustomMatched = true;
+              if (!isMovie) {
+                skip = true;
+              } else {
+                skip = false;
+              }
+            }
 
-                  if (isMovieOffer && (catL.includes('movie') || nameL.includes('movie')) && !nameL.match(/cinepolis|pvr|inox|bookmyshow|district|bms|paytm insider|townscript|mera event|cinema|theatre/i)) {
-                    if (!searchedMoviePlat) skip = false;
+
+            if (!isCustomMatched) {
+              for (const plat of SPECIFIC_PLATFORMS) {
+                if (descL.includes(plat) || valLower.includes(plat)) {
+                  if (!nameL.includes(plat) && !(platL && platL.includes(plat))) {
+                    skip = true;
+
+                    if (isMovieOffer && (catL.includes('movie') || nameL.includes('movie')) && !nameL.match(/cinepolis|pvr|inox|bookmyshow|district|bms|paytm insider|townscript|mera event|cinema|theatre/i)) {
+                      if (!searchedMoviePlat) skip = false;
+                    }
+                    if (isDiningOffer && (catL.includes('dining') || nameL.includes('dining')) && !nameL.match(/swiggy|zomato|eazydiner|dineout|district|toing|bistro|blinkit|zepto cafe|eatsure|fresh menu|box8|eat club|uber eats|domino|pizza hut|magicpin|starbucks|mcdonald|kfc|burger king|haldiram|bikanervala|cafe|restaurant|diner|eatery|pub|bar|coffee/i)) {
+                      if (!searchedDiningPlat) skip = false;
+                    }
                   }
-                  if (isDiningOffer && (catL.includes('dining') || nameL.includes('dining')) && !nameL.match(/swiggy|zomato|eazydiner|dineout|district|toing|bistro|blinkit|zepto cafe|eatsure|fresh menu|box8|eat club|uber eats|domino|pizza hut|magicpin|starbucks|mcdonald|kfc|burger king|haldiram|bikanervala|cafe|restaurant|diner|eatery|pub|bar|coffee/i)) {
-                    if (!searchedDiningPlat) skip = false;
-                  }
+                  break;
                 }
-                break;
               }
             }
 
@@ -396,7 +446,7 @@ export function getRecommendations(
           cashbackAmount = calculatedCb + baseCb;
           const capType = usedBenefit.type.charAt(0).toUpperCase() + usedBenefit.type.slice(1);
           if (card.id === 'axis-myzone') {
-            if (usedBenefit.category === 'Food Delivery') benefitText = `Flat ₹120 Off (Code: AXIS120)`;
+            if (usedBenefit.category === 'Food' || usedBenefit.category === 'Food Delivery') benefitText = `Flat ₹120 Off (Code: AXIS120)`;
             else if (usedBenefit.category === 'Movies') benefitText = `1+1 via District (Code: AXIS200)`;
             else if (usedBenefit.category === 'Fashion') benefitText = `Up to ₹1,000 Off (Code: AJIOAXISMZ)`;
             else if (usedBenefit.category === 'Dining') benefitText = `${rate}% Off via EazyDiner`;
@@ -535,16 +585,16 @@ export function getRecommendations(
     if ((offerUsage['kotak-811-infinity-Dining-District'] || 0) < 1) {
       availableOffers.push({ id: 'k-dist', icon: '🍽️', title: 'Kotak 811', description: '20% off up to ₹750', category: 'District', cardId: 'kotak-811-infinity' });
     }
-    if ((offerUsage['axis-myzone-Dining-EazyDiner'] || 0) < 1) {
+    if ((offerUsage['axis-myzone-Dining-EazyDiner'] || 0) < 1 && !isFoodDelivery && !nameL.includes('food')) {
       availableOffers.push({ id: 'a-eazy', icon: '🥂', title: 'Axis MyZone', description: '15% off up to ₹500', category: 'EazyDiner', cardId: 'axis-myzone' });
     }
   }
 
   if (!isIntl && isFoodDelivery) {
-    if ((offerUsage['axis-myzone-Food-Swiggy'] || 0) < 2) {
+    if ((offerUsage['axis-myzone-Food-Swiggy'] || 0) < 2 && !isDining) {
       availableOffers.push({ id: 'a-swig', icon: '🍔', title: 'Axis MyZone', description: 'Flat ₹120 off (AXIS120)', category: 'Swiggy', cardId: 'axis-myzone' });
     }
-    if ((offerUsage['hdfc-imperia-Food-Swiggy'] || 0) < 1) {
+    if ((offerUsage['hdfc-imperia-Food-Swiggy'] || 0) < 1 && !isDining) {
       availableOffers.push({ id: 'i-swig', icon: '🍕', title: 'HDFC Imperia', description: '5% cashback up to ₹150', category: 'Swiggy', cardId: 'hdfc-imperia' });
     }
   }
