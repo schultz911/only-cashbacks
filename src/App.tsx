@@ -412,6 +412,11 @@ export default function App() {
       setOfferUsage({});
       setOpenRouterApiKey('');
       setKiwiNeonEarnRate(2);
+      setWalletCards([]);
+      setCashbackLogs([]);
+      setCardBillDates({});
+      setPaidBills({});
+      setHistory([]);
 
       setShowDeleteConfirm(false);
       setDeleteConfirmText('');
