@@ -522,34 +522,6 @@ export default function App() {
     }
   };
 
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-
-  useEffect(() => {
-    if ((window as any).deferredPrompt) {
-      setDeferredPrompt((window as any).deferredPrompt);
-    }
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-      (window as any).deferredPrompt = e;
-    };
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-  }, []);
-
-  const handleInstallClick = () => {
-    const promptEvent = deferredPrompt || (window as any).deferredPrompt;
-    if (promptEvent) {
-      promptEvent.prompt();
-      promptEvent.userChoice.then(() => {
-        setDeferredPrompt(null);
-        (window as any).deferredPrompt = null;
-      });
-    } else {
-      showToast('Install prompt not available. On iOS, use Share > Add to Home Screen.', 'info');
-    }
-  };
-
   const [isLogged, setIsLogged] = useState(false);
 
   const handleSearch = async (e?: React.FormEvent, directQuery?: string, prefilledAmount?: string) => {
@@ -1549,8 +1521,10 @@ export default function App() {
           <p>Crafted by Kiran Saldanha. Coded with Gemini.</p>
           <p>For non-commercial use only.</p>
         </div>
-        <motion.button
-          onClick={handleInstallClick}
+        <motion.a
+          href="https://drive.google.com/file/d/1CSKBesMoJzL7ACbjIXTui071TMAUBS8H/view"
+          target="_blank"
+          rel="noopener noreferrer"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           animate={{ y: [0, -5, 0] }}
@@ -1561,7 +1535,7 @@ export default function App() {
             <Download className="w-5 h-5" />
           </motion.div>
           Install App
-        </motion.button>
+        </motion.a>
       </footer>
 
       <AnimatePresence>
