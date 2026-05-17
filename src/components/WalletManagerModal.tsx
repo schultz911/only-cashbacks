@@ -63,7 +63,7 @@ export function WalletManagerModal({ isOpen, onClose, walletCards, setWalletCard
             </div>
 
             <div className="flex-1 overflow-y-auto scrollbar-hide px-2 pb-6 min-h-0 snap-y">
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-2">
                 {allCards.map(card => {
                   const selected = isSelected(card.id);
                   return (
@@ -72,9 +72,9 @@ export function WalletManagerModal({ isOpen, onClose, walletCards, setWalletCard
                       key={card.id}
                       onClick={() => toggleCard(card.id)}
                       className={cn(
-                        "relative shrink-0 rounded-2xl md:rounded-3xl cursor-pointer overflow-hidden transition-all duration-300 border-2 select-none group snap-center",
-                        selected ? "border-white/50 dark:border-gray-600 shadow-lg scale-[0.98]" : "border-transparent shadow-sm hover:scale-[1.02] opacity-50 hover:opacity-100",
-                        "h-24 md:h-28"
+                        "relative shrink-0 rounded-2xl md:rounded-3xl cursor-pointer overflow-hidden transition-all duration-300 select-none group snap-center",
+                        selected ? "shadow-lg scale-[0.98]" : "shadow-sm hover:scale-[1.02] opacity-50 hover:opacity-100",
+                        "h-16 md:h-20"
                       )}
                     >
                       <div 
@@ -84,11 +84,13 @@ export function WalletManagerModal({ isOpen, onClose, walletCards, setWalletCard
                         )}
                       />
                       <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors" />
-                      <div className="absolute inset-0 p-4 md:p-5 flex items-center justify-between">
-                        <div className="flex flex-col shrink-0 w-[80%] max-w-[80%]">
-                          <span className="text-white/80 text-[10px] md:text-xs font-black tracking-widest uppercase truncate">{card.bank}</span>
-                          <div className="text-white font-black text-lg md:text-xl leading-tight drop-shadow-md truncate">{card.name}</div>
-                          <div className="text-white/70 text-[10px] md:text-xs font-bold font-mono tracking-widest mt-0.5">{card.network}</div>
+                      <div className="absolute inset-0 p-3 md:p-4 flex items-center justify-between">
+                        <div className="flex flex-col shrink-0 w-[80%] max-w-[80%] justify-center">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <span className="text-white/80 text-[10px] md:text-xs font-black tracking-widest uppercase truncate">{card.bank}</span>
+                            <span className="text-white/60 text-[10px] md:text-xs font-bold font-mono tracking-widest">{card.network}</span>
+                          </div>
+                          <div className="text-white font-black text-base md:text-lg leading-tight drop-shadow-md truncate">{card.name}</div>
                         </div>
                         <div className={cn(
                           "w-8 h-8 rounded-full flex items-center justify-center transition-all backdrop-blur-md shadow-sm shrink-0",
