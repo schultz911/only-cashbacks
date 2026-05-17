@@ -545,8 +545,9 @@ export default function App() {
   const [isLogged, setIsLogged] = useState(false);
 
   const handleSearch = async (e?: React.FormEvent, directQuery?: string, prefilledAmount?: string) => {
-    setIsLogged(false);
     if (e) e.preventDefault();
+    if (loading) return;
+    setIsLogged(false);
     const activeQuery = directQuery !== undefined ? directQuery : query;
     let activeAmountRaw = prefilledAmount !== undefined ? prefilledAmount : (isIntl ? foreignAmount : amount);
 
@@ -683,6 +684,7 @@ export default function App() {
                 </motion.section>
               ) : recommendation ? (
                 <motion.section
+                  key="recommendation-result"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
@@ -917,14 +919,20 @@ export default function App() {
                   )}
                 </motion.section>
               ) : (
-                <div className="flex items-center justify-center border-2 border-dashed border-gray-200 rounded-3xl min-h-[300px]">
+                <motion.div 
+                  key="empty-state"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="flex items-center justify-center border-2 border-dashed border-gray-200 rounded-3xl min-h-[300px]"
+                >
                   <div className="text-center space-y-3">
                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto text-gray-400">
                       <Search className="w-6 h-6" />
                     </div>
                     <p className="text-gray-500 font-medium">Start a search to find the best card.</p>
                   </div>
-                </div>
+                </motion.div>
               )}
             </AnimatePresence>
 
