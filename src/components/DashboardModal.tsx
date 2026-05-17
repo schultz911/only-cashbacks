@@ -67,13 +67,13 @@ export function DashboardModal({ isOpen, onClose, logs, setLogs }: Props) {
                 <h3 className="text-xl font-bold text-gray-900 mb-2">Reset Savings?</h3>
                 <p className="text-gray-500 mb-8 font-medium">This will permanently delete your savings history. This cannot be undone.</p>
                 <div className="flex gap-3 w-full">
-                  <button 
+                  <button aria-label="Cancel Reset"
                     onClick={() => setShowConfirm(false)}
                     className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-colors shadow-sm"
                   >
                     Cancel
                   </button>
-                  <button 
+                  <button aria-label="Confirm Reset"
                     onClick={handleReset}
                     className="flex-1 py-3 px-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition-colors shadow-sm"
                   >
@@ -101,14 +101,14 @@ export function DashboardModal({ isOpen, onClose, logs, setLogs }: Props) {
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 w-full mb-6">
-                  <button 
+                  <button aria-label="Undo Action"
                     onClick={handleUndo}
                     disabled={logs.length === 0}
                     className="py-3 px-4 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-700 font-bold rounded-xl transition-colors shadow-sm flex items-center justify-center gap-2"
                   >
                     <Undo2 className="w-4 h-4" /> Undo Last
                   </button>
-                  <button 
+                  <button aria-label="Reset Savings"
                     onClick={() => setShowConfirm(true)}
                     disabled={logs.length === 0}
                     className="py-3 px-4 bg-red-50 hover:bg-red-100 disabled:opacity-50 text-red-600 font-bold rounded-xl transition-colors shadow-sm flex items-center justify-center gap-2"

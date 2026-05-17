@@ -38,7 +38,7 @@ export class ErrorBoundary extends Component<Props, State> {
           <p className="text-gray-600 mb-6 max-w-md">
             We encountered an unexpected error while rendering this section.
           </p>
-          <button
+          <button aria-label="Try again"
             onClick={() => this.setState({ hasError: false, error: null })}
             className="flex items-center gap-2 px-5 py-2.5 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 transition-colors shadow-sm"
           >

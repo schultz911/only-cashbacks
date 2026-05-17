@@ -43,6 +43,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   return (
     <div ref={selectRef} className={cn("relative", className)} style={{ zIndex: isOpen ? 50 : 10 }}>
       <button
+        aria-label="Select an option"
         type="button"
         aria-haspopup="listbox"
         aria-expanded={isOpen}

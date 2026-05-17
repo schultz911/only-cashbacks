@@ -35,6 +35,7 @@ export function BillDateSelector({ date, onChange }: BillDateSelectorProps) {
   return (
     <div className="flex items-center gap-2 bg-black/20 border border-white/10 rounded-xl p-1 backdrop-blur-sm">
       <button
+        aria-label="Decrease date"
         onMouseDown={() => startAdjusting(-1)}
         onMouseUp={stopAdjusting}
         onMouseLeave={stopAdjusting}
@@ -60,6 +61,7 @@ export function BillDateSelector({ date, onChange }: BillDateSelectorProps) {
       </div>
       
       <button
+        aria-label="Increase date"
         onMouseDown={() => startAdjusting(1)}
         onMouseUp={stopAdjusting}
         onMouseLeave={stopAdjusting}

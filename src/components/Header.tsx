@@ -80,8 +80,7 @@ export const Header: React.FC<HeaderProps> = React.memo(({
           <div className="flex items-center gap-3">
             {!openRouterApiKey && (
               <div className="relative group flex items-center">
-                <button 
-                  aria-label="Open API settings" 
+                <button aria-label="Open API settings"
                   onClick={() => { setTempApiKey(openRouterApiKey); setIsApiModalOpen(true); }} 
                   className="flex items-center justify-center bg-amber-100 text-amber-700 p-2 rounded-full hover:bg-amber-200 transition-colors shadow-sm"
                 >
@@ -97,6 +96,7 @@ export const Header: React.FC<HeaderProps> = React.memo(({
               <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{user.displayName}</span>
               <button
                 onClick={() => !isSyncing && saveData()}
+                aria-label="Sync status"
                 disabled={isSyncing}
                 className={cn(
                   "flex items-center gap-1 text-[10px] uppercase font-bold tracking-widest transition-all hover:opacity-80 disabled:opacity-50",

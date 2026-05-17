@@ -141,6 +141,7 @@ export const LoungeTrackerItem: React.FC<LoungeTrackerItemProps> = ({
               </a>
             )}
             <button
+              aria-label="Add pass"
               onClick={(e) => {
                 e.stopPropagation();
                 setPassesUsed(passesUsed - 1);

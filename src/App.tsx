@@ -1020,7 +1020,7 @@ export default function App() {
                     You have {CARD_DATA.filter(c => !c.isDummy && c.benefits.some(b => b.type === 'lounge')).length} cards with tracking for lounge access.
                   </p>
                 </div>
-                <button onClick={() => setIsLoungeOpen(true)} className="relative z-10 bg-white hover:bg-gray-100 text-gray-900 text-sm font-bold px-6 py-3 rounded-2xl mt-4 sm:mt-0 transition-all w-fit shrink-0 shadow-lg shadow-white/5 hover:scale-105 active:scale-95 flex items-center gap-2 group/btn">
+                <button aria-label="View Lounge Passes" onClick={() => setIsLoungeOpen(true)} className="relative z-10 bg-white hover:bg-gray-100 text-gray-900 text-sm font-bold px-6 py-3 rounded-2xl mt-4 sm:mt-0 transition-all w-fit shrink-0 shadow-lg shadow-white/5 hover:scale-105 active:scale-95 flex items-center gap-2 group/btn">
                   View Passes
                 </button>
                 <Plane className="absolute -bottom-10 -right-8 w-48 h-48 text-white opacity-[0.02] group-hover:opacity-[0.04] rotate-12 transition-opacity duration-500 pointer-events-none" />
@@ -1041,7 +1041,7 @@ export default function App() {
             </h3>
             <div className="flex items-center gap-3">
               <div className="relative group flex cursor-pointer" onClick={() => setIsDashboardOpen(true)}>
-                <button className="relative overflow-hidden flex items-center justify-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-white/10 transition-colors shadow-sm text-yellow-600 dark:text-yellow-500 px-4 py-1.5 rounded-full text-sm font-bold gap-2 focus:ring-2 ring-gray-200 dark:ring-gray-800 outline-none group/piggy">
+                <button aria-label="View Savings" className="relative overflow-hidden flex items-center justify-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-white/10 transition-colors shadow-sm text-yellow-600 dark:text-yellow-500 px-4 py-1.5 rounded-full text-sm font-bold gap-2 focus:ring-2 ring-gray-200 dark:ring-gray-800 outline-none group/piggy">
                   <span className="absolute -top-1 left-[50%] w-1.5 h-1.5 rounded-full bg-yellow-600 dark:bg-yellow-500 opacity-0 group-hover/piggy:opacity-0 group-hover/piggy:animate-[coin-drop_0.5s_ease-in_forwards] z-[5]"></span>
                   <PiggyBank className="w-5 h-5 transition-transform group-hover/piggy:scale-110 relative z-10 fill-white dark:fill-gray-800" strokeWidth={2} />
                 </button>
@@ -1049,7 +1049,7 @@ export default function App() {
                   My Savings
                 </div>
               </div>
-              <button
+              <button aria-label="Edit Wallet"
                 onClick={() => setIsWalletOpen(true)}
                 className="text-sm font-semibold flex items-center gap-2 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 px-5 py-1.5 rounded-full transition-colors shadow-sm focus:ring-2 ring-gray-200 outline-none"
               >
@@ -1142,10 +1142,9 @@ export default function App() {
               )}
             >
               <div className="absolute inset-0 rounded-3xl shadow-2xl shadow-black/40 pointer-events-none" />
-              <button
+              <button aria-label="Close details"
                 onClick={() => setSelectedCardForDetails(null)}
                 className="absolute right-4 top-4 p-2 bg-black/20 rounded-full hover:bg-black/40 transition-colors z-40 backdrop-blur-md"
-                aria-label="Close details"
               >
                 <X className="w-5 h-5 text-white" />
               </button>
@@ -1203,7 +1202,7 @@ export default function App() {
                           <span className="text-xs font-semibold text-white/80 uppercase tracking-wider">{isQuarterly ? 'Quarterly Usage:' : 'Monthly Usage:'}</span>
                           <div className="flex gap-1.5">
                             {Array.from({ length: b.usageLimit }).map((_, index) => (
-                              <button
+                              <button aria-label="Toggle Pass Usage"
                                 key={index}
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -1316,7 +1315,7 @@ export default function App() {
                   <span className="text-sm font-bold block leading-none mb-1">Accelerated Limit Reached</span>
                   <span className="text-[11px] font-medium text-white/60 leading-none">Exclude from recommendations</span>
                 </div>
-                <button
+                <button aria-label="Toggle Excluded Card"
                   onClick={() => {
                     const isEx = normalizedExhaustedCards[selectedCardForDetails.card.id];
                     setExhaustedCards(prev => {
@@ -1387,8 +1386,7 @@ export default function App() {
                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.25em] pl-1">Drag or Swipe across</p>
                   </div>
                 </div>
-                <button
-                  aria-label="Close offers overlay"
+                <button aria-label="Close offers overlay"
                   onClick={() => setShowOffersOverlay(false)}
                   className="w-12 h-12 bg-gray-100/80 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-all active:scale-90 border border-gray-200/50"
                 >
@@ -1434,7 +1432,7 @@ export default function App() {
                           <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
                           <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Verified</span>
                         </div>
-                        <button
+                        <button aria-label="View Offer Details"
                           onClick={() => {
                             if (offer.cardId) {
                               const card = CARD_DATA.find(c => c.id === offer.cardId);
@@ -1497,13 +1495,13 @@ export default function App() {
                 </div>
 
                 <div className="flex gap-3 pt-4">
-                  <button
+                  <button aria-label="Cancel API Key Update"
                     onClick={() => setIsApiModalOpen(false)}
                     className="flex-1 px-4 py-3 rounded-xl border border-gray-200 font-bold text-gray-700 hover:bg-gray-50 transition-colors"
                   >
                     Cancel
                   </button>
-                  <button
+                  <button aria-label="Save API Key"
                     onClick={() => {
                       setOpenRouterApiKey(tempApiKey);
                       setIsApiModalOpen(false);
@@ -1564,13 +1562,13 @@ export default function App() {
                 </div>
 
                 <div className="flex gap-3 pt-4">
-                  <button
+                  <button aria-label="Cancel Delete Data"
                     onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmText(''); }}
                     className="flex-1 px-4 py-4 rounded-2xl border border-gray-200 font-bold text-gray-700 hover:bg-gray-50 transition-colors"
                   >
                     Keep Data
                   </button>
-                  <button
+                  <button aria-label="Confirm Delete Data"
                     disabled={deleteConfirmText !== 'DELETE'}
                     onClick={handleDeleteData}
                     className="flex-1 px-4 py-4 rounded-2xl bg-red-600 text-white font-bold hover:bg-red-700 transition-colors disabled:opacity-30 disabled:grayscale shadow-lg shadow-red-600/20"

@@ -142,7 +142,7 @@ export function BillReminders({ walletCards, cardBillDates, paidBills, markBillP
                   </div>
                   <div className="shrink-0 flex items-center justify-end">
                     {bill.status === 'ready' ? (
-                      <button
+                      <button aria-label="Mark as paid"
                         onClick={() => handlePay(bill.card.id)}
                         className="bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/20 hover:bg-red-500 hover:text-white dark:hover:bg-red-500 dark:hover:text-white transition-colors px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm"
                       >

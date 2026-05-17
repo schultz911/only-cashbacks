@@ -55,6 +55,7 @@ export function WalletManagerModal({ isOpen, onClose, walletCards, setWalletCard
                 <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Add the cards you own to get personalized recommendations.</p>
               </div>
               <button
+                aria-label="Close wallet manager"
                 onClick={onClose}
                 className="w-10 h-10 rounded-full flex items-center justify-center bg-gray-200/50 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300 backdrop-blur-sm shrink-0"
               >
