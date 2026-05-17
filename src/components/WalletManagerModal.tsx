@@ -56,7 +56,8 @@ export function WalletManagerModal({ isOpen, onClose, walletCards, setWalletCard
               </div>
               <button
                 onClick={onClose}
-                className="w-10 h-10 rounded-full flex items-center justify-center bg-gray-200/50 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300 backdrop-blur-sm shrink-0"
+                aria-label="Close Wallet Manager"
+                className="w-10 h-10 rounded-full flex items-center justify-center bg-gray-200/50 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300 backdrop-blur-sm shrink-0 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -70,9 +71,19 @@ export function WalletManagerModal({ isOpen, onClose, walletCards, setWalletCard
                     <motion.div
                       layoutId={`wallet-card-${card.id}`}
                       key={card.id}
+                      role="checkbox"
+                      aria-checked={selected}
+                      tabIndex={0}
                       onClick={() => toggleCard(card.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          toggleCard(card.id);
+                        }
+                      }}
                       className={cn(
                         "relative shrink-0 rounded-2xl md:rounded-3xl cursor-pointer overflow-hidden transition-all duration-300 select-none group snap-center",
+                        "focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900",
                         selected ? "shadow-lg scale-[0.98]" : "shadow-sm hover:scale-[1.02] opacity-50 hover:opacity-100",
                         "h-16 md:h-20"
                       )}
@@ -106,7 +117,7 @@ export function WalletManagerModal({ isOpen, onClose, walletCards, setWalletCard
             </div>
             
             <div className="pt-6 mt-auto shrink-0">
-              <button onClick={onClose} className="w-full py-4 rounded-2xl bg-black dark:bg-white text-white dark:text-black font-black text-lg hover:scale-[1.01] transition-transform shadow-xl shadow-black/10 dark:shadow-white/10 active:scale-95">
+              <button onClick={onClose} className="w-full py-4 rounded-2xl bg-black dark:bg-white text-white dark:text-black font-black text-lg hover:scale-[1.01] transition-transform shadow-xl shadow-black/10 dark:shadow-white/10 active:scale-95 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900">
                 Save & Close
               </button>
             </div>
