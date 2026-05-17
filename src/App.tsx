@@ -1522,7 +1522,7 @@ export default function App() {
           <p>For non-commercial use only.</p>
         </div>
         <motion.a
-          href="https://drive.google.com/file/d/16OumI3KMnNJbR6m_OXeSm69Ij8HkDe0q/view?usp=drive_link"
+          href="https://drive.google.com/file/d/16OumI3KMnNJbR6m_OXeSm69Ij8HkDe0q/"
           target="_blank"
           rel="noopener noreferrer"
           whileHover={{ scale: 1.05 }}
