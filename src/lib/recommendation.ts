@@ -275,16 +275,16 @@ export function getRecommendations(
       if (isIntl) {
         cashbackAmount = Math.min(amount * 0.05, 100);
         benefitText = '5% Cashback';
-      } else if (isMovie && isOnline && movieUsed < 1) {
+      } else if (isMovie && isOnline && movieUsed < 1 && amount > 399) {
         discountAmount = Math.min(amount * 0.5, 300);
         const remaining = amount - discountAmount;
         cashbackAmount = discountAmount + Math.min(remaining * 0.05, 100);
         benefitText = '1+1 Movie on BookMyShow + 5% Cashback';
-      } else if ((isDining || nameL.includes('district')) && isOnline && diningUsed < 1) {
-        discountAmount = Math.min(amount * 0.15, 500); // Assuming 15% up to 500 for District
+      } else if (((isDining || nameL.includes('district')) && amount > 1999) && isOnline && diningUsed < 1) {
+        discountAmount = Math.min(amount * 0.20, 750); // Assuming 20% up to 750 for District
         const remaining = amount - discountAmount;
         cashbackAmount = discountAmount + Math.min(remaining * 0.05, 100);
-        benefitText = '15% Instant Discount + 5% Cashback';
+        benefitText = '20% Off on District + 5% Cashback';
       } else {
         cashbackAmount = Math.min(amount * 0.05, 100);
         benefitText = '5% Cashback';
