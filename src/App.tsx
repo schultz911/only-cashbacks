@@ -589,7 +589,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F5F7] text-[#1D1D1F] font-sans selection:bg-blue-100 pb-12">
+    <div className="min-h-screen bg-[#F5F5F7] text-[#1D1D1F] font-sans selection:bg-blue-100 pb-12 isolate relative z-0">
       {/* Header */}
       <Header
         isAuthLoading={isAuthLoading}
@@ -964,8 +964,8 @@ export default function App() {
         </div>
 
         {/* My Cards Section - Full Width Bottom */}
-        <div className="mt-12 pt-8 border-t border-gray-200 space-y-6">
-          <div className="flex items-center justify-between">
+        <div className="relative z-20 mt-12 pt-8 border-t border-gray-200 space-y-6 isolate">
+          <div className="flex items-center justify-between relative z-30">
             <h3 className="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
               <Wallet className="w-5 h-5 text-gray-500" />
               My Wallet
@@ -993,10 +993,11 @@ export default function App() {
           </div>
 
           {/* We turn this into a horizontal scrolling container with a fade mask on the edges if there's overflow, or just a nice grid */}
-          <div className="relative">
+          <div className="relative z-30 isolate" style={{ WebkitTransform: 'translate3d(0,0,0)', transform: 'translate3d(0,0,0)' }}>
             <motion.div 
               layoutScroll
-              className="flex sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 overflow-x-auto pt-8 pb-4 px-1 snap-x scrollbar-hide"
+              className="flex sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 overflow-x-auto pt-8 pb-4 px-1 snap-x scrollbar-hide relative z-40 isolate"
+              style={{ paddingBottom: '2rem', WebkitTransform: 'translateZ(0)', transform: 'translateZ(0)' }} // ensure enough overflow room
             >
               {(walletCards.length > 0 ? CARD_DATA.filter(c => walletCards.includes(c.id) && !c.isDummy) : CARD_DATA.filter(c => !c.isDummy)).map((card) => (
                 <div key={card.id} className={cn("snap-start shrink-0 w-72 sm:w-auto", selectedCardForDetails?.card.id === card.id ? "opacity-0 pointer-events-none" : "opacity-100")}>
@@ -1018,7 +1019,7 @@ export default function App() {
 
           {/* Redemption Reminder Section */}
           <section className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200/60 dark:border-gray-800 rounded-3xl p-6 shadow-sm flex flex-col justify-between h-full relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-pink-500/10 to-transparent rounded-bl-full pointer-events-none" />
+            <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-pink-500/10 to-transparent rounded-bl-full pointer-events-none -z-10" />
 
             <div>
               <div className="flex items-center gap-3 mb-4">
