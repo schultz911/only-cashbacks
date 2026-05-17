@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
 import { auth, db, handleFirestoreError, OperationType } from '../firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useWallet } from '../context/WalletContext';
@@ -8,6 +8,7 @@ export function useCloudSync() {
   const { 
     user, setUser, setIsAuthLoading,
     exhaustedCards, setExhaustedCards,
+    cardBillDates, setCardBillDates,
     loungePassesUsed, setLoungePassesUsed,
     loungeMilestonesVerified, setLoungeMilestonesVerified,
     offerUsage, setOfferUsage,
@@ -16,6 +17,7 @@ export function useCloudSync() {
   } = useWallet();
 
   const skipSyncRef = useRef(false);
+  const isDataLoadedRef = useRef(false);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -25,7 +27,10 @@ export function useCloudSync() {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setIsAuthLoading(false);
-      if (!currentUser) setIsDataLoaded(false);
+      if (!currentUser) {
+        setIsDataLoaded(false);
+        isDataLoadedRef.current = false;
+      }
     });
     return () => unsubscribe();
   }, [setUser, setIsAuthLoading]);
@@ -42,43 +47,51 @@ export function useCloudSync() {
     if (!user) {
       skipSyncRef.current = true;
       setExhaustedCards(getInitialState('oc_exhaustedCards', {}));
+      setCardBillDates(getInitialState('oc_cardBillDates', {}));
       setLoungePassesUsed(getInitialState('oc_loungePassesUsed', {}));
       setLoungeMilestonesVerified(getInitialState('oc_loungeMilestonesVerified', {}));
       setOfferUsage(getInitialState('oc_offerUsage', {}));
       setOpenRouterApiKey(getInitialState('oc_openRouterApiKey', ''));
       setKiwiNeonEarnRate(getInitialState('oc_kiwiNeonEarnRate', 2));
-      setTimeout(() => { skipSyncRef.current = false; setIsDataLoaded(true); }, 100);
+      setTimeout(() => { 
+        skipSyncRef.current = false; 
+        setIsDataLoaded(true); 
+        isDataLoadedRef.current = true;
+      }, 100);
       return;
     }
 
-    const loadData = async () => {
-      try {
-        const docRef = doc(db, 'users', user.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          skipSyncRef.current = true;
-          setExhaustedCards(data.exhaustedCards || {});
-          setLoungePassesUsed(data.loungePassesUsed || {});
-          setLoungeMilestonesVerified(data.loungeMilestonesVerified || {});
-          setOfferUsage(data.offerUsage || {});
-          setOpenRouterApiKey(data.openRouterApiKey || '');
-          setKiwiNeonEarnRate(data.kiwiNeonEarnRate || 2);
-          setTimeout(() => { skipSyncRef.current = false; }, 100);
-        }
-      } catch (error: any) {
-        setSyncError(error.message || 'Failed to sync with cloud');
-        try {
-          handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
-        } catch (e) {
-          console.warn('Sync failed, continuing with local state.');
-        }
-      } finally {
-        setIsDataLoaded(true);
-      }
-    };
+    const docRef = doc(db, 'users', user.uid);
+    const unsubscribe = onSnapshot(docRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        
+        skipSyncRef.current = true;
+        setExhaustedCards(data.exhaustedCards || {});
+        setCardBillDates(data.cardBillDates || {});
+        setLoungePassesUsed(data.loungePassesUsed || {});
+        setLoungeMilestonesVerified(data.loungeMilestonesVerified || {});
+        setOfferUsage(data.offerUsage || {});
+        if (data.openRouterApiKey !== undefined) setOpenRouterApiKey(data.openRouterApiKey);
+        if (data.kiwiNeonEarnRate !== undefined) setKiwiNeonEarnRate(data.kiwiNeonEarnRate);
 
-    loadData();
+        setTimeout(() => { 
+          skipSyncRef.current = false; 
+        }, 100);
+      }
+      setIsDataLoaded(true);
+      isDataLoadedRef.current = true;
+      setSyncError(null);
+    }, (error: any) => {
+      setSyncError(error.message || 'Failed to sync with cloud');
+      try {
+        handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
+      } catch (e) {}
+      setIsDataLoaded(true);
+      isDataLoadedRef.current = true;
+    });
+
+    return () => unsubscribe();
   }, [user]);
 
   const saveData = async () => {
@@ -87,6 +100,7 @@ export function useCloudSync() {
     try {
       await setDoc(doc(db, 'users', user.uid), {
         exhaustedCards,
+        cardBillDates,
         loungePassesUsed,
         loungeMilestonesVerified,
         offerUsage,
@@ -112,20 +126,18 @@ export function useCloudSync() {
 
   useEffect(() => {
     localStorage.setItem('oc_exhaustedCards', JSON.stringify(exhaustedCards));
+    localStorage.setItem('oc_cardBillDates', JSON.stringify(cardBillDates));
     localStorage.setItem('oc_loungePassesUsed', JSON.stringify(loungePassesUsed));
     localStorage.setItem('oc_loungeMilestonesVerified', JSON.stringify(loungeMilestonesVerified));
     localStorage.setItem('oc_offerUsage', JSON.stringify(offerUsage));
     localStorage.setItem('oc_openRouterApiKey', JSON.stringify(openRouterApiKey));
     localStorage.setItem('oc_kiwiNeonEarnRate', JSON.stringify(kiwiNeonEarnRate));
 
-    if (isDataLoaded && !skipSyncRef.current) {
+    if (isDataLoadedRef.current && !skipSyncRef.current) {
       setIsDirty(true);
-      const timeoutId = setTimeout(() => {
-        saveData();
-      }, 2000);
-      return () => clearTimeout(timeoutId);
+      saveData();
     }
-  }, [exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, openRouterApiKey, kiwiNeonEarnRate, isDataLoaded]);
+  }, [exhaustedCards, cardBillDates, loungePassesUsed, loungeMilestonesVerified, offerUsage, openRouterApiKey, kiwiNeonEarnRate]);
 
   const handleDeleteData = async () => {
     if (!user) return;
@@ -133,6 +145,7 @@ export function useCloudSync() {
       await deleteDoc(doc(db, 'users', user.uid));
       skipSyncRef.current = true;
       setExhaustedCards({});
+      setCardBillDates({});
       setLoungePassesUsed({});
       setLoungeMilestonesVerified({});
       setOfferUsage({});
