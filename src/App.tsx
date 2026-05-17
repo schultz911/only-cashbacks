@@ -525,18 +525,26 @@ export default function App() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   useEffect(() => {
+    if ((window as any).deferredPrompt) {
+      setDeferredPrompt((window as any).deferredPrompt);
+    }
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
+      (window as any).deferredPrompt = e;
     };
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
   }, []);
 
   const handleInstallClick = () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      deferredPrompt.userChoice.then(() => setDeferredPrompt(null));
+    const promptEvent = deferredPrompt || (window as any).deferredPrompt;
+    if (promptEvent) {
+      promptEvent.prompt();
+      promptEvent.userChoice.then(() => {
+        setDeferredPrompt(null);
+        (window as any).deferredPrompt = null;
+      });
     } else {
       showToast('Install prompt not available. On iOS, use Share > Add to Home Screen.', 'info');
     }
