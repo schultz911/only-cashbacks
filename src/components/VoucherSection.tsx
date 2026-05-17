@@ -1,5 +1,5 @@
 import React from 'react';
-import { CustomSelect } from './LoungeTrackerModal';
+import { CustomSelect } from './CustomSelect';
 
 interface VoucherSectionProps {
   selectedVoucherPortal: string;

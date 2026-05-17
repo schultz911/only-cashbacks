@@ -38,6 +38,14 @@ export default function App() {
     return defaultValue;
   };
 
+  const safeSetItem = (key: string, value: any) => {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch (e) {
+      console.warn(`Could not save ${key} to localStorage`, e);
+    }
+  };
+
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -137,7 +145,7 @@ export default function App() {
       if (meta !== metaThemeColor) meta.remove();
     });
 
-    localStorage.setItem('oc_theme', JSON.stringify(theme));
+    safeSetItem('oc_theme', theme);
   }, [theme]);
 
   const [user, setUser] = useState<User | null>(null);
@@ -252,7 +260,6 @@ export default function App() {
     const docRef = doc(db, 'users', user.uid);
     const unsubscribe = onSnapshot(docRef, (docSnap) => {
       if (docSnap.metadata.hasPendingWrites) return;
-      if (isDirtyRef.current) return; // Prevent overwriting local uncommitted changes
       
       if (docSnap.exists()) {
         const data = docSnap.data();
@@ -369,19 +376,19 @@ export default function App() {
 
   useEffect(() => {
     // Save to localStorage regardless of user status
-    localStorage.setItem('oc_exhaustedCards', JSON.stringify(exhaustedCards));
-    localStorage.setItem('oc_cardBillDates', JSON.stringify(cardBillDates));
-    localStorage.setItem('oc_paidBills', JSON.stringify(paidBills));
-    localStorage.setItem('oc_loungePassesUsed', JSON.stringify(loungePassesUsed));
-    localStorage.setItem('oc_loungeMilestonesVerified', JSON.stringify(loungeMilestonesVerified));
-    localStorage.setItem('oc_offerUsage', JSON.stringify(offerUsage));
-    localStorage.setItem('oc_openRouterApiKey', JSON.stringify(openRouterApiKey));
-    localStorage.setItem('oc_kiwiNeonEarnRate', JSON.stringify(kiwiNeonEarnRate));
-    localStorage.setItem('oc_walletCards', JSON.stringify(walletCards));
-    localStorage.setItem('oc_cashbackLogs', JSON.stringify(cashbackLogs));
-    localStorage.setItem('oc_isDarkMode', JSON.stringify(theme !== 'light')); // back compat
-    localStorage.setItem('oc_theme', JSON.stringify(theme));
-    localStorage.setItem('oc_isSyncPaused', JSON.stringify(isSyncPaused));
+    safeSetItem('oc_exhaustedCards', exhaustedCards);
+    safeSetItem('oc_cardBillDates', cardBillDates);
+    safeSetItem('oc_paidBills', paidBills);
+    safeSetItem('oc_loungePassesUsed', loungePassesUsed);
+    safeSetItem('oc_loungeMilestonesVerified', loungeMilestonesVerified);
+    safeSetItem('oc_offerUsage', offerUsage);
+    safeSetItem('oc_openRouterApiKey', openRouterApiKey);
+    safeSetItem('oc_kiwiNeonEarnRate', kiwiNeonEarnRate);
+    safeSetItem('oc_walletCards', walletCards);
+    safeSetItem('oc_cashbackLogs', cashbackLogs);
+    safeSetItem('oc_isDarkMode', theme !== 'light'); // back compat
+    safeSetItem('oc_theme', theme);
+    safeSetItem('oc_isSyncPaused', isSyncPaused);
 
     if (isDataLoaded && !skipSyncRef.current) {
       setIsDirty(true);
@@ -465,13 +472,13 @@ export default function App() {
   };
 
   useEffect(() => {
-    const cachedRates = localStorage.getItem('oc_exchangeRates');
-    if (cachedRates) {
-      try {
+    try {
+      const cachedRates = localStorage.getItem('oc_exchangeRates');
+      if (cachedRates) {
         setExchangeRates(JSON.parse(cachedRates));
-      } catch (e) {
-        console.error("Could not parse cached exchange rates", e);
       }
+    } catch (e) {
+      console.warn("Could not load cached exchange rates", e);
     }
 
     fetch('https://open.er-api.com/v6/latest/INR')
@@ -479,7 +486,7 @@ export default function App() {
       .then(data => {
         if (data && data.rates) {
           setExchangeRates(data.rates);
-          localStorage.setItem('oc_exchangeRates', JSON.stringify(data.rates));
+          safeSetItem('oc_exchangeRates', data.rates);
         }
       })
       .catch(err => console.error("Could not fetch exchange rates:", err));
@@ -1222,6 +1229,8 @@ export default function App() {
                       <span>150k+</span>
                     </div>
                     <input
+                      id="kiwiNeonSlider"
+                      aria-label="Kiwi Neon Earn Rate"
                       type="range"
                       min="2"
                       max="5"

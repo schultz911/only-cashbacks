@@ -22,6 +22,11 @@ const FOOD_DELIVERY_EXCLUSIONS = ['dineout', 'district', 'eazydiner'];
 const DINING_KEYWORDS = ['dining', 'dine', 'restaurant', 'eatery', 'cafe', 'district', 'dineout', 'eazydiner'];
 const MOVIE_KEYWORDS = ['movie', ...MOVIE_PLATFORMS];
 
+const MOVIE_PLATFORM_REGEX = /cinepolis|pvr|inox|bookmyshow|district|bms|paytm insider|townscript|mera event|cinema|theatre/i;
+const DINING_PLATFORM_REGEX = /swiggy|zomato|eazydiner|dineout|district|toing|bistro|blinkit|zepto cafe|eatsure|fresh menu|box8|eat club|uber eats|domino|pizza hut|magicpin|starbucks|mcdonald|kfc|burger king|haldiram|bikanervala|cafe|restaurant|diner|eatery|pub|bar|coffee/i;
+const BMS_DISTRICT_REGEX = /bookmyshow|district/i;
+const BMS_DISTRICT_BMS_REGEX = /bookmyshow|bms|district/i;
+
 const round2 = (num: number) => Math.round((num + Number.EPSILON) * 100) / 100;
 
 
@@ -92,6 +97,11 @@ export function getRecommendations(
 
   // Optimization: Hoist DEFAULT_EXCLUSIONS.find out of the map loop since catL, nameL, and platL are constant
   const isExcludedCatCache = DEFAULT_EXCLUSIONS.find(ex => catL.includes(ex) || nameL.includes(ex) || platL.includes(ex));
+  
+  const isMoviePlatName = MOVIE_PLATFORM_REGEX.test(nameL);
+  const isDiningPlatName = DINING_PLATFORM_REGEX.test(nameL);
+  const isBmsOrDistrict = BMS_DISTRICT_REGEX.test(nameL);
+  const isBmsOrDistrictOrBms = BMS_DISTRICT_BMS_REGEX.test(nameL);
 
   const cardsToEvaluate = walletCards
     ? CARD_DATA.filter(c => walletCards.includes(c.id) && !c.isDummy)
@@ -375,13 +385,12 @@ export function getRecommendations(
                 if (descL.includes(plat) || valLower.includes(plat)) {
                   if (!nameL.includes(plat) && !(platL && platL.includes(plat))) {
                     skip = true;
-
-                    if (isMovieOffer && (catL.includes('movie') || nameL.includes('movie')) && !nameL.match(/cinepolis|pvr|inox|bookmyshow|district|bms|paytm insider|townscript|mera event|cinema|theatre/i)) {
-                      if (!searchedMoviePlat) skip = false;
-                    }
-                    if (isDiningOffer && (catL.includes('dining') || nameL.includes('dining')) && !nameL.match(/swiggy|zomato|eazydiner|dineout|district|toing|bistro|blinkit|zepto cafe|eatsure|fresh menu|box8|eat club|uber eats|domino|pizza hut|magicpin|starbucks|mcdonald|kfc|burger king|haldiram|bikanervala|cafe|restaurant|diner|eatery|pub|bar|coffee/i)) {
-                      if (!searchedDiningPlat) skip = false;
-                    }
+                    if (isMovieOffer && (catL.includes('movie') || nameL.includes('movie')) && !isMoviePlatName) {
+                    if (!searchedMoviePlat) skip = false;
+                  }
+                  if (isDiningOffer && (catL.includes('dining') || nameL.includes('dining')) && !isDiningPlatName) {
+                    if (!searchedDiningPlat) skip = false;
+                  }
                   }
                   break;
                 }
@@ -497,7 +506,7 @@ export function getRecommendations(
 
         const totalCinepolisValue = cinepolisDiscount + onlineCb;
 
-        if (totalCinepolisValue > cashbackAmount && !nameL.match(/bookmyshow|district/i)) {
+        if (totalCinepolisValue > cashbackAmount && !isBmsOrDistrict) {
           cashbackAmount = totalCinepolisValue;
           const dealDetail = `Swiggy Cinepolis Coupon (₹${cinepolisDiscount.toFixed(0)} off)`;
           if (benefitText.includes('Base Rewards') || benefitText.includes('Excluded')) {
@@ -576,7 +585,7 @@ export function getRecommendations(
     if ((offerUsage['hdfc-imperia-Movies-BMS'] || 0) < 1) {
       availableOffers.push({ id: 'i-bms', icon: '🎟️', title: 'HDFC Imperia', description: '25% points up to ₹250', category: 'BMS', cardId: 'hdfc-imperia' });
     }
-    if (!nameL.match(/bookmyshow|bms|district/i)) {
+    if (!isBmsOrDistrictOrBms) {
       availableOffers.push({ id: 's-cine', icon: '🎥', title: 'Swiggy oneBLCK', description: '25% off up to ₹75', category: 'Cinepolis', cardId: 'hdfc-swiggy' });
     }
   }
