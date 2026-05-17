@@ -109,6 +109,26 @@ export function getRecommendations(
   const isBmsOrDistrict = BMS_DISTRICT_REGEX.test(nameL);
   const isBmsOrDistrictOrBms = BMS_DISTRICT_BMS_REGEX.test(nameL);
 
+  // Optimization: Precompute values that are constant across all cards
+  const isUtilityCat = catL.includes('utility') || catL.includes('utilities');
+  const isGamingCat = catL.includes('gaming');
+  const isGamblingName = nameL.includes('gambling');
+  const isGamblingCat = catL.includes('gambling');
+  const isTataNeuUtility = catL.includes('utilities') || nameL.includes('internet') || nameL.includes('bill') || nameL.includes('bills') || nameL.includes('toll') || nameL.includes('tata play') || nameL.includes('fastag');
+  const isNykaaOrBeauty = nameL.includes('nykaa') || platL.includes('nykaa') || catL.includes('beauty');
+  const isCleartripOrTravel = nameL.includes('cleartrip') || catL.includes('travel') || platL.includes('cleartrip');
+  const isHotelCatOrName = nameL.includes('hotel') || catL.includes('hotel');
+  const isHdfcSwiggyExcludedCat = catL.includes('utility') || nameL.includes('utility') || catL.includes('fuel') || nameL.includes('fuel') || catL.includes('gaming') || nameL.includes('gaming') || catL.includes('gambling') || nameL.includes('gambling') || catL.includes('finance') || nameL.includes('finance') || catL.includes('education') || nameL.includes('education') || catL.includes('school') || nameL.includes('school') || catL.includes('rail') || nameL.includes('rail') || catL.includes('travel') || nameL.includes('travel') || catL.includes('flights') || nameL.includes('flights') || catL.includes('hotel') || nameL.includes('hotel');
+  const isBmsName = nameL.includes('bookmyshow') || nameL.includes('bms');
+  const isDistrictName = nameL.includes('district');
+  const isFoodName = nameL.includes('food');
+  const isEazydiner = nameL.includes('eazydiner') || platL.includes('eazydiner');
+  const isAjioNameOrPlat = nameL.includes('ajio') || platL.includes('ajio');
+  const isAjio = catL.includes('ajio') || isAjioNameOrPlat;
+  const currentQuarterCycle = getQuarterCycle();
+  const cinepolisDiscount = Math.min(amount * 0.25, 75);
+  const ajioDisc = amount * 0.20;
+
   const cardsToEvaluate = walletCards
     ? CARD_DATA.filter(c => walletCards.includes(c.id) && !c.isDummy)
     : CARD_DATA.filter(c => !c.isDummy);
@@ -143,7 +163,7 @@ export function getRecommendations(
         isExcluded = true;
         benefitText = `Excluded category (${isExcludedCat})`;
 
-        if (isExcludedCat === 'gaming' && !catL.includes('gambling') && !nameL.includes('gambling')) {
+        if (isExcludedCat === 'gaming' && !isGamblingCat && !isGamblingName) {
           if (card.id === 'hsbc-live-plus' || card.id === 'kotak-811-infinity') {
             // Only bypass if it wasn't already excluded by Scan & Pay or International
             if (benefitText.includes('Excluded category')) {
@@ -153,7 +173,7 @@ export function getRecommendations(
           }
         }
         if (card.id === 'hdfc-tata-neu-infinity') {
-          if (catL.includes('utility') || catL.includes('utilities') || isExcludedCat === 'toll' || isExcludedCat === 'tolls' ||
+          if (isUtilityCat || isExcludedCat === 'toll' || isExcludedCat === 'tolls' ||
             (isExcludedCat === 'jewellery') ||
             (isExcludedCat === 'insurance')) {
             isExcluded = false;
@@ -221,7 +241,7 @@ export function getRecommendations(
         cashbackAmount = (amount * 0.035) + (amount * card.baseRewardRate / 100);
         benefitText = '5% NeuCoins at Offline Stores';
         // Priority 4: Utilities & bill payments
-      } else if (catL.includes('utilities') || nameL.includes('internet') || nameL.includes('bill') || nameL.includes('bills') || nameL.includes('toll') || nameL.includes('tata play') || nameL.includes('fastag')) {
+      } else if (isTataNeuUtility) {
         const eligibleSpend = Math.min(amount, 40000);
         cashbackAmount = (eligibleSpend * 0.035) + (eligibleSpend * card.baseRewardRate / 100);
         benefitText = '5% NeuCoins on Tata Neu';
@@ -242,23 +262,22 @@ export function getRecommendations(
         const eligible = Math.min(amount, 15000);
         cashbackAmount = (eligible * 0.10);
         benefitText = '10% Cashback';
-      } else if (isOnline && (nameL.includes('nykaa') || platL.includes('nykaa') || catL.includes('beauty'))) {
+      } else if (isOnline && isNykaaOrBeauty) {
         const eligible = Math.min(amount, 30000);
         const over = Math.max(0, amount - 30000);
         cashbackAmount = (eligible * 0.05) + (over * 0.01);
         discountAmount = amount * 0.05;
         benefitText = `5% Cashback + 5% Instant Discount`;
         cashbackAmount += discountAmount;
-      } else if (isOnline && (nameL.includes('cleartrip') || catL.includes('travel') || platL.includes('cleartrip'))) {
+      } else if (isOnline && isCleartripOrTravel) {
         const eligible = Math.min(amount, 30000);
         const over = Math.max(0, amount - 30000);
         cashbackAmount = (eligible * 0.05) + (over * 0.01);
-        const isHotel = nameL.includes('hotel') || catL.includes('hotel');
-        const ctDisc = isHotel ? 0.20 : 0.0635;
+        const ctDisc = isHotelCatOrName ? 0.20 : 0.0635;
         discountAmount = amount * ctDisc;
         cashbackAmount += discountAmount;
         benefitText = `5% Cashback + ${(ctDisc * 100).toFixed(2)}% Instant Discount (Code: CTSWHDFC)`;
-      } else if (isOnline && !catL.includes('utility') && !nameL.includes('utility') && !catL.includes('fuel') && !nameL.includes('fuel') && !catL.includes('gaming') && !nameL.includes('gaming') && !catL.includes('gambling') && !nameL.includes('gambling') && !catL.includes('finance') && !nameL.includes('finance') && !catL.includes('education') && !nameL.includes('education') && !catL.includes('school') && !nameL.includes('school') && !catL.includes('rail') && !nameL.includes('rail') && !catL.includes('travel') && !nameL.includes('travel') && !catL.includes('flights') && !nameL.includes('flights') && !catL.includes('hotel') && !nameL.includes('hotel')) {
+      } else if (isOnline && !isHdfcSwiggyExcludedCat) {
         const eligible = Math.min(amount, 30000);
         const over = Math.max(0, amount - 30000);
         cashbackAmount = (eligible * 0.05) + (over * 0.01);
@@ -291,12 +310,12 @@ export function getRecommendations(
       if (isIntl) {
         cashbackAmount = Math.min(amount * 0.05, 100);
         benefitText = '5% Cashback';
-      } else if ((isMovie || nameL.includes('bookmyshow') || nameL.includes('bms')) && isOnline && movieUsed < 1 && amount > 399) {
+      } else if ((isMovie || isBmsName) && isOnline && movieUsed < 1 && amount > 399) {
         discountAmount = Math.min(amount * 0.5, 300);
         const remaining = amount - discountAmount;
         cashbackAmount = discountAmount + Math.min(remaining * 0.05, 100);
         benefitText = '1+1 Movie on BookMyShow + 5% Cashback';
-      } else if ((isDining || nameL.includes('district')) && isOnline && diningUsed < 1 && amount > 1999) {
+      } else if ((isDining || isDistrictName) && isOnline && diningUsed < 1 && amount > 1999) {
         discountAmount = Math.min(amount * 0.20, 750); // Assuming 20% up to 750 for District
         const remaining = amount - discountAmount;
         cashbackAmount = discountAmount + Math.min(remaining * 0.05, 100);
@@ -319,7 +338,7 @@ export function getRecommendations(
           let matchScore = -1;
 
           const isQuarterly = benefit.description.toLowerCase().includes('quarter') || benefit.description.toLowerCase().includes('qtr');
-          const cycle = isQuarterly ? getQuarterCycle() : getCycleForCard(card.id, cardBillDates);
+          const cycle = isQuarterly ? currentQuarterCycle : getCycleForCard(card.id, cardBillDates);
           const usageKey = `${card.id}-${benefit.category}-${benefit.value}-${cycle}`;
           const usedCount = offerUsage[usageKey] || 0;
           if (benefit.usageLimit && usedCount >= benefit.usageLimit) {
@@ -352,7 +371,7 @@ export function getRecommendations(
             // 2. Axis EazyDiner
             else if ((card.id === 'axis-myzone' && benefit.category === 'Dining' && benefit.value === 'EazyDiner') && amount > 2499) {
               isCustomMatched = true;
-              if (!isDining || isFoodDelivery || nameL.includes('food')) {
+              if (!isDining || isFoodDelivery || isFoodName) {
                 skip = true;
               } else {
                 skip = false;
@@ -419,10 +438,10 @@ export function getRecommendations(
           else if (isMovie && (pLower.includes('movie') || pLower.includes('ticket'))) {
             matchScore = 70;
           }
-          else if ((card.id === 'axis-myzone') && (nameL.includes('ajio') || platL.includes('ajio'))) {
+          else if (card.id === 'axis-myzone' && isAjioNameOrPlat) {
             if (pLower.includes('fashion') || pLower.includes('ajio')) matchScore = 95;
           }
-          else if ((card.id === 'axis-myzone' || card.id === 'kotak-811-infinity') && (nameL.includes('eazydiner') || platL.includes('eazydiner') || nameL.includes('district') || platL.includes('district'))) {
+          else if ((card.id === 'axis-myzone' || card.id === 'kotak-811-infinity') && (isEazydiner || isDistrictName || (platL && platL.includes('district')))) {
             if (pLower.includes('dining') || pLower.includes('eazydiner') || pLower.includes('district')) matchScore = 95;
           }
           else if (isOnline && benefit.category.toLowerCase().includes('online')) matchScore = 20 + (benefit.percentValue || 0);
@@ -486,7 +505,6 @@ export function getRecommendations(
     // Apply Universal Offers (Coupons from Swiggy One apply regardless of card limits if not excluded)
     if (!isExcluded && !exhaustedCards[card.id] && !isIntl && isOnline) {
       if (isMovie) {
-        const cinepolisDiscount = Math.min(amount * 0.25, 75);
         let onlineRate = card.baseRewardRate;
         let onlineCap = amount;
 
@@ -526,8 +544,7 @@ export function getRecommendations(
         }
       }
 
-      if ((catL.includes('ajio') || nameL.includes('ajio') || platL.includes('ajio')) && amount >= 999) {
-        const ajioDisc = amount * 0.20;
+      if (isAjio && amount >= 999) {
         cashbackAmount += ajioDisc;
         const ajioDetail = `Swiggy One Coupon (20% off)`;
         if (benefitText.includes('Base Rewards') || benefitText.includes('Excluded')) {
