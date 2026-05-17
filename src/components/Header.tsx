@@ -63,11 +63,11 @@ export const Header: React.FC<HeaderProps> = React.memo(({
             </svg>
           </div>
           <div className="flex flex-col">
-            <h1 className="text-base sm:text-xl md:text-2xl font-black tracking-tight text-gray-900 dark:text-white leading-none pb-1">
+            <h1 className="text-lg sm:text-xl md:text-2xl font-black tracking-tight text-gray-900 dark:text-white leading-none pb-1">
               OnlyCashbacks
             </h1>
-            <p className="text-[8px] sm:text-[10px] md:text-xs font-bold tracking-widest text-[#0095f6] uppercase leading-tight">
-              Make Your Credit <br className="sm:hidden" /> Cards Pay
+            <p className="text-[10px] sm:text-[10px] md:text-xs font-bold tracking-widest text-[#0095f6] uppercase leading-tight">
+              Make Your Credit Cards Pay
             </p>
           </div>
         </div>
