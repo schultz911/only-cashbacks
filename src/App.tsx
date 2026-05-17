@@ -24,7 +24,7 @@ import { SearchSection } from './components/SearchSection';
 import { cn } from './lib/utils';
 import { auth, googleProvider, db, handleFirestoreError, OperationType } from './firebase';
 import { signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut, User } from 'firebase/auth';
-import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
 
 import Fuse from 'fuse.js';
 import { KNOWN_MERCHANTS } from './data/merchants';
@@ -104,6 +104,9 @@ export default function App() {
   const [theme, setTheme] = useState<'light' | 'dark' | 'oled'>(() => {
     const saved = getInitialState('oc_theme', null);
     if (saved) return saved;
+    if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      return 'dark';
+    }
     return getInitialState('oc_isDarkMode', false) ? 'dark' : 'light';
   });
   const [isSyncPaused, setIsSyncPaused] = useState(() => getInitialState('oc_isSyncPaused', false));
@@ -111,11 +114,29 @@ export default function App() {
   // Apply theme
   useEffect(() => {
     document.documentElement.classList.remove('dark', 'oled');
+    let themeColor = '#F5F5F7';
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
+      themeColor = '#0f172a';
     } else if (theme === 'oled') {
       document.documentElement.classList.add('dark', 'oled');
+      themeColor = '#000000';
     }
+    
+    // Dynamically update theme-color for seamless status bar
+    let metaThemeColor = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement;
+    if (!metaThemeColor) {
+      metaThemeColor = document.createElement('meta');
+      metaThemeColor.name = "theme-color";
+      document.head.appendChild(metaThemeColor);
+    }
+    metaThemeColor.content = themeColor;
+    
+    // Clean up any extra theme-color tags
+    document.querySelectorAll('meta[name="theme-color"]').forEach(meta => {
+      if (meta !== metaThemeColor) meta.remove();
+    });
+
     localStorage.setItem('oc_theme', JSON.stringify(theme));
   }, [theme]);
 
@@ -164,6 +185,10 @@ export default function App() {
   const [syncError, setSyncError] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+  const isDirtyRef = useRef(false);
+  useEffect(() => {
+    isDirtyRef.current = isDirty;
+  }, [isDirty]);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
@@ -224,40 +249,36 @@ export default function App() {
       return;
     }
 
-    const loadData = async () => {
-      try {
-        const docRef = doc(db, 'users', user.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          skipSyncRef.current = true;
-          setExhaustedCards(data.exhaustedCards || {});
-          setCardBillDates(data.cardBillDates || {});
-          setPaidBills(data.paidBills || {});
-          setLoungePassesUsed(data.loungePassesUsed || {});
-          setLoungeMilestonesVerified(data.loungeMilestonesVerified || {});
-          setOfferUsage(data.offerUsage || {});
-          setOpenRouterApiKey(data.openRouterApiKey || '');
-          setKiwiNeonEarnRate(data.kiwiNeonEarnRate || 2);
-          if (data.walletCards) setWalletCards(data.walletCards);
-          if (data.cashbackLogs) setCashbackLogs(data.cashbackLogs);
-          if (data.theme) setTheme(data.theme);
-          else if (data.isDarkMode !== undefined) setTheme(data.isDarkMode ? 'dark' : 'light');
-          setTimeout(() => { skipSyncRef.current = false; }, 100);
-        }
-      } catch (error: any) {
-        setSyncError(error.message || 'Failed to sync with cloud');
-        try {
-          handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
-        } catch (e) {
-          console.warn('Sync failed, continuing with local state.');
-        }
-      } finally {
-        setIsDataLoaded(true);
+    const docRef = doc(db, 'users', user.uid);
+    const unsubscribe = onSnapshot(docRef, (docSnap) => {
+      if (docSnap.metadata.hasPendingWrites) return;
+      if (isDirtyRef.current) return; // Prevent overwriting local uncommitted changes
+      
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        skipSyncRef.current = true;
+        if (data.exhaustedCards) setExhaustedCards(data.exhaustedCards);
+        if (data.cardBillDates) setCardBillDates(data.cardBillDates);
+        if (data.paidBills) setPaidBills(data.paidBills);
+        if (data.loungePassesUsed) setLoungePassesUsed(data.loungePassesUsed);
+        if (data.loungeMilestonesVerified) setLoungeMilestonesVerified(data.loungeMilestonesVerified);
+        if (data.offerUsage) setOfferUsage(data.offerUsage);
+        if (data.openRouterApiKey !== undefined) setOpenRouterApiKey(data.openRouterApiKey);
+        if (data.kiwiNeonEarnRate !== undefined) setKiwiNeonEarnRate(data.kiwiNeonEarnRate);
+        if (data.walletCards) setWalletCards(data.walletCards);
+        if (data.cashbackLogs) setCashbackLogs(data.cashbackLogs);
+        if (data.theme) setTheme(data.theme);
+        else if (data.isDarkMode !== undefined) setTheme(data.isDarkMode ? 'dark' : 'light');
+        setTimeout(() => { skipSyncRef.current = false; }, 100);
       }
-    };
+      setIsDataLoaded(true);
+      setSyncError(null);
+    }, (error: any) => {
+      setSyncError(error.message || 'Failed to sync with cloud');
+      setIsDataLoaded(true);
+    });
 
-    loadData();
+    return () => unsubscribe();
   }, [user]);
 
   const saveData = async () => {
@@ -303,7 +324,7 @@ export default function App() {
 
     const timer = setTimeout(() => {
       saveData();
-    }, 3000); // Auto-save after 3 seconds of inactivity
+    }, 500); // Auto-save quickly
 
     return () => clearTimeout(timer);
   }, [isDirty, user, isAuthLoading, isDataLoaded, isSyncPaused]);

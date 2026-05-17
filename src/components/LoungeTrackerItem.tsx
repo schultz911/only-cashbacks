@@ -116,27 +116,40 @@ export const LoungeTrackerItem: React.FC<LoungeTrackerItemProps> = ({
         <div className="text-sm text-gray-500 font-medium leading-relaxed">
           {parsed.description}
         </div>
-        {isVerified && !isExhausted && passesCount > 0 && category === 'Domestic' && card.id === 'hdfc-tata-neu-infinity' && (
-          <a
-            href="https://www.gyftr.com/myrewards/tataneuhdfcbankcreditcards/"
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="text-xs font-bold text-blue-700 bg-blue-100/80 backdrop-blur-sm border border-blue-200 px-3 py-1.5 rounded-lg w-fit hover:bg-blue-200 transition-colors shadow-sm"
-          >
-            Redeem Voucher
-          </a>
-        )}
-        {isVerified && !isExhausted && passesCount > 0 && category === 'Domestic' && card.id === 'hdfc-imperia' && (
-          <a
-            href="https://www.gyftr.com/myrewards/hdfcdebitcardloungeprogram/"
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="text-xs font-bold text-blue-700 bg-blue-100/80 backdrop-blur-sm border border-blue-200 px-3 py-1.5 rounded-lg w-fit hover:bg-blue-200 transition-colors shadow-sm"
-          >
-            Redeem Voucher
-          </a>
+        {isVerified && passesCount > 0 && category === 'Domestic' && (card.id === 'hdfc-tata-neu-infinity' || card.id === 'hdfc-imperia') && (
+          <div className="flex gap-2 items-center flex-wrap pt-1">
+            {!isExhausted && card.id === 'hdfc-tata-neu-infinity' && (
+              <a
+                href="https://www.gyftr.com/myrewards/tataneuhdfcbankcreditcards/"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="text-xs font-bold text-blue-700 bg-blue-100/80 backdrop-blur-sm border border-blue-200 px-3 py-1.5 rounded-lg w-fit hover:bg-blue-200 transition-colors shadow-sm"
+              >
+                Redeem Voucher
+              </a>
+            )}
+            {!isExhausted && card.id === 'hdfc-imperia' && (
+              <a
+                href="https://www.gyftr.com/myrewards/hdfcdebitcardloungeprogram/"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="text-xs font-bold text-blue-700 bg-blue-100/80 backdrop-blur-sm border border-blue-200 px-3 py-1.5 rounded-lg w-fit hover:bg-blue-200 transition-colors shadow-sm"
+              >
+                Redeem Voucher
+              </a>
+            )}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setPassesUsed(passesUsed - 1);
+              }}
+              className="text-xs font-bold text-purple-700 bg-purple-100/80 backdrop-blur-sm border border-purple-200 px-3 py-1.5 rounded-lg w-fit hover:bg-purple-200 transition-colors shadow-sm"
+            >
+              + 1
+            </button>
+          </div>
         )}
       </div>
 
