@@ -35,7 +35,7 @@ export function getCycleForCard(cardId: string, cardBillDates: Record<string, nu
   if (card && card.type === 'Debit') {
     billDay = 1;
   }
-  
+
   const now = new Date();
   if (now.getDate() >= billDay) {
     return `${now.getFullYear()}-${now.getMonth() + 1}`;
@@ -93,7 +93,7 @@ export function getRecommendations(
   // Optimization: Hoist DEFAULT_EXCLUSIONS.find out of the map loop since catL, nameL, and platL are constant
   const isExcludedCatCache = DEFAULT_EXCLUSIONS.find(ex => catL.includes(ex) || nameL.includes(ex) || platL.includes(ex));
 
-  const cardsToEvaluate = walletCards 
+  const cardsToEvaluate = walletCards
     ? CARD_DATA.filter(c => walletCards.includes(c.id) && !c.isDummy)
     : CARD_DATA.filter(c => !c.isDummy);
 
@@ -396,7 +396,7 @@ export function getRecommendations(
           cashbackAmount = calculatedCb + baseCb;
           const capType = usedBenefit.type.charAt(0).toUpperCase() + usedBenefit.type.slice(1);
           if (card.id === 'axis-myzone') {
-            if (usedBenefit.value === 'Swiggy') benefitText = `Flat ₹120 Off (Code: AXIS120)`;
+            if (usedBenefit.category === 'Food Delivery') benefitText = `Flat ₹120 Off (Code: AXIS120)`;
             else if (usedBenefit.category === 'Movies') benefitText = `1+1 via District (Code: AXIS200)`;
             else if (usedBenefit.category === 'Fashion') benefitText = `Up to ₹1,000 Off (Code: AJIOAXISMZ)`;
             else if (usedBenefit.category === 'Dining') benefitText = `${rate}% Off via EazyDiner`;
