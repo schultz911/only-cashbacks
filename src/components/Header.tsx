@@ -56,7 +56,7 @@ export const Header: React.FC<HeaderProps> = React.memo(({
     <header className="sticky top-0 z-[200] bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 px-6 py-4">
       <div className="max-w-6xl mx-auto flex justify-between items-center">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 shrink-0 bg-[#0095f6] rounded-full flex items-center justify-center shadow-md relative overflow-hidden">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 shrink-0 bg-[#0095f6] rounded-full flex items-center justify-center shadow-md relative overflow-hidden">
             <svg viewBox="0 0 100 100" className="w-[85%] h-[85%] mt-0.5 ml-0.5" fill="white" xmlns="http://www.w3.org/2000/svg">
               <path d="M 50 15 A 35 35 0 1 0 50 85 A 35 35 0 0 0 50 15 Z M 50 35 A 15 15 0 1 1 50 65 A 15 15 0 0 1 50 35 Z" />
               <path d="M 68 35 C 75 35 85 40 90 30 C 88 45 80 50 72 50 C 82 50 95 60 92 75 C 80 75 70 65 65 60 L 65 35 Z" />
