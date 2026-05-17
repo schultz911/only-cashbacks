@@ -18,21 +18,21 @@
 
 ## 🚀 Key Features
 
-- **🔍 Smart Search & Categorization**: Just type a merchant name, category, or item, and the app instantly identifies the category and tells you which card to pull out. Works seamlessly for online, in-store, international, and UPI spends.
-- **📂 Comprehensive Offline DB**: While it can use an AI API to resolve merchant names, if you don't want AI, no worries! We have built a thorough and comprehensive merchant database using optimized regexes that works entirely offline.
-- **✈️ Offline-First**: Once you load the app, you don't need the internet to use it. Perfect when you're traveling or in areas with spotty connectivity.
-- **💰 Real Net Value Calculations**: It doesn't just show a raw cashback %. It calculates the true net value by subtracting fees and taxes (like GST on Forex markups) so you see the real profit.
-- **🌍 Real-Time Forex Calculator**: Get real-time exchange rate calculations to see if your card's rewards outweigh its foreign currency markup.
-- **🎟️ Exclusive Offer Management**: Keeps track of exclusive card offers and tells you when it's best to use them based on the amount and category. Easily manage your offer usage history so you know exactly what you've used in a given month.
-- **⚡ Accelerated Limit Filters**: Exclude cards automatically once you hit their monthly cashback limits, and customize your wallet so it only shows the cards you actually own.
-- **📅 Bill Reminders**: Set your credit card bill generation date to get smart reminders when your bill is approaching and track if you've marked it as paid.
-- **🔗 Community SBI DB Link**: Direct, quick-access link to the community-maintained database of confirmed merchants and cashback eligibility for the popular SBI Cashback card.
-- **📈 Transaction Logging & Savings Tracker**: Log transactions to the savings tab to track exactly how much real money you have saved in cashback.
-- **💡 Reward Redemption Reminders**: Never lose points! Get handy reminders of all the platforms where you need to manually turn rewards into real cash.
-- **🛫 Milestone-based Lounge Tracker**: Keep tabs on your lounge passes. Automatically tracks your domestic and international visits based on your card's spend milestones, with a direct link to the HDFC voucher redemption portal right on the app so no more looking for your email or SMS.
-- **🛍️ Voucher Strategies**: Discover "reward-on-reward" opportunities. The app tells you which cards work best with which voucher portals.
-- **📱 Portfolio Sync**: Your cards, limits, and lounge usage stay synced across all your devices securely via your Google account.
-- **🔒 Privacy First**: You're in control. Manually trigger cloud syncs, work in offline mode, or wipe all your data instantly from the profile menu.
+- **🔍 Smart Search**: Instantly identifies categories by merchant name, item, or category. Supports Online, In-Store, International, and UPI.
+- **📂 Regex Offline DB**: An optimized regex merchant database that handles category matching entirely offline—no AI required.
+- **✈️ Offline-First**: Once loaded, the app works completely without internet. Perfect for traveling or low-connectivity zones.
+- **💰 Real Net Value**: Factor in real-world fees and taxes (like GST on Forex markups) to see your actual net profit instead of just basic cashback percentages.
+- **🌍 Forex Precision**: Live exchange rate comparisons to check if your card's reward points outweigh its forex fees.
+- **🎟️ Offer Manager**: Track monthly credit card offers (like Axis Swiggy or EazyDiner) and manage usage limits to see when they are most profitable.
+- **⚡ Reward Caps & Wallet Filters**: Hide cards from suggestions once they reach monthly cashback limits, and filter suggestions based on cards you actually own.
+- **📅 Bill Reminders**: Input your billing cycles to receive smart reminders when credit card payments are due.
+- **🔗 Community SBI Link**: Built-in reference sheet linking to community-sourced eligible/excluded merchants for the popular SBI Cashback card.
+- **📈 Savings Logger**: Easily log your transactions to see your cumulative cashback savings over time.
+- **💡 Point Redemption**: Smart reminders telling you when and where to redeem voucher rewards into real-world cash.
+- **🛫 Lounge & Milestone Tracker**: Automatically track your domestic and international lounge passes based on card milestones. Features a direct HDFC voucher redemption link.
+- **🛍️ Voucher Optimizations**: Maximize your rewards using recommended "card-to-voucher-portal" stacking strategies.
+- **📱 Multi-Device Sync**: Keep your wallet, offer limits, and lounge history secure and in sync via Google Sign-In.
+- **🔒 Total Privacy**: No analytics, background trackers, or hidden telemetry. Wipe or sync your data manually whenever you choose.
 
 > [!IMPORTANT]
 > **This app doesn't use AI by default.**
