@@ -34,6 +34,12 @@ const round2 = (num: number) => Math.round((num + Number.EPSILON) * 100) / 100;
 const hasKeyword = (targets: string[], keywords: string[]) =>
   keywords.some(keyword => targets.some(target => target.includes(keyword)));
 
+export function getQuarterCycle(): string {
+  const now = new Date();
+  const quarter = Math.floor(now.getMonth() / 3) + 1;
+  return `${now.getFullYear()}-Q${quarter}`;
+}
+
 export function getCycleForCard(cardId: string, cardBillDates: Record<string, number>): string {
   let billDay = cardBillDates[cardId] || 1;
   const card = CARD_DATA.find(c => c.id === cardId);
@@ -312,7 +318,8 @@ export function getRecommendations(
           if (isIntl && benefit.type === 'offer' && benefit.category !== 'International') continue;
           let matchScore = -1;
 
-          const cycle = getCycleForCard(card.id, cardBillDates);
+          const isQuarterly = benefit.description.toLowerCase().includes('quarter') || benefit.description.toLowerCase().includes('qtr');
+          const cycle = isQuarterly ? getQuarterCycle() : getCycleForCard(card.id, cardBillDates);
           const usageKey = `${card.id}-${benefit.category}-${benefit.value}-${cycle}`;
           const usedCount = offerUsage[usageKey] || 0;
           if (benefit.usageLimit && usedCount >= benefit.usageLimit) {

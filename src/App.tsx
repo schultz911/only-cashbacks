@@ -8,14 +8,15 @@ import { Search, History, Plane, Loader2, Sparkles, Globe, Wallet, QrCode, X, Ch
 
 import { motion, AnimatePresence } from 'motion/react';
 import { categorizeMerchant } from './services/gemini';
-import { getRecommendations, getCycleForCard } from './lib/recommendation';
+import { getRecommendations, getCycleForCard, getQuarterCycle } from './lib/recommendation';
 import { Recommendation, MerchantInfo, Card, CashbackLog } from './types';
 import { CARD_DATA } from './data/cards';
 import { CardItem } from './components/CardItem';
 import { BillReminders } from './components/BillReminders';
 import { BillDateSelector } from './components/BillDateSelector';
 import { LoungeTrackerItem } from './components/LoungeTrackerItem';
-import { LoungeTrackerModal, CustomSelect, parseLoungeBenefit } from './components/LoungeTrackerModal';
+import { LoungeTrackerModal, parseLoungeBenefit } from './components/LoungeTrackerModal';
+import { CustomSelect } from './components/CustomSelect';
 import { WalletManagerModal } from './components/WalletManagerModal';
 import { DashboardModal } from './components/DashboardModal';
 import { Header } from './components/Header';
@@ -286,6 +287,50 @@ export default function App() {
     });
 
     return () => unsubscribe();
+  }, [user]);
+
+  // Persistent refresh when app visibility changes
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible' && user) {
+        try {
+          const docRef = doc(db, 'users', user.uid);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists() && !isDirtyRef.current) {
+            const data = docSnap.data();
+            skipSyncRef.current = true;
+            if (data.exhaustedCards) setExhaustedCards(data.exhaustedCards);
+            if (data.cardBillDates) setCardBillDates(data.cardBillDates);
+            if (data.paidBills) setPaidBills(data.paidBills);
+            if (data.loungePassesUsed) setLoungePassesUsed(data.loungePassesUsed);
+            if (data.loungeMilestonesVerified) setLoungeMilestonesVerified(data.loungeMilestonesVerified);
+            if (data.offerUsage) setOfferUsage(data.offerUsage);
+            if (data.openRouterApiKey !== undefined) setOpenRouterApiKey(data.openRouterApiKey);
+            if (data.kiwiNeonEarnRate !== undefined) setKiwiNeonEarnRate(data.kiwiNeonEarnRate);
+            if (data.walletCards) setWalletCards(data.walletCards);
+            if (data.cashbackLogs) setCashbackLogs(data.cashbackLogs);
+            if (data.theme) setTheme(data.theme);
+            else if (data.isDarkMode !== undefined) setTheme(data.isDarkMode ? 'dark' : 'light');
+            setTimeout(() => { skipSyncRef.current = false; }, 100);
+          }
+        } catch (e) {
+          console.error("Failed to persistently refresh data on visibility change", e);
+        }
+      }
+    };
+    
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    // Also set an interval to fetch data periodically just in case
+    const interval = setInterval(() => {
+       if (document.visibilityState === 'visible' && user && !isDirtyRef.current) {
+          handleVisibilityChange();
+       }
+    }, 30000); // 30 seconds
+
+    return () => {
+       document.removeEventListener("visibilitychange", handleVisibilityChange);
+       clearInterval(interval);
+    }
   }, [user]);
 
   const saveData = async () => {
@@ -1138,7 +1183,8 @@ export default function App() {
 
               <div className="overflow-y-auto pr-2 space-y-3 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent relative z-10 pb-4">
                 {selectedCardForDetails.card.benefits.filter(b => b.type !== 'exclusion' && b.type !== 'lounge' && !b.isHidden).map((b, i) => {
-                  const cycle = getCycleForCard(selectedCardForDetails.card.id, cardBillDates);
+                  const isQuarterly = b.description.toLowerCase().includes('quarter') || b.description.toLowerCase().includes('qtr');
+                  const cycle = isQuarterly ? getQuarterCycle() : getCycleForCard(selectedCardForDetails.card.id, cardBillDates);
                   const usageKey = `${selectedCardForDetails.card.id}-${b.category}-${b.value}-${cycle}`;
                   const usedCount = offerUsage[usageKey] || 0;
                   return (
@@ -1154,7 +1200,7 @@ export default function App() {
                       </div>
                       {b.usageLimit && (
                         <div className="mt-3 flex items-center gap-2 border-t border-white/10 pt-3">
-                          <span className="text-xs font-semibold text-white/80 uppercase tracking-wider">Monthly Usage:</span>
+                          <span className="text-xs font-semibold text-white/80 uppercase tracking-wider">{isQuarterly ? 'Quarterly Usage:' : 'Monthly Usage:'}</span>
                           <div className="flex gap-1.5">
                             {Array.from({ length: b.usageLimit }).map((_, index) => (
                               <button
