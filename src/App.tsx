@@ -25,7 +25,7 @@ import { SearchSection } from './components/SearchSection';
 import { cn } from './lib/utils';
 import { auth, googleProvider, db, handleFirestoreError, OperationType } from './firebase';
 import { signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut, User } from 'firebase/auth';
-import { doc, getDoc, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, getDocFromServer, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
 
 import Fuse from 'fuse.js';
 import { KNOWN_MERCHANTS } from './data/merchants';
@@ -246,9 +246,11 @@ export default function App() {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setIsDataLoaded(false); // ALWAYS set to false when auth state changes so we don't accidentally sync before data loads
+      setIsDirty(false); // Reset dirty flag so we don't save guest data to the authenticated profile
+      isDirtyRef.current = false;
       setUser(currentUser);
       setIsAuthLoading(false);
-      if (!currentUser) setIsDataLoaded(false);
     });
     return () => unsubscribe();
   }, []);
@@ -264,6 +266,18 @@ export default function App() {
       setOfferUsage(getInitialState('oc_offerUsage', {}));
       setOpenRouterApiKey(getInitialState('oc_openRouterApiKey', ''));
       setKiwiNeonEarnRate(getInitialState('oc_kiwiNeonEarnRate', 2));
+      setCardBillDates(getInitialState('oc_cardBillDates', {}));
+      setPaidBills(getInitialState('oc_paidBills', {}));
+      setWalletCards(getInitialState('oc_walletCards', []));
+      setCashbackLogs(getInitialState('oc_cashbackLogs', []));
+      
+      const savedTheme = getInitialState('oc_theme', null);
+      if (savedTheme) {
+        setTheme(savedTheme);
+      } else {
+        setTheme('light');
+      }
+
       setTimeout(() => { skipSyncRef.current = false; setIsDataLoaded(true); }, 100);
       return;
     }
@@ -305,7 +319,8 @@ export default function App() {
       if (document.visibilityState === 'visible' && user) {
         try {
           const docRef = doc(db, 'users', user.uid);
-          const docSnap = await getDoc(docRef);
+          // Use getDocFromServer to bypass local cache and always fetch the absolute newest state from the backend
+          const docSnap = await getDocFromServer(docRef);
           if (docSnap.exists() && !isDirtyRef.current) {
             const data = docSnap.data();
             skipSyncRef.current = true;
