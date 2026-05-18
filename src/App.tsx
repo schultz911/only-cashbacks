@@ -113,8 +113,10 @@ export default function App() {
 
   const isAndroidApp = useMemo(() => {
     if (typeof window !== 'undefined') {
-      // Check for WebView environment typically used by Android wrapper apps
-      return /Android/i.test(navigator.userAgent) && /wv/i.test(navigator.userAgent);
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.matchMedia('(display-mode: fullscreen)').matches;
+      const isTwaReferrer = document.referrer.includes('android-app://');
+      const isWebView = /Android/i.test(navigator.userAgent) && /wv/i.test(navigator.userAgent);
+      return isStandalone || isTwaReferrer || isWebView;
     }
     return false;
   }, []);
