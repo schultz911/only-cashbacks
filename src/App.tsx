@@ -195,9 +195,19 @@ export default function App() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const isDirtyRef = useRef(false);
+  const pendingSyncCounterRef = useRef(0);
+  
+  const latestStateRef = useRef({
+    exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, cardBillDates, paidBills, openRouterApiKey, kiwiNeonEarnRate, walletCards, cashbackLogs, theme
+  });
+
   useEffect(() => {
-    isDirtyRef.current = isDirty;
-  }, [isDirty]);
+    latestStateRef.current = {
+      exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, cardBillDates, paidBills, openRouterApiKey, kiwiNeonEarnRate, walletCards, cashbackLogs, theme
+    };
+  }, [exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, cardBillDates, paidBills, openRouterApiKey, kiwiNeonEarnRate, walletCards, cashbackLogs, theme]);
+  
+  // Note: markDirty is managed down below, leaving layout similar
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
@@ -336,30 +346,29 @@ export default function App() {
   const saveData = async () => {
     if (!user) return;
     setIsSyncing(true);
+    
+    // Capture the exact sync counter before we start the async operation
+    const syncCounterAtStart = pendingSyncCounterRef.current;
+    // Capture the latest state without relying on the closure environment 
+    const dataToSave = latestStateRef.current;
+
     try {
       const docRef = doc(db, 'users', user.uid);
       await setDoc(docRef, {
         userId: user.uid,
-        exhaustedCards,
-        loungePassesUsed,
-        loungeMilestonesVerified,
-        offerUsage,
-        cardBillDates,
-        paidBills,
-        openRouterApiKey,
-        kiwiNeonEarnRate,
-        walletCards,
-        cashbackLogs,
-        theme,
-        isDarkMode: theme !== 'light',
+        ...dataToSave,
+        isDarkMode: dataToSave.theme !== 'light',
         updatedAt: Date.now()
       }, { merge: true });
+      
       setSyncError(null);
-      setIsDirty(false);
-      // showToast('Synced to cloud', 'success');
+      // Only clear dirty if no new changes were triggered during the upload
+      if (pendingSyncCounterRef.current === syncCounterAtStart) {
+        setIsDirty(false);
+        isDirtyRef.current = false;
+      }
     } catch (error: any) {
       setSyncError(error.message || 'Failed to save to cloud');
-      // showToast('Failed to sync', 'error');
       try {
         handleFirestoreError(error, OperationType.WRITE, `users/${user.uid}`);
       } catch (e) {
@@ -376,13 +385,17 @@ export default function App() {
 
     const timer = setTimeout(() => {
       saveData();
-    }, 500); // Auto-save quickly
+    }, 1000); // 1s batch window
 
     return () => clearTimeout(timer);
-  }, [isDirty, user, isAuthLoading, isDataLoaded, isSyncPaused]);
+  }, [isDirty, user, isAuthLoading, isDataLoaded, isSyncPaused, isSyncing, exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, cardBillDates, paidBills, openRouterApiKey, kiwiNeonEarnRate, walletCards, cashbackLogs, theme]);
 
   const markDirty = () => {
-    if (!skipSyncRef.current) setIsDirty(true);
+    if (!skipSyncRef.current) {
+      pendingSyncCounterRef.current += 1;
+      setIsDirty(true);
+      isDirtyRef.current = true;
+    }
   };
 
   // Watch for state changes to mark dirty
