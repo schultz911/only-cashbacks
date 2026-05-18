@@ -110,6 +110,14 @@ export default function App() {
   const [isWalletOpen, setIsWalletOpen] = useState(false);
   const [cashbackLogs, setCashbackLogs] = useState<CashbackLog[]>(() => getInitialState('oc_cashbackLogs', []));
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
+
+  const isAndroidApp = useMemo(() => {
+    if (typeof window !== 'undefined') {
+      // Check for WebView environment typically used by Android wrapper apps
+      return /Android/i.test(navigator.userAgent) && /wv/i.test(navigator.userAgent);
+    }
+    return false;
+  }, []);
   const [theme, setTheme] = useState<'light' | 'dark' | 'oled'>(() => {
     const saved = getInitialState('oc_theme', null);
     if (saved) return saved;
@@ -1631,7 +1639,7 @@ export default function App() {
           <p>For non-commercial use only.</p>
         </div>
         <motion.a
-          href="https://drive.google.com/file/d/16OumI3KMnNJbR6m_OXeSm69Ij8HkDe0q"
+          href={isAndroidApp ? "https://github.com/schultz911/onlycashbacks-android/releases/latest" : "https://drive.google.com/file/d/16OumI3KMnNJbR6m_OXeSm69Ij8HkDe0q"}
           target="_blank"
           rel="noopener noreferrer"
           whileHover={{ scale: 1.05 }}
@@ -1643,7 +1651,7 @@ export default function App() {
           <motion.div animate={{ y: [0, 3, 0] }} transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}>
             <Download className="w-5 h-5" />
           </motion.div>
-          Install App
+          {isAndroidApp ? "Check for updates" : "Install App"}
         </motion.a>
       </footer>
 
