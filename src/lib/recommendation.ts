@@ -129,6 +129,18 @@ export function getRecommendations(
   const cinepolisDiscount = Math.min(amount * 0.25, 75);
   const ajioDisc = amount * 0.20;
 
+  const isMovieCatOrName = catL.includes('movie') || nameL.includes('movie');
+  const isDiningCatOrName = catL.includes('dining') || nameL.includes('dining');
+  const isDistrictPlat = platL && platL.includes('district');
+  const isCinepolisName = nameL.includes('cinepolis');
+
+  const matchedSpecificPlatforms = new Set<string>();
+  for (const plat of SPECIFIC_PLATFORMS) {
+    if (nameL.includes(plat) || (platL && platL.includes(plat))) {
+      matchedSpecificPlatforms.add(plat);
+    }
+  }
+
   const cardsToEvaluate = walletCards
     ? CARD_DATA.filter(c => walletCards.includes(c.id) && !c.isDummy)
     : CARD_DATA.filter(c => !c.isDummy);
@@ -409,14 +421,14 @@ export function getRecommendations(
             if (!isCustomMatched) {
               for (const plat of SPECIFIC_PLATFORMS) {
                 if (descL.includes(plat) || valLower.includes(plat)) {
-                  if (!nameL.includes(plat) && !(platL && platL.includes(plat))) {
+                  if (!matchedSpecificPlatforms.has(plat)) {
                     skip = true;
-                    if (isMovieOffer && (catL.includes('movie') || nameL.includes('movie')) && !isMoviePlatName) {
-                    if (!searchedMoviePlat) skip = false;
-                  }
-                  if (isDiningOffer && (catL.includes('dining') || nameL.includes('dining')) && !isDiningPlatName) {
-                    if (!searchedDiningPlat) skip = false;
-                  }
+                    if (isMovieOffer && isMovieCatOrName && !isMoviePlatName) {
+                      if (!searchedMoviePlat) skip = false;
+                    }
+                    if (isDiningOffer && isDiningCatOrName && !isDiningPlatName) {
+                      if (!searchedDiningPlat) skip = false;
+                    }
                   }
                   break;
                 }
@@ -441,7 +453,7 @@ export function getRecommendations(
           else if (card.id === 'axis-myzone' && isAjioNameOrPlat) {
             if (pLower.includes('fashion') || pLower.includes('ajio')) matchScore = 95;
           }
-          else if ((card.id === 'axis-myzone' || card.id === 'kotak-811-infinity') && (isEazydiner || isDistrictName || (platL && platL.includes('district')))) {
+          else if ((card.id === 'axis-myzone' || card.id === 'kotak-811-infinity') && (isEazydiner || isDistrictName || isDistrictPlat)) {
             if (pLower.includes('dining') || pLower.includes('eazydiner') || pLower.includes('district')) matchScore = 95;
           }
           else if (isOnline && benefit.category.toLowerCase().includes('online')) matchScore = 20 + (benefit.percentValue || 0);
@@ -536,7 +548,7 @@ export function getRecommendations(
           const dealDetail = `Swiggy Cinepolis Coupon (₹${cinepolisDiscount.toFixed(0)} off)`;
           if (benefitText.includes('Base Rewards') || benefitText.includes('Excluded')) {
             benefitText = `${onlineRate}% Online + ${dealDetail}`;
-          } else if (!nameL.includes('cinepolis')) {
+          } else if (!isCinepolisName) {
             benefitText = `${benefitText} (Better Deal: ${dealDetail})`;
           } else {
             benefitText = `${benefitText} with ${dealDetail}!`;
