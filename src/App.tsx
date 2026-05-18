@@ -1616,7 +1616,7 @@ export default function App() {
           <p>For non-commercial use only.</p>
         </div>
         <motion.a
-          href="https://github.com/schultz911/onlycashbacks-android/releases/download/Release/app-release.apk"
+          href="https://github.com/schultz911/onlycashbacks-android/releases/download/v1.0.10/app-release.apk"
           target="_blank"
           rel="noopener noreferrer"
           whileHover={{ scale: 1.05 }}
