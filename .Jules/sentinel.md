@@ -7,3 +7,7 @@
 2.  **Bypass logic flaws:** A non-string or whitespace-only value could cause downstream failures or unexpected behaviors in the prompt execution.
 
 **Prevention:** Always validate all user input on API endpoints (length checks, type checks, and content sanitation) before processing, especially before injecting into LLM contexts or making third party external API requests. Added `express.json({ limit: "10kb" })` for base payload protection and explicit bounds checking on `merchantName` and `apiKey`.
+## 2026-05-20 - Unsafe innerHTML Assignment
+**Vulnerability:** Direct assignment to `innerHTML` with strings, which can lead to Cross-Site Scripting (XSS) if the string contains unsanitized user input.
+**Learning:** Always use `textContent` or `innerText` when assigning text to an element, even if the current text is hardcoded, to build defense in depth and avoid triggering security scanners.
+**Prevention:** Avoid `innerHTML` unless specifically intending to parse and render HTML. Prefer safer DOM manipulation methods.
