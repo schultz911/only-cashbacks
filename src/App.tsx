@@ -630,7 +630,7 @@ export default function App() {
 
                               for (let i = 0; i < 15; i++) {
                                 const confetti = document.createElement('div');
-                                confetti.innerHTML = '🪙';
+                                confetti.textContent = '🪙';
                                 confetti.className = 'fixed pointer-events-none z-[400] text-xl drop-shadow-md';
 
                                 confetti.style.left = `${e.clientX}px`;
