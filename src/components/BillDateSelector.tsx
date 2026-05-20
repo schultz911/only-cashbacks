@@ -35,8 +35,6 @@ export function BillDateSelector({ date, onChange }: BillDateSelectorProps) {
   return (
     <div className="flex items-center gap-2 bg-black/20 border border-white/10 rounded-xl p-1 backdrop-blur-sm">
       <button
-        aria-label="Decrease bill date"
-        title="Decrease bill date"
         onMouseDown={() => startAdjusting(-1)}
         onMouseUp={stopAdjusting}
         onMouseLeave={stopAdjusting}
@@ -52,7 +50,7 @@ export function BillDateSelector({ date, onChange }: BillDateSelectorProps) {
           e.preventDefault();
           stopAdjusting();
         }}
-        className="w-8 h-8 rounded-lg outline-none hover:bg-white/10 flex items-center justify-center text-white/70 hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-blue-500"
+        className="w-8 h-8 rounded-lg outline-none hover:bg-white/10 flex items-center justify-center text-white/70 hover:text-white transition-colors"
       >
         <ChevronLeft className="w-5 h-5" />
       </button>
@@ -62,8 +60,6 @@ export function BillDateSelector({ date, onChange }: BillDateSelectorProps) {
       </div>
       
       <button
-        aria-label="Increase bill date"
-        title="Increase bill date"
         onMouseDown={() => startAdjusting(1)}
         onMouseUp={stopAdjusting}
         onMouseLeave={stopAdjusting}
@@ -79,7 +75,7 @@ export function BillDateSelector({ date, onChange }: BillDateSelectorProps) {
           e.preventDefault();
           stopAdjusting();
         }}
-        className="w-8 h-8 rounded-lg outline-none hover:bg-white/10 flex items-center justify-center text-white/70 hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-blue-500"
+        className="w-8 h-8 rounded-lg outline-none hover:bg-white/10 flex items-center justify-center text-white/70 hover:text-white transition-colors"
       >
         <ChevronRight className="w-5 h-5" />
       </button>

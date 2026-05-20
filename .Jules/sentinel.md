@@ -1,9 +1,9 @@
-## 2024-05-20 - Missing trust proxy for rate limiting behind reverse proxy
-**Vulnerability:** The Express application implements IP-based rate limiting but fails to set `app.set('trust proxy', 1)`. Behind a reverse proxy (like Cloud Run or a load balancer), `req.ip` will be the proxy's IP, effectively applying a global rate limit for all users instead of per-user limits, creating a DoS vulnerability.
-**Learning:** Always enable `trust proxy` in Express when deploying behind load balancers/proxies if you rely on `req.ip` for security controls like rate limiting.
-**Prevention:** Add `app.set('trust proxy', 1);` before setting up rate limiting middlewares in Express applications.
+## 2025-05-16 - Input Validation Missing on API Server
 
-## 2024-05-20 - Missing trust proxy for rate limiting behind reverse proxy
-**Vulnerability:** The Express application implements IP-based rate limiting but fails to set `app.set('trust proxy', 1)`. Behind a reverse proxy (like Cloud Run or a load balancer), `req.ip` will be the proxy's IP, effectively applying a global rate limit for all users instead of per-user limits, creating a DoS vulnerability.
-**Learning:** Always enable `trust proxy` in Express when deploying behind load balancers/proxies if you rely on `req.ip` for security controls like rate limiting.
-**Prevention:** Add `app.set('trust proxy', 1);` before setting up rate limiting middlewares in Express applications.
+**Vulnerability:** The API endpoint `/api/categorize` accepted user input (`merchantName`) without length restrictions or strict type validation, passing it directly to third-party AI models (OpenRouter/Google Gemini SDKs) in the system prompt payload. It also did not limit JSON payload size globally.
+
+**Learning:** This missing input validation presented multiple risks:
+1.  **Prompt Injection / Large Payload Denial of Service (DoS):** An attacker could send extremely large strings as `merchantName`, exhausting memory and server limits or dramatically increasing third-party API costs.
+2.  **Bypass logic flaws:** A non-string or whitespace-only value could cause downstream failures or unexpected behaviors in the prompt execution.
+
+**Prevention:** Always validate all user input on API endpoints (length checks, type checks, and content sanitation) before processing, especially before injecting into LLM contexts or making third party external API requests. Added `express.json({ limit: "10kb" })` for base payload protection and explicit bounds checking on `merchantName` and `apiKey`.
