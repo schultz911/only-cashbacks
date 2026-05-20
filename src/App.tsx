@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react';
 import { Search, History, Plane, Loader2, Sparkles, Globe, Wallet, QrCode, X, ChevronDown, Check, UserCircle, LogOut, AlertCircle, Ticket, Tag, Info, RefreshCw, Trash2, Store, Moon, Sun, CloudOff, Cloud, Undo2, RotateCcw, Banknote, Download, PiggyBank } from 'lucide-react';
 
 import { motion, AnimatePresence } from 'motion/react';
@@ -15,10 +15,11 @@ import { CardItem } from './components/CardItem';
 import { BillReminders } from './components/BillReminders';
 import { BillDateSelector } from './components/BillDateSelector';
 import { LoungeTrackerItem } from './components/LoungeTrackerItem';
-import { LoungeTrackerModal, parseLoungeBenefit } from './components/LoungeTrackerModal';
+import { parseLoungeBenefit } from './components/LoungeTrackerModal';
+const LoungeTrackerModal = lazy(() => import('./components/LoungeTrackerModal').then(module => ({ default: module.LoungeTrackerModal })));
 import { CustomSelect } from './components/CustomSelect';
-import { WalletManagerModal } from './components/WalletManagerModal';
-import { DashboardModal } from './components/DashboardModal';
+const WalletManagerModal = lazy(() => import('./components/WalletManagerModal').then(module => ({ default: module.WalletManagerModal })));
+const DashboardModal = lazy(() => import('./components/DashboardModal').then(module => ({ default: module.DashboardModal })));
 import { Header } from './components/Header';
 import { VoucherSection } from './components/VoucherSection';
 import { SearchSection } from './components/SearchSection';
@@ -29,8 +30,25 @@ import { doc, getDoc, getDocFromServer, setDoc, deleteDoc, onSnapshot } from 'fi
 
 import Fuse from 'fuse.js';
 import { KNOWN_MERCHANTS } from './data/merchants';
+import { useUserData } from './context/UserDataContext';
 
 export default function App() {
+  const { userData, updateUserData, user, isAuthLoading, isDataLoaded, isSyncing, syncError, isSyncPaused, setIsSyncPaused, saveData, handleDeleteData: _handleDeleteData } = useUserData();
+  const { exhaustedCards, cardBillDates, paidBills, loungePassesUsed, loungeMilestonesVerified, offerUsage, openRouterApiKey, kiwiNeonEarnRate, walletCards, cashbackLogs, theme } = userData;
+
+  const setExhaustedCards = (val: any) => updateUserData({ exhaustedCards: typeof val === 'function' ? val(exhaustedCards) : val });
+  const setCardBillDates = (val: any) => updateUserData({ cardBillDates: typeof val === 'function' ? val(cardBillDates) : val });
+  const setPaidBills = (val: any) => updateUserData({ paidBills: typeof val === 'function' ? val(paidBills) : val });
+  const setLoungePassesUsed = (val: any) => updateUserData({ loungePassesUsed: typeof val === 'function' ? val(loungePassesUsed) : val });
+  const setLoungeMilestonesVerified = (val: any) => updateUserData({ loungeMilestonesVerified: typeof val === 'function' ? val(loungeMilestonesVerified) : val });
+  const setOfferUsage = (val: any) => updateUserData({ offerUsage: typeof val === 'function' ? val(offerUsage) : val });
+  const setOpenRouterApiKey = (val: any) => updateUserData({ openRouterApiKey: typeof val === 'function' ? val(openRouterApiKey) : val });
+  const setKiwiNeonEarnRate = (val: any) => updateUserData({ kiwiNeonEarnRate: typeof val === 'function' ? val(kiwiNeonEarnRate) : val });
+  const setWalletCards = (val: any) => updateUserData({ walletCards: typeof val === 'function' ? val(walletCards) : val });
+  const setCashbackLogs = (val: any) => updateUserData({ cashbackLogs: typeof val === 'function' ? val(cashbackLogs) : val });
+  const setTheme = (val: any) => updateUserData({ theme: typeof val === 'function' ? val(theme) : val });
+  const isDirty = false; // Mock for now, handled by context
+
   const getInitialState = <T,>(key: string, defaultValue: T): T => {
     try {
       const stored = localStorage.getItem(key);
@@ -80,9 +98,7 @@ export default function App() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  const [exhaustedCards, setExhaustedCards] = useState<Record<string, any>>(() => getInitialState('oc_exhaustedCards', {}));
-  const [cardBillDates, setCardBillDates] = useState<Record<string, number>>(() => getInitialState('oc_cardBillDates', {}));
-
+    
   const normalizedExhaustedCards = useMemo(() => {
     const result: Record<string, boolean> = {};
     for (const card of CARD_DATA) {
@@ -94,22 +110,14 @@ export default function App() {
     return result;
   }, [exhaustedCards, cardBillDates]);
 
-  const [paidBills, setPaidBills] = useState<Record<string, string>>(() => getInitialState('oc_paidBills', {}));
-
+  
   const [loungeTab, setLoungeTab] = useState<'Domestic' | 'International'>('Domestic');
-  const [loungePassesUsed, setLoungePassesUsed] = useState<Record<string, number>>(() => getInitialState('oc_loungePassesUsed', {}));
-  const [loungeMilestonesVerified, setLoungeMilestonesVerified] = useState<Record<string, boolean>>(() => getInitialState('oc_loungeMilestonesVerified', {}));
-  const [offerUsage, setOfferUsage] = useState<Record<string, number>>(() => getInitialState('oc_offerUsage', {}));
-  const [openRouterApiKey, setOpenRouterApiKey] = useState(() => getInitialState('oc_openRouterApiKey', ''));
-  const [isApiModalOpen, setIsApiModalOpen] = useState(false);
+          const [isApiModalOpen, setIsApiModalOpen] = useState(false);
   const [tempApiKey, setTempApiKey] = useState('');
-  const [kiwiNeonEarnRate, setKiwiNeonEarnRate] = useState(() => getInitialState('oc_kiwiNeonEarnRate', 2));
-
+  
   // Feature states
-  const [walletCards, setWalletCards] = useState<string[]>(() => getInitialState('oc_walletCards', []));
-  const [isWalletOpen, setIsWalletOpen] = useState(false);
-  const [cashbackLogs, setCashbackLogs] = useState<CashbackLog[]>(() => getInitialState('oc_cashbackLogs', []));
-  const [isDashboardOpen, setIsDashboardOpen] = useState(false);
+    const [isWalletOpen, setIsWalletOpen] = useState(false);
+    const [isDashboardOpen, setIsDashboardOpen] = useState(false);
 
   const isAndroidApp = useMemo(() => {
     if (typeof window !== 'undefined') {
@@ -120,16 +128,7 @@ export default function App() {
     }
     return false;
   }, []);
-  const [theme, setTheme] = useState<'light' | 'dark' | 'oled'>(() => {
-    const saved = getInitialState('oc_theme', null);
-    if (saved) return saved;
-    if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      return 'dark';
-    }
-    return getInitialState('oc_isDarkMode', false) ? 'dark' : 'light';
-  });
-  const [isSyncPaused, setIsSyncPaused] = useState(() => getInitialState('oc_isSyncPaused', false));
-
+    
   // Apply theme
   useEffect(() => {
     document.documentElement.classList.remove('dark', 'oled');
@@ -159,9 +158,7 @@ export default function App() {
     safeSetItem('oc_theme', theme);
   }, [theme]);
 
-  const [user, setUser] = useState<User | null>(null);
-  const [isAuthLoading, setIsAuthLoading] = useState(true);
-
+    
   // Initialize fuse
   const fuse = useMemo(() => new Fuse(KNOWN_MERCHANTS, { threshold: 0.3 }), []);
 
@@ -200,23 +197,9 @@ export default function App() {
 
   const skipSyncRef = useRef(false);
 
-  const [isDataLoaded, setIsDataLoaded] = useState(false);
-  const [syncError, setSyncError] = useState<string | null>(null);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [isDirty, setIsDirty] = useState(false);
-  const isDirtyRef = useRef(false);
-  const pendingSyncCounterRef = useRef(0);
+              
   
-  const latestStateRef = useRef({
-    exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, cardBillDates, paidBills, openRouterApiKey, kiwiNeonEarnRate, walletCards, cashbackLogs, theme
-  });
-
-  useEffect(() => {
-    latestStateRef.current = {
-      exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, cardBillDates, paidBills, openRouterApiKey, kiwiNeonEarnRate, walletCards, cashbackLogs, theme
-    };
-  }, [exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, cardBillDates, paidBills, openRouterApiKey, kiwiNeonEarnRate, walletCards, cashbackLogs, theme]);
-  
+    
   // Note: markDirty is managed down below, leaving layout similar
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -254,229 +237,7 @@ export default function App() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setIsDataLoaded(false); // ALWAYS set to false when auth state changes so we don't accidentally sync before data loads
-      setIsDirty(false); // Reset dirty flag so we don't save guest data to the authenticated profile
-      isDirtyRef.current = false;
-      setUser(currentUser);
-      setIsAuthLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
-
-
-  useEffect(() => {
-    if (!user) {
-      // Load from localStorage if not signed in
-      skipSyncRef.current = true;
-      setExhaustedCards(getInitialState('oc_exhaustedCards', {}));
-      setLoungePassesUsed(getInitialState('oc_loungePassesUsed', {}));
-      setLoungeMilestonesVerified(getInitialState('oc_loungeMilestonesVerified', {}));
-      setOfferUsage(getInitialState('oc_offerUsage', {}));
-      setOpenRouterApiKey(getInitialState('oc_openRouterApiKey', ''));
-      setKiwiNeonEarnRate(getInitialState('oc_kiwiNeonEarnRate', 2));
-      setCardBillDates(getInitialState('oc_cardBillDates', {}));
-      setPaidBills(getInitialState('oc_paidBills', {}));
-      setWalletCards(getInitialState('oc_walletCards', []));
-      setCashbackLogs(getInitialState('oc_cashbackLogs', []));
-      
-      const savedTheme = getInitialState('oc_theme', null);
-      if (savedTheme) {
-        setTheme(savedTheme);
-      } else {
-        setTheme('light');
-      }
-
-      setTimeout(() => { skipSyncRef.current = false; setIsDataLoaded(true); }, 100);
-      return;
-    }
-
-    const docRef = doc(db, 'users', user.uid);
-    const unsubscribe = onSnapshot(docRef, (docSnap) => {
-      if (docSnap.metadata.hasPendingWrites) return;
-      
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        skipSyncRef.current = true;
-        if (data.exhaustedCards) setExhaustedCards(data.exhaustedCards);
-        if (data.cardBillDates) setCardBillDates(data.cardBillDates);
-        if (data.paidBills) setPaidBills(data.paidBills);
-        if (data.loungePassesUsed) setLoungePassesUsed(data.loungePassesUsed);
-        if (data.loungeMilestonesVerified) setLoungeMilestonesVerified(data.loungeMilestonesVerified);
-        if (data.offerUsage) setOfferUsage(data.offerUsage);
-        if (data.openRouterApiKey !== undefined) setOpenRouterApiKey(data.openRouterApiKey);
-        if (data.kiwiNeonEarnRate !== undefined) setKiwiNeonEarnRate(data.kiwiNeonEarnRate);
-        if (data.walletCards) setWalletCards(data.walletCards);
-        if (data.cashbackLogs) setCashbackLogs(data.cashbackLogs);
-        if (data.theme) setTheme(data.theme);
-        else if (data.isDarkMode !== undefined) setTheme(data.isDarkMode ? 'dark' : 'light');
-        setTimeout(() => { skipSyncRef.current = false; }, 100);
-      }
-      setIsDataLoaded(true);
-      setSyncError(null);
-    }, (error: any) => {
-      setSyncError(error.message || 'Failed to sync with cloud');
-      setIsDataLoaded(true);
-    });
-
-    return () => unsubscribe();
-  }, [user]);
-
-  // Persistent refresh when app visibility changes
-  useEffect(() => {
-    const handleVisibilityChange = async () => {
-      if (document.visibilityState === 'visible' && user) {
-        try {
-          const docRef = doc(db, 'users', user.uid);
-          // Use getDocFromServer to bypass local cache and always fetch the absolute newest state from the backend
-          const docSnap = await getDocFromServer(docRef);
-          if (docSnap.exists() && !isDirtyRef.current) {
-            const data = docSnap.data();
-            skipSyncRef.current = true;
-            if (data.exhaustedCards) setExhaustedCards(data.exhaustedCards);
-            if (data.cardBillDates) setCardBillDates(data.cardBillDates);
-            if (data.paidBills) setPaidBills(data.paidBills);
-            if (data.loungePassesUsed) setLoungePassesUsed(data.loungePassesUsed);
-            if (data.loungeMilestonesVerified) setLoungeMilestonesVerified(data.loungeMilestonesVerified);
-            if (data.offerUsage) setOfferUsage(data.offerUsage);
-            if (data.openRouterApiKey !== undefined) setOpenRouterApiKey(data.openRouterApiKey);
-            if (data.kiwiNeonEarnRate !== undefined) setKiwiNeonEarnRate(data.kiwiNeonEarnRate);
-            if (data.walletCards) setWalletCards(data.walletCards);
-            if (data.cashbackLogs) setCashbackLogs(data.cashbackLogs);
-            if (data.theme) setTheme(data.theme);
-            else if (data.isDarkMode !== undefined) setTheme(data.isDarkMode ? 'dark' : 'light');
-            setTimeout(() => { skipSyncRef.current = false; }, 100);
-          }
-        } catch (e) {
-          console.error("Failed to persistently refresh data on visibility change", e);
-        }
-      }
-    };
-    
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    // Also set an interval to fetch data periodically just in case
-    const interval = setInterval(() => {
-       if (document.visibilityState === 'visible' && user && !isDirtyRef.current) {
-          handleVisibilityChange();
-       }
-    }, 30000); // 30 seconds
-
-    return () => {
-       document.removeEventListener("visibilitychange", handleVisibilityChange);
-       clearInterval(interval);
-    }
-  }, [user]);
-
-  const saveData = async () => {
-    if (!user) return;
-    setIsSyncing(true);
-    
-    // Capture the exact sync counter before we start the async operation
-    const syncCounterAtStart = pendingSyncCounterRef.current;
-    // Capture the latest state without relying on the closure environment 
-    const dataToSave = latestStateRef.current;
-
-    try {
-      const docRef = doc(db, 'users', user.uid);
-      await setDoc(docRef, {
-        userId: user.uid,
-        ...dataToSave,
-        isDarkMode: dataToSave.theme !== 'light',
-        updatedAt: Date.now()
-      }, { merge: true });
-      
-      setSyncError(null);
-      // Only clear dirty if no new changes were triggered during the upload
-      if (pendingSyncCounterRef.current === syncCounterAtStart) {
-        setIsDirty(false);
-        isDirtyRef.current = false;
-      }
-    } catch (error: any) {
-      setSyncError(error.message || 'Failed to save to cloud');
-      try {
-        handleFirestoreError(error, OperationType.WRITE, `users/${user.uid}`);
-      } catch (e) {
-        console.warn('Save failed, state is local only.');
-      }
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
-  // Consolidated auto-save logic
-  useEffect(() => {
-    if (!user || isAuthLoading || !isDataLoaded || skipSyncRef.current || !isDirty || isSyncing || isSyncPaused) return;
-
-    const timer = setTimeout(() => {
-      saveData();
-    }, 1000); // 1s batch window
-
-    return () => clearTimeout(timer);
-  }, [isDirty, user, isAuthLoading, isDataLoaded, isSyncPaused, isSyncing, exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, cardBillDates, paidBills, openRouterApiKey, kiwiNeonEarnRate, walletCards, cashbackLogs, theme]);
-
-  const markDirty = () => {
-    if (!skipSyncRef.current) {
-      pendingSyncCounterRef.current += 1;
-      setIsDirty(true);
-      isDirtyRef.current = true;
-    }
-  };
-
-  // Watch for state changes to mark dirty
-  useEffect(() => markDirty(), [exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, cardBillDates, paidBills, walletCards, cashbackLogs, theme, openRouterApiKey, kiwiNeonEarnRate]);
-
-  useEffect(() => {
-    if (!isDataLoaded || !walletCards || walletCards.length === 0) return;
-
-    // Use a small timeout to avoid showing immediately on load
-    const timer = setTimeout(() => {
-      let hasUnpaidPastDue = false;
-      const today = new Date();
-      for (const cardId of walletCards) {
-        const card = CARD_DATA.find(c => c.id === cardId);
-        if (!card || card.isDummy || card.type !== 'Credit') continue;
-
-        const billDay = cardBillDates[cardId] || 1;
-        const cycle = getCycleForCard(cardId, cardBillDates);
-        const isPaid = paidBills[cardId] === cycle;
-
-        if (!isPaid) {
-          if (today.getDate() >= billDay + 2) {
-            hasUnpaidPastDue = true;
-            break;
-          }
-        }
-      }
-
-      if (hasUnpaidPastDue) {
-        showToast('You have unpaid credit card bills past their billing dates.', 'info');
-      }
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, [isDataLoaded, walletCards, paidBills, cardBillDates]);
-
-  useEffect(() => {
-    // Save to localStorage regardless of user status
-    safeSetItem('oc_exhaustedCards', exhaustedCards);
-    safeSetItem('oc_cardBillDates', cardBillDates);
-    safeSetItem('oc_paidBills', paidBills);
-    safeSetItem('oc_loungePassesUsed', loungePassesUsed);
-    safeSetItem('oc_loungeMilestonesVerified', loungeMilestonesVerified);
-    safeSetItem('oc_offerUsage', offerUsage);
-    safeSetItem('oc_openRouterApiKey', openRouterApiKey);
-    safeSetItem('oc_kiwiNeonEarnRate', kiwiNeonEarnRate);
-    safeSetItem('oc_walletCards', walletCards);
-    safeSetItem('oc_cashbackLogs', cashbackLogs);
-    safeSetItem('oc_isDarkMode', theme !== 'light'); // back compat
-    safeSetItem('oc_theme', theme);
-    safeSetItem('oc_isSyncPaused', isSyncPaused);
-
-    if (isDataLoaded && !skipSyncRef.current) {
-      setIsDirty(true);
-    }
-  }, [exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, cardBillDates, paidBills, openRouterApiKey, kiwiNeonEarnRate, walletCards, cashbackLogs, theme, isDataLoaded]);
+  
 
 
   const handleLogin = async () => {
@@ -510,36 +271,14 @@ export default function App() {
 
   const handleDeleteData = async () => {
     if (deleteConfirmText !== 'DELETE' || !user) return;
-
     try {
-      const docRef = doc(db, 'users', user.uid);
-      await deleteDoc(docRef);
-
-      // Reset local state
-      skipSyncRef.current = true;
-      setExhaustedCards({});
-      setLoungePassesUsed({});
-      setLoungeMilestonesVerified({});
-      setOfferUsage({});
-      setOpenRouterApiKey('');
-      setKiwiNeonEarnRate(2);
-      setWalletCards([]);
-      setCashbackLogs([]);
-      setCardBillDates({});
-      setPaidBills({});
+      await _handleDeleteData();
       setHistory([]);
-
       setShowDeleteConfirm(false);
       setDeleteConfirmText('');
       setIsProfileMenuOpen(false);
-      setSyncError(null);
-      setIsDirty(false);
-
       showToast('All user data deleted permanently.', 'info');
-
-      setTimeout(() => { skipSyncRef.current = false; }, 500);
     } catch (error: any) {
-      console.error('Error deleting data:', error);
       alert('Failed to delete data. Please check your permissions.');
     }
   };
@@ -1382,6 +1121,7 @@ export default function App() {
       </AnimatePresence>
 
       <AnimatePresence>
+        <Suspense fallback={null}>
         <LoungeTrackerModal
           isOpen={isLoungeOpen}
           onClose={() => setIsLoungeOpen(false)}
@@ -1393,6 +1133,7 @@ export default function App() {
           setLoungeMilestonesVerified={setLoungeMilestonesVerified}
           kiwiNeonEarnRate={kiwiNeonEarnRate}
         />
+      </Suspense>
       </AnimatePresence>
 
       <AnimatePresence>
@@ -1622,18 +1363,22 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      <WalletManagerModal
+      <Suspense fallback={null}>
+        <WalletManagerModal
         isOpen={isWalletOpen}
         onClose={() => setIsWalletOpen(false)}
         walletCards={walletCards}
         setWalletCards={setWalletCards}
       />
-      <DashboardModal
+      </Suspense>
+      <Suspense fallback={null}>
+        <DashboardModal
         isOpen={isDashboardOpen}
         onClose={() => setIsDashboardOpen(false)}
         logs={cashbackLogs}
         setLogs={setCashbackLogs}
       />
+      </Suspense>
 
       <footer className="text-center py-6 mt-8 text-xs text-gray-400 font-medium px-6 flex flex-col items-center gap-3">
         <div>
