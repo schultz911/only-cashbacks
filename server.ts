@@ -12,6 +12,7 @@ async function startServer() {
   const PORT = Number(process.env.PORT) || 3000;
 
   app.disable("x-powered-by"); // Security: Hide Express technology stack
+  app.set("trust proxy", 1); // Security: Ensure req.ip works behind reverse proxies for rate limiting
 
   // Security headers middleware
   app.use((req, res, next) => {
@@ -19,6 +20,8 @@ async function startServer() {
     res.setHeader("X-Frame-Options", "DENY");
     res.setHeader("X-XSS-Protection", "1; mode=block");
     res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    res.setHeader("Permissions-Policy", "geolocation=(), microphone=(), camera=()");
     next();
   });
 
