@@ -1,13 +1,4 @@
-## 2025-05-16 - Input Validation Missing on API Server
-
-**Vulnerability:** The API endpoint `/api/categorize` accepted user input (`merchantName`) without length restrictions or strict type validation, passing it directly to third-party AI models (OpenRouter/Google Gemini SDKs) in the system prompt payload. It also did not limit JSON payload size globally.
-
-**Learning:** This missing input validation presented multiple risks:
-1.  **Prompt Injection / Large Payload Denial of Service (DoS):** An attacker could send extremely large strings as `merchantName`, exhausting memory and server limits or dramatically increasing third-party API costs.
-2.  **Bypass logic flaws:** A non-string or whitespace-only value could cause downstream failures or unexpected behaviors in the prompt execution.
-
-**Prevention:** Always validate all user input on API endpoints (length checks, type checks, and content sanitation) before processing, especially before injecting into LLM contexts or making third party external API requests. Added `express.json({ limit: "10kb" })` for base payload protection and explicit bounds checking on `merchantName` and `apiKey`.
-## 2026-05-20 - Unsafe innerHTML Assignment
-**Vulnerability:** Direct assignment to `innerHTML` with strings, which can lead to Cross-Site Scripting (XSS) if the string contains unsanitized user input.
-**Learning:** Always use `textContent` or `innerText` when assigning text to an element, even if the current text is hardcoded, to build defense in depth and avoid triggering security scanners.
-**Prevention:** Avoid `innerHTML` unless specifically intending to parse and render HTML. Prefer safer DOM manipulation methods.
+## 2024-05-20 - Fix Exposed Firebase API Key
+**Vulnerability:** A hardcoded API Key was left inside `firebase-applet-config.json`, which exposed the Firebase environment to any user with access to the source code.
+**Learning:** Config files like `firebase-applet-config.json` shouldn't have secret keys hardcoded directly in the code repository to avoid leakage in the version control system.
+**Prevention:** Keys should be loaded through an environment variable instead, which is exactly what the code `apiKey: import.meta.env.VITE_FIREBASE_API_KEY` achieved.
