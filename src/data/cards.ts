@@ -256,3 +256,8 @@ export const CARD_DATA: Card[] = [
     ]
   }
 ];
+
+export const CARD_DICT: Record<string, Card> = CARD_DATA.reduce((acc, card) => {
+  acc[card.id] = card;
+  return acc;
+}, {} as Record<string, Card>);
