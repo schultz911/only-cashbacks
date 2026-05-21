@@ -129,9 +129,7 @@ export function getRecommendations(
   const cinepolisDiscount = Math.min(amount * 0.25, 75);
   const ajioDisc = amount * 0.20;
 
-  const cardsToEvaluate = walletCards
-    ? CARD_DATA.filter(c => walletCards.includes(c.id) && !c.isDummy)
-    : CARD_DATA.filter(c => !c.isDummy);
+  const cardsToEvaluate = walletCards && walletCards.length > 0 ? walletCards.map(id => CARD_DICT[id]).filter(c => c && !c.isDummy) : CARD_DATA.filter(c => !c.isDummy);
 
   const calculationResults = cardsToEvaluate.map(card => {
     let cashbackAmount = 0;
@@ -649,6 +647,9 @@ export function getRecommendations(
     cashbackEarned: bestResult.cashbackEarned,
     feesPaid: bestResult.feesPaid,
     alternatives: validOptions.slice(tiedCards.length, tiedCards.length + 3).map(s => ({ card: s.card, benefit: s.benefitText, netValue: round2(s.netValue) })),
-    availableOffers: availableOffers.filter(o => !o.cardId || !calculationResults.find(r => r.card.id === o.cardId)?.isExcluded)
+    availableOffers: (() => {
+      const excludedCardIds = new Set(calculationResults.filter(r => r.isExcluded).map(r => r.card.id));
+      return availableOffers.filter(o => !o.cardId || !excludedCardIds.has(o.cardId));
+    })()
   };
 }
