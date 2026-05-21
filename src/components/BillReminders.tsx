@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Calendar, CheckCircle2 } from 'lucide-react';
 import { Card } from '../types';
-import { CARD_DATA } from '../data/cards';
+import { CARD_DATA, CARD_DICT } from '../data/cards';
 import { getCycleForCard } from '../lib/recommendation';
 import { cn } from '../lib/utils';
 
@@ -23,7 +23,7 @@ export function BillReminders({ walletCards, cardBillDates, paidBills, markBillP
     const effectiveCards = walletCards.length > 0 ? walletCards : CARD_DATA.filter(c => !c.isDummy).map(c => c.id);
 
     for (const cardId of effectiveCards) {
-      const card = CARD_DATA.find(c => c.id === cardId);
+      const card = CARD_DICT[cardId];
       if (!card || card.isDummy || card.type !== 'Credit') continue;
       
       const billDay = cardBillDates[cardId] || 1;

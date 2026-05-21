@@ -4,7 +4,7 @@
  */
 
 import { Card, MerchantInfo, Recommendation } from '../types';
-import { CARD_DATA } from '../data/cards';
+import { CARD_DATA, CARD_DICT } from '../data/cards';
 
 const TATA_NEU_MERCHANTS = ['croma', 'westside', 'zudio', 'ihcl', 'bigbasket', '1mg', 'cliq', 'air india', 'air india express', 'qmin', 'cult', 'tata play', 'titan', 'tanishq', 'mia', 'fastrack', 'caratlane', 'helios', 'zoya'];
 const ALLOWED_UPI_CARDS = ['kiwi-neon', 'amazon-pay-upi', 'cred-pay-upi', 'kotak-811-infinity'];
@@ -14,7 +14,7 @@ const MOVIE_PLATFORMS = ['bookmyshow', 'bms', 'paytm insider', 'townscript', 'me
 const DINING_PLATFORMS = ['dineout', 'eazydiner', 'district', 'magicpin', 'cafe', 'restaurant', 'diner', 'eatery', 'pub', 'bar', 'coffee'];
 const FOOD_PLATFORMS = ['swiggy', 'zomato', 'toing', 'bistro', 'eatsure', 'fresh menu', 'box8', 'eat club', 'uber eats', 'domino', 'pizza hut', 'starbucks', 'mcdonald', 'kfc', 'burger king', 'haldiram', 'bikanervala'];
 const SPECIFIC_PLATFORMS = ['bookmyshow', 'district', 'swiggy', 'zomato', 'dineout', 'eazydiner', 'nykaa', 'cleartrip', 'ajio', 'amazon', 'flipkart'];
-const SBI_CASHBACK_CARD = CARD_DATA.find(c => c.id === 'sbi-cashback')!;
+const SBI_CASHBACK_CARD = CARD_DICT['sbi-cashback']!;
 
 const GROCERY_KEYWORDS = ['grocery', 'groce', 'bigbasket', 'blinkit', 'zepto', 'instamart', 'dunzo', 'jiomart'];
 const FOOD_DELIVERY_KEYWORDS = ['food delivery', 'delivery', 'food', 'swig', 'zomat', ...FOOD_PLATFORMS];
@@ -42,7 +42,7 @@ export function getQuarterCycle(): string {
 
 export function getCycleForCard(cardId: string, cardBillDates: Record<string, number>): string {
   let billDay = cardBillDates[cardId] || 1;
-  const card = CARD_DATA.find(c => c.id === cardId);
+  const card = CARD_DICT[cardId];
   if (card && card.type === 'Debit') {
     billDay = 1;
   }
