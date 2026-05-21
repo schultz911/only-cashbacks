@@ -13,6 +13,8 @@ interface BillRemindersProps {
   markBillPaid: (cardId: string) => void;
 }
 
+const REAL_CARDS_MAP = CARD_DATA.filter(c => !c.isDummy).map(c => c.id);
+
 export function BillReminders({ walletCards, cardBillDates, paidBills, markBillPaid }: BillRemindersProps) {
   const [animatingCardId, setAnimatingCardId] = useState<string | null>(null);
 
@@ -20,7 +22,7 @@ export function BillReminders({ walletCards, cardBillDates, paidBills, markBillP
     const today = new Date();
     const result: { card: Card, status: 'ready' | 'upcoming', daysUntil: number }[] = [];
 
-    const effectiveCards = walletCards.length > 0 ? walletCards : CARD_DATA.filter(c => !c.isDummy).map(c => c.id);
+    const effectiveCards = walletCards.length > 0 ? walletCards : REAL_CARDS_MAP;
 
     for (const cardId of effectiveCards) {
       const card = CARD_DICT[cardId];
