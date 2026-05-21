@@ -7,3 +7,8 @@
 ## 2025-05-22 - Optimize nested array filtering mapping
 **Learning:** Checking an array with `.filter` and `.includes` inside a tight loop causes significant performance bottleneck. In addition, iterating via `.find()` over results that can be mapped into a `Set` has an `O(N*M)` complexity instead of an `O(N)` mapping step, followed by `O(1)` checking step with `.has()`. Finally, pulling a constant filter mapping step outside of the `useMemo` hooks is safer as it does not get reevaluated, improving runtime memory efficiency.
 **Action:** Replace `CARD_DATA.filter(c => walletCards.includes(c.id))` with `walletCards.map(id => CARD_DICT[id]).filter(Boolean)` mapping mapping, extract constant logic out of react hook variables and leverage a `Set` to hold card IDs. Measurements confirmed an O(N) -> O(1) performance enhancement (24x faster based on bench evaluation).
+
+## 2026-05-21 - [App.tsx: Memoize Wallet Cards]
+**Learning:** Performing inline map and filter operations directly in JSX elements creates a performance bottleneck by running CPU-intensive operations and generating array allocations on every single render cycle.
+
+**Action:** Leveraged `useMemo` to memoize the wallet card mapping and filtering operations based on `walletCards` dependency. This ensures that the array is only mapped and filtered when the underlying list actually changes, drastically saving computation time across render cycles.
