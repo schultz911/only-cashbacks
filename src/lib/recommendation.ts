@@ -56,6 +56,8 @@ export function getCycleForCard(cardId: string, cardBillDates: Record<string, nu
   }
 }
 
+export const DEFAULT_CARDS_TO_EVALUATE = CARD_DATA.filter(c => !c.isDummy);
+
 export function getRecommendations(
   merchant: MerchantInfo,
   amount: number,
@@ -65,7 +67,7 @@ export function getRecommendations(
   exhaustedCards: Record<string, boolean> = {},
   offerUsage: Record<string, number> = {},
   kiwiNeonEarnRate: number = 2,
-  walletCards: string[] | null = null,
+  cardsToEvaluate: Card[] = CARD_DATA.filter(c => !c.isDummy),
   cardBillDates: Record<string, number> = {}
 ): Recommendation | null {
 
@@ -129,7 +131,7 @@ export function getRecommendations(
   const cinepolisDiscount = Math.min(amount * 0.25, 75);
   const ajioDisc = amount * 0.20;
 
-  const cardsToEvaluate = walletCards && walletCards.length > 0 ? walletCards.map(id => CARD_DICT[id]).filter(c => c && !c.isDummy) : CARD_DATA.filter(c => !c.isDummy);
+
 
   const calculationResults = cardsToEvaluate.map(card => {
     let cashbackAmount = 0;

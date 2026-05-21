@@ -353,7 +353,7 @@ export default function App() {
       }
 
       if (effectiveAmount > 0) {
-        setRecommendation(getRecommendations(info, effectiveAmount, isOnline, isIntl, !isOnline && isScanToPay, normalizedExhaustedCards, offerUsage, kiwiNeonEarnRate, walletCards.length > 0 ? walletCards : null, cardBillDates));
+        setRecommendation(getRecommendations(info, effectiveAmount, isOnline, isIntl, !isOnline && isScanToPay, normalizedExhaustedCards, offerUsage, kiwiNeonEarnRate, activeWalletCards, cardBillDates));
       } else {
         setRecommendation(null);
       }
@@ -418,7 +418,7 @@ export default function App() {
     try {
       const info = await categorizeMerchant(activeQuery, openRouterApiKey || undefined);
       setLastSearchInfo(info);
-      const rec = getRecommendations(info, effectiveAmount, isOnline, isIntl, !isOnline && isScanToPay, normalizedExhaustedCards, offerUsage, kiwiNeonEarnRate, walletCards.length > 0 ? walletCards : null, cardBillDates);
+      const rec = getRecommendations(info, effectiveAmount, isOnline, isIntl, !isOnline && isScanToPay, normalizedExhaustedCards, offerUsage, kiwiNeonEarnRate, activeWalletCards, cardBillDates);
       setRecommendation(rec);
       setHistory(prev => {
         const filtered = prev.filter(p => p.name.toLowerCase() !== info.name.toLowerCase());
