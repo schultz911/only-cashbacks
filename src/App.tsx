@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react';
-import { Search, History, Plane, Loader2, Sparkles, Globe, Wallet, QrCode, X, ChevronDown, Check, UserCircle, LogOut, AlertCircle, Ticket, Tag, Info, RefreshCw, Trash2, Store, Moon, Sun, CloudOff, Cloud, Undo2, RotateCcw, Banknote, Download, PiggyBank } from 'lucide-react';
+import { Search, Plane, Sparkles, Wallet, X, ChevronDown, Check, AlertCircle, Ticket, Tag, Info, Trash2, Store, Download, PiggyBank } from 'lucide-react';
 
 import { motion, AnimatePresence } from 'motion/react';
 import { categorizeMerchant } from './services/gemini';
