@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import { CARD_DATA } from '../data/cards';
 import { LoungeTrackerItem } from './LoungeTrackerItem';
 import { CustomSelect } from './CustomSelect';
-import { cn } from '../lib/utils';
 import React from 'react';
 
 export const parseLoungeBenefit = (b: { value: string, description: string }) => {
