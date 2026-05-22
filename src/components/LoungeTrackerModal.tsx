@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { CARD_DATA } from '../data/cards';
 import { LoungeTrackerItem } from './LoungeTrackerItem';
 import { CustomSelect } from './CustomSelect';
-import React from 'react';
+import React, { useMemo } from 'react';
 
 export const parseLoungeBenefit = (b: { value: string, description: string }) => {
   let spend = 0;
@@ -51,6 +51,45 @@ export function LoungeTrackerModal({
   loungeMilestonesVerified, setLoungeMilestonesVerified,
   kiwiNeonEarnRate
 }: LoungeTrackerModalProps) {
+
+  const loungeCards = useMemo(() => {
+    return CARD_DATA.reduce((acc: any[], card: any) => {
+      if (card.isDummy) return acc;
+
+      const b = card.benefits.find((x: any) => x.type === 'lounge' && x.category === loungeTab);
+      if (!b) return acc;
+
+      const parsed = parseLoungeBenefit(b);
+
+      let finalPasses = parsed.passesCount;
+      let finalVerified = loungeMilestonesVerified[`${card.id}-${loungeTab}`] ?? parsed.isFree;
+
+      if (card.id === 'kiwi-neon') {
+        let passes = 0;
+        if (kiwiNeonEarnRate >= 3) passes += 1;
+        if (kiwiNeonEarnRate >= 4) passes += 1;
+        if (kiwiNeonEarnRate >= 5) passes += 1;
+        finalPasses = passes;
+        finalVerified = passes > 0;
+        parsed.passesCount = finalPasses;
+      }
+
+      const used = loungePassesUsed[`${card.id}-${loungeTab}`] || 0;
+      const passesRemaining = Math.max(0, finalPasses - used);
+      const isExhausted = finalPasses > 0 && passesRemaining === 0;
+
+      acc.push({ card, b, parsed, isExhausted, isVerified: finalVerified });
+      return acc;
+    }, []).sort((a, b) => {
+      if (a.isExhausted && !b.isExhausted) return 1;
+      if (!a.isExhausted && b.isExhausted) return -1;
+      if (a.isVerified && !b.isVerified) return -1;
+      if (!a.isVerified && b.isVerified) return 1;
+      if (a.parsed.spend !== b.parsed.spend) return a.parsed.spend - b.parsed.spend;
+      return b.parsed.passesCount - a.parsed.passesCount;
+    });
+  }, [loungeTab, loungeMilestonesVerified, kiwiNeonEarnRate, loungePassesUsed]);
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -105,39 +144,7 @@ export function LoungeTrackerModal({
               </div>
 
               <div className="flex-1 overflow-y-auto flex flex-col gap-3 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent pb-10">
-                {CARD_DATA.filter(c => !c.isDummy)
-                  .filter(c => c.benefits.some(b => b.type === 'lounge' && b.category === loungeTab))
-                  .map((card: any) => {
-                    const b = card.benefits.find((x: any) => x.type === 'lounge' && x.category === loungeTab)!;
-                    const parsed = parseLoungeBenefit(b);
-
-                    let finalPasses = parsed.passesCount;
-                    let finalVerified = loungeMilestonesVerified[`${card.id}-${loungeTab}`] ?? parsed.isFree;
-
-                    if (card.id === 'kiwi-neon') {
-                      let passes = 0;
-                      if (kiwiNeonEarnRate >= 3) passes += 1;
-                      if (kiwiNeonEarnRate >= 4) passes += 1;
-                      if (kiwiNeonEarnRate >= 5) passes += 1;
-                      finalPasses = passes;
-                      finalVerified = passes > 0;
-                      parsed.passesCount = finalPasses;
-                    }
-
-                    const used = loungePassesUsed[`${card.id}-${loungeTab}`] || 0;
-                    const passesRemaining = Math.max(0, finalPasses - used);
-                    const isExhausted = finalPasses > 0 && passesRemaining === 0;
-                    return { card, b, parsed, isExhausted, isVerified: finalVerified };
-                  })
-                  .sort((a, b) => {
-                    if (a.isExhausted && !b.isExhausted) return 1;
-                    if (!a.isExhausted && b.isExhausted) return -1;
-                    if (a.isVerified && !b.isVerified) return -1;
-                    if (!a.isVerified && b.isVerified) return 1;
-                    if (a.parsed.spend !== b.parsed.spend) return a.parsed.spend - b.parsed.spend;
-                    return b.parsed.passesCount - a.parsed.passesCount;
-                  })
-                  .map(({ card, parsed, isVerified }) => (
+                {loungeCards.map(({ card, parsed, isVerified }) => (
                     <LoungeTrackerItem
                       key={`${card.id}-${loungeTab}`}
                       card={card}
@@ -154,7 +161,7 @@ export function LoungeTrackerModal({
                     />
                   ))
                 }
-                {CARD_DATA.filter(c => c.benefits.some(b => b.type === 'lounge' && b.category === loungeTab)).length === 0 && (
+                {loungeCards.length === 0 && (
                   <div className="text-sm text-gray-400 py-4 text-center">No {loungeTab.toLowerCase()} lounge cards</div>
                 )}
               </div>

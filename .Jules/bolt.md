@@ -12,3 +12,6 @@
 **Learning:** Performing inline map and filter operations directly in JSX elements creates a performance bottleneck by running CPU-intensive operations and generating array allocations on every single render cycle.
 
 **Action:** Leveraged `useMemo` to memoize the wallet card mapping and filtering operations based on `walletCards` dependency. This ensures that the array is only mapped and filtered when the underlying list actually changes, drastically saving computation time across render cycles.
+## 2024-05-22 - Optimize array iterations in LoungeTrackerModal
+**Learning:** Combining chained \`.filter\` and \`.map\` operations into a single \`.reduce\` pass can significantly improve performance, especially when dealing with large arrays. Additionally, wrapping this operation in \`useMemo\` ensures that the heavy computation is only executed when its dependencies change, preventing redundant recalculations on every render.
+**Action:** Implemented a single \`.reduce()\` pass wrapped in a \`useMemo\` hook to optimize the rendering and state derivation of lounge cards in the \`LoungeTrackerModal\` component.
