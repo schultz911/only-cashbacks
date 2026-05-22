@@ -34,7 +34,11 @@ const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
 const RATE_LIMIT_MAX_REQUESTS = 30; // Max requests per window per IP
 
 function rateLimiter(req: express.Request, res: express.Response, next: express.NextFunction) {
-  const ip = req.ip || req.connection.remoteAddress || 'unknown';
+  // Security: Extract the true client IP safely.
+  // We only trust req.ip (which parses X-Forwarded-For) if the connection originates from a private network proxy.
+  const remoteAddress = req.socket.remoteAddress || 'unknown';
+  const isPrivateIp = /^(::f{4}:)?(10\.|192\.168\.|172\.(1[6-9]|2\d|3[0-1])\.|127\.|169\.254\.)|^(::1)$/.test(remoteAddress);
+  const ip = isPrivateIp ? (req.ip || remoteAddress) : remoteAddress;
   const now = Date.now();
 
   if (!rateLimitCache.has(ip)) {
