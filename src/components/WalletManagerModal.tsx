@@ -3,6 +3,62 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, Check } from 'lucide-react';
 import { CARD_DATA } from '../data/cards';
 import { cn } from '../lib/utils';
+import { Card } from '../types';
+
+
+interface WalletCardProps {
+  card: Card;
+  selected: boolean;
+  onToggle: (id: string) => void;
+}
+
+function WalletCard({ card, selected, onToggle }: WalletCardProps) {
+  return (
+    <motion.div
+      layoutId={`wallet-card-${card.id}`}
+      key={card.id}
+      role="checkbox"
+      aria-checked={selected}
+      tabIndex={0}
+      onClick={() => onToggle(card.id)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onToggle(card.id);
+        }
+      }}
+      className={cn(
+        "relative shrink-0 rounded-2xl md:rounded-3xl cursor-pointer overflow-hidden transition-all duration-300 select-none group snap-center",
+        "focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900",
+        selected ? "shadow-lg scale-[0.98]" : "shadow-sm hover:scale-[1.02] opacity-50 hover:opacity-100",
+        "h-16 md:h-20"
+      )}
+    >
+      <div
+        className={cn(
+          "absolute inset-0 bg-gradient-to-br z-0",
+          card.gradient || "from-gray-700 to-gray-900"
+        )}
+      />
+      <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors" />
+      <div className="absolute inset-0 p-3 md:p-4 flex items-center justify-between">
+        <div className="flex flex-col shrink-0 w-[80%] max-w-[80%] justify-center">
+          <div className="flex items-center gap-2 mb-0.5">
+            <span className="text-white/80 text-[10px] md:text-xs font-black tracking-widest uppercase truncate">{card.bank}</span>
+            <span className="text-white/60 text-[10px] md:text-xs font-bold font-mono tracking-widest">{card.network}</span>
+          </div>
+          <div className="text-white font-black text-base md:text-lg leading-tight drop-shadow-md truncate">{card.name}</div>
+        </div>
+        <div className={cn(
+          "w-8 h-8 rounded-full flex items-center justify-center transition-all backdrop-blur-md shadow-sm shrink-0",
+          selected ? "bg-white text-emerald-600 shadow-lg scale-110" : "bg-white/10 border border-white/30 text-transparent"
+        )}>
+          <Check className="w-5 h-5" strokeWidth={selected ? 3 : 2} />
+        </div>
+      </div>
+    </motion.div>
+  );
+}
 
 interface Props {
   isOpen: boolean;
@@ -65,54 +121,14 @@ export function WalletManagerModal({ isOpen, onClose, walletCards, setWalletCard
 
             <div className="flex-1 overflow-y-auto scrollbar-hide px-2 pb-6 min-h-0 snap-y">
               <div className="flex flex-col gap-2">
-                {allCards.map(card => {
-                  const selected = isSelected(card.id);
-                  return (
-                    <motion.div
-                      layoutId={`wallet-card-${card.id}`}
-                      key={card.id}
-                      role="checkbox"
-                      aria-checked={selected}
-                      tabIndex={0}
-                      onClick={() => toggleCard(card.id)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          toggleCard(card.id);
-                        }
-                      }}
-                      className={cn(
-                        "relative shrink-0 rounded-2xl md:rounded-3xl cursor-pointer overflow-hidden transition-all duration-300 select-none group snap-center",
-                        "focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900",
-                        selected ? "shadow-lg scale-[0.98]" : "shadow-sm hover:scale-[1.02] opacity-50 hover:opacity-100",
-                        "h-16 md:h-20"
-                      )}
-                    >
-                      <div 
-                        className={cn(
-                          "absolute inset-0 bg-gradient-to-br z-0",
-                          card.gradient || "from-gray-700 to-gray-900"
-                        )}
-                      />
-                      <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors" />
-                      <div className="absolute inset-0 p-3 md:p-4 flex items-center justify-between">
-                        <div className="flex flex-col shrink-0 w-[80%] max-w-[80%] justify-center">
-                          <div className="flex items-center gap-2 mb-0.5">
-                            <span className="text-white/80 text-[10px] md:text-xs font-black tracking-widest uppercase truncate">{card.bank}</span>
-                            <span className="text-white/60 text-[10px] md:text-xs font-bold font-mono tracking-widest">{card.network}</span>
-                          </div>
-                          <div className="text-white font-black text-base md:text-lg leading-tight drop-shadow-md truncate">{card.name}</div>
-                        </div>
-                        <div className={cn(
-                          "w-8 h-8 rounded-full flex items-center justify-center transition-all backdrop-blur-md shadow-sm shrink-0",
-                          selected ? "bg-white text-emerald-600 shadow-lg scale-110" : "bg-white/10 border border-white/30 text-transparent"
-                        )}>
-                          <Check className="w-5 h-5" strokeWidth={selected ? 3 : 2} />
-                        </div>
-                      </div>
-                    </motion.div>
-                  );
-                })}
+                {allCards.map(card => (
+                  <WalletCard
+                    key={card.id}
+                    card={card}
+                    selected={isSelected(card.id)}
+                    onToggle={toggleCard}
+                  />
+                ))}
               </div>
             </div>
             
