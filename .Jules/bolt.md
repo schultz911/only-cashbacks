@@ -15,3 +15,6 @@
 ## 2024-05-22 - Optimize array iterations in LoungeTrackerModal
 **Learning:** Combining chained \`.filter\` and \`.map\` operations into a single \`.reduce\` pass can significantly improve performance, especially when dealing with large arrays. Additionally, wrapping this operation in \`useMemo\` ensures that the heavy computation is only executed when its dependencies change, preventing redundant recalculations on every render.
 **Action:** Implemented a single \`.reduce()\` pass wrapped in a \`useMemo\` hook to optimize the rendering and state derivation of lounge cards in the \`LoungeTrackerModal\` component.
+## 2025-05-23 - Extracting subcomponents to improve code maintainability
+**Learning:** Extracting large inline components into their own files improves code readability and maintainability.
+**Action:** Extracted `ConfirmResetView` and `TopCategoriesChart` from `DashboardModal` into their own files.

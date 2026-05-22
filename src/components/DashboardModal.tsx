@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, TrendingUp, Undo2, RotateCcw, AlertTriangle } from 'lucide-react';
+import { X, TrendingUp, Undo2, RotateCcw } from 'lucide-react';
 import { CashbackLog } from '../types';
-import { Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
+import { TopCategoriesChart } from './Dashboard/TopCategoriesChart';
+import { ConfirmResetView } from './Dashboard/ConfirmResetView';
 
 interface Props {
   isOpen: boolean;
@@ -70,31 +71,10 @@ export function DashboardModal({ isOpen, onClose, logs, setLogs }: Props) {
             className="bg-white/90 dark:bg-gray-900/90 oled:bg-black/95 backdrop-blur-xl border border-gray-100 dark:border-gray-800/80 rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl flex flex-col items-center text-center relative overflow-hidden"
           >
             {showConfirm ? (
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="w-full flex flex-col items-center py-6"
-              >
-                <div className="w-16 h-16 bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400 rounded-full flex items-center justify-center mb-4 shadow-inner">
-                  <AlertTriangle className="w-8 h-8 animate-bounce" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Reset Savings?</h3>
-                <p className="text-gray-500 dark:text-gray-400 mb-8 font-medium text-sm">This will permanently delete your savings history. This cannot be undone.</p>
-                <div className="flex gap-3 w-full">
-                  <button 
-                    onClick={() => setShowConfirm(false)}
-                    className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold rounded-xl transition-colors shadow-sm"
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                    onClick={handleReset}
-                    className="flex-1 py-3 px-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition-colors shadow-sm"
-                  >
-                    Yes, Reset
-                  </button>
-                </div>
-              </motion.div>
+              <ConfirmResetView
+                onCancel={() => setShowConfirm(false)}
+                onConfirm={handleReset}
+              />
             ) : (
               <motion.div
                 initial={{ opacity: 0 }}
@@ -116,85 +96,7 @@ export function DashboardModal({ isOpen, onClose, logs, setLogs }: Props) {
                 </div>
 
                 {logs.length > 0 && (
-                  <div className="w-full mb-6">
-                    <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-3 text-left">Top Categories</h3>
-                    
-                    <div className="bg-white/40 dark:bg-gray-800/20 backdrop-blur-xl border border-gray-100/30 dark:border-white/5 shadow-lg rounded-2xl p-4 w-full flex flex-col sm:flex-row items-center gap-4 relative overflow-hidden">
-                      <div className="absolute -left-12 -bottom-12 w-24 h-24 bg-blue-500/10 dark:bg-blue-400/5 rounded-full blur-xl pointer-events-none" />
-                      <div className="absolute -right-12 -top-12 w-24 h-24 bg-purple-500/10 dark:bg-purple-400/5 rounded-full blur-xl pointer-events-none" />
-
-                      {/* Donut Chart with Centered Dynamic Metric */}
-                      <div className="w-full sm:w-1/2 h-36 flex items-center justify-center relative select-none">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <PieChart>
-                            <Pie
-                              data={categoryData}
-                              cx="50%"
-                              cy="50%"
-                              innerRadius={50}
-                              outerRadius={67}
-                              paddingAngle={4}
-                              dataKey="value"
-                            >
-                              {categoryData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                              ))}
-                            </Pie>
-                            <Tooltip 
-                              formatter={(value: number) => `₹${value.toFixed(2)}`}
-                              contentStyle={{
-                                backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                                borderRadius: '12px',
-                                border: '1px solid rgba(0, 0, 0, 0.05)',
-                                boxShadow: '0 8px 16px -4px rgba(0, 0, 0, 0.1)',
-                                fontWeight: 'bold',
-                                fontSize: '11px',
-                                color: '#1f2937'
-                              }}
-                            />
-                          </PieChart>
-                        </ResponsiveContainer>
-                        <div className="absolute flex flex-col items-center justify-center pointer-events-none">
-                          <span className="text-[9px] font-black tracking-widest text-gray-400 dark:text-gray-500 uppercase leading-none">Top</span>
-                          <span className="text-sm font-black text-gray-800 dark:text-gray-200 truncate max-w-[70px] mt-0.5 leading-none">{categoryData[0]?.name || ''}</span>
-                        </div>
-                      </div>
-
-                      {/* High-quality Responsive Legend with HTML Flow (solves SVG overlaps) */}
-                      <div className="w-full sm:w-1/2 flex flex-col gap-2 z-10">
-                        {categoryData.map((item, index) => {
-                          const totalVal = categoryData.reduce((s, c) => s + c.value, 0);
-                          const pct = totalVal > 0 ? (item.value / totalVal) * 100 : 0;
-                          return (
-                            <div key={item.name} className="flex flex-col gap-1 w-full text-left">
-                              <div className="flex items-center justify-between text-[11px] font-bold">
-                                <div className="flex items-center gap-1.5 text-gray-700 dark:text-gray-300 min-w-0 pr-1">
-                                  <span 
-                                    className="w-2 h-2 rounded-full shrink-0" 
-                                    style={{ backgroundColor: COLORS[index % COLORS.length] }} 
-                                  />
-                                  <span className="truncate pr-1">{item.name}</span>
-                                </div>
-                                <div className="flex items-center gap-1 text-gray-900 dark:text-white font-black shrink-0">
-                                  <span>₹{item.value.toFixed(0)}</span>
-                                  <span className="text-[9px] font-bold text-gray-400 dark:text-gray-500">({pct.toFixed(0)}%)</span>
-                                </div>
-                              </div>
-                              <div className="w-full h-1 bg-gray-100 dark:bg-gray-800/60 rounded-full overflow-hidden">
-                                <motion.div 
-                                  initial={{ width: 0 }}
-                                  animate={{ width: `${pct}%` }}
-                                  transition={{ duration: 0.8, ease: "easeOut" }}
-                                  className="h-full rounded-full"
-                                  style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                                />
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
+                  <TopCategoriesChart categoryData={categoryData} colors={COLORS} />
                 )}
 
                 <div className="grid grid-cols-2 gap-3 w-full mb-6">
