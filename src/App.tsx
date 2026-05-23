@@ -8,7 +8,7 @@ import { Search, History, Plane, Loader2, Sparkles, Globe, Wallet, QrCode, X, Ch
 
 import { motion, AnimatePresence } from 'motion/react';
 import { categorizeMerchant } from './services/gemini';
-import { getRecommendations, getCycleForCard, getQuarterCycle } from './lib/recommendation';
+import { getCycleForCard, getQuarterCycle, getRecommendations } from './lib/recommendation';
 import { Recommendation, MerchantInfo, Card, CashbackLog } from './types';
 import { CARD_DATA } from './data/cards';
 import { CardItem } from './components/CardItem';
@@ -456,6 +456,93 @@ export default function App() {
 
     return () => clearTimeout(timer);
   }, [isDataLoaded, walletCards, paidBills, cardBillDates]);
+
+  // Proactive offer & exhausted-card reset on billing cycle rollover
+  useEffect(() => {
+    if (!isDataLoaded) return;
+
+    const today = new Date();
+    const todayDate = today.getDate();
+    const todayKey = `${today.getFullYear()}-${today.getMonth() + 1}-${todayDate}`;
+
+    // Load last-reset timestamps per card to avoid redundant cleanup
+    let lastResetDates: Record<string, string> = {};
+    try {
+      const stored = localStorage.getItem('oc_lastOfferResetDates');
+      if (stored) lastResetDates = JSON.parse(stored);
+    } catch { }
+
+    let offerUsageDirty = false;
+    let exhaustedDirty = false;
+    const newOfferUsage = { ...offerUsage };
+    const newExhaustedCards = { ...exhaustedCards };
+
+    for (const card of CARD_DATA) {
+      if (card.isDummy) continue;
+
+      // Determine the reset day: billing date for credit cards, 1st for debit cards
+      const resetDay = card.type === 'Credit'
+        ? (cardBillDates[card.id] || 1)
+        : 1; // Debit cards always reset on the 1st
+
+      // Only run cleanup if today is the reset day and we haven't already cleaned today
+      if (todayDate !== resetDay) continue;
+      if (lastResetDates[card.id] === todayKey) continue;
+
+      // Current cycle for this card (after the reset day, this is the new cycle)
+      const currentCycle = getCycleForCard(card.id, cardBillDates);
+
+      // Clean up stale offerUsage keys for this card (any key not matching current cycle)
+      for (const key of Object.keys(newOfferUsage)) {
+        if (key.startsWith(`${card.id}-`) && !key.endsWith(`-${currentCycle}`)) {
+          delete newOfferUsage[key];
+          offerUsageDirty = true;
+        }
+      }
+
+      // For credit cards, also reset the accelerated limit
+      if (card.type === 'Credit') {
+        if (newExhaustedCards[card.id] !== undefined && newExhaustedCards[card.id] !== currentCycle) {
+          delete newExhaustedCards[card.id];
+          exhaustedDirty = true;
+        }
+      }
+
+      // For debit cards, also clean up exhaustedCards if applicable
+      if (card.type === 'Debit') {
+        if (newExhaustedCards[card.id] !== undefined && newExhaustedCards[card.id] !== currentCycle) {
+          delete newExhaustedCards[card.id];
+          exhaustedDirty = true;
+        }
+      }
+
+      lastResetDates[card.id] = todayKey;
+    }
+
+    // Quarterly offer cleanup (e.g., Niyo DCB ATM withdrawal resets each quarter)
+    // Quarter boundaries: Q1=Jan-Mar, Q2=Apr-Jun, Q3=Jul-Sep, Q4=Oct-Dec
+    // Cleanup runs on the first day of each new quarter (Jan 1, Apr 1, Jul 1, Oct 1)
+    const quarterStartMonths = [0, 3, 6, 9]; // JS months: Jan, Apr, Jul, Oct
+    const isQuarterStart = todayDate === 1 && quarterStartMonths.includes(today.getMonth());
+    if (isQuarterStart && lastResetDates['_quarterly'] !== todayKey) {
+      const currentQuarter = getQuarterCycle(); // e.g., "2026-Q2"
+      for (const key of Object.keys(newOfferUsage)) {
+        // Quarterly keys contain "-YYYY-Q#" pattern
+        const qMatch = key.match(/-(\d{4}-Q\d)$/);
+        if (qMatch && qMatch[1] !== currentQuarter) {
+          delete newOfferUsage[key];
+          offerUsageDirty = true;
+        }
+      }
+      lastResetDates['_quarterly'] = todayKey;
+    }
+
+    if (offerUsageDirty) setOfferUsage(newOfferUsage);
+    if (exhaustedDirty) setExhaustedCards(newExhaustedCards);
+
+    // Persist the last-reset timestamps
+    safeSetItem('oc_lastOfferResetDates', lastResetDates);
+  }, [isDataLoaded, cardBillDates]);
 
   useEffect(() => {
     // Save to localStorage regardless of user status
