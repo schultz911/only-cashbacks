@@ -3,11 +3,14 @@ import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 import { ErrorBoundary } from './components/ErrorBoundary.tsx';
+import { UserDataProvider } from './context/UserDataContext.tsx';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
-      <App />
+      <UserDataProvider>
+        <App />
+      </UserDataProvider>
     </ErrorBoundary>
   </StrictMode>,
 );

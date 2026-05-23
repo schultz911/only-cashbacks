@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, TrendingUp, Undo2, RotateCcw, AlertTriangle } from 'lucide-react';
 import { CashbackLog } from '../types';
+import { Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 
 interface Props {
   isOpen: boolean;
@@ -24,6 +25,19 @@ export function DashboardModal({ isOpen, onClose, logs, setLogs }: Props) {
 
   const totalThisMonth = thisMonthLogs.reduce((acc, log) => acc + log.amount, 0);
 
+  // Group logs by category for Pie Chart
+  const categoryData = logs.reduce((acc, log) => {
+    const existing = acc.find(item => item.name === log.category);
+    if (existing) {
+      existing.value += log.amount;
+    } else {
+      acc.push({ name: log.category, value: log.amount });
+    }
+    return acc;
+  }, [] as { name: string; value: number }[]).sort((a, b) => b.value - a.value).slice(0, 5);
+
+  const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
+
   const handleUndo = () => {
     setLogs(prev => prev.slice(0, -1));
   };
@@ -45,7 +59,7 @@ export function DashboardModal({ isOpen, onClose, logs, setLogs }: Props) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm"
+          className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-gray-950/40 dark:bg-black/60 backdrop-blur-sm"
           onClick={handleClose}
         >
           <motion.div
@@ -53,7 +67,7 @@ export function DashboardModal({ isOpen, onClose, logs, setLogs }: Props) {
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.95, y: 20 }}
             onClick={(e) => e.stopPropagation()}
-            className="bg-white rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl flex flex-col items-center text-center relative overflow-hidden"
+            className="bg-white/90 dark:bg-gray-900/90 oled:bg-black/95 backdrop-blur-xl border border-gray-100 dark:border-gray-800/80 rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl flex flex-col items-center text-center relative overflow-hidden"
           >
             {showConfirm ? (
               <motion.div 
@@ -61,15 +75,15 @@ export function DashboardModal({ isOpen, onClose, logs, setLogs }: Props) {
                 animate={{ opacity: 1, scale: 1 }}
                 className="w-full flex flex-col items-center py-6"
               >
-                <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-4">
-                  <AlertTriangle className="w-8 h-8" />
+                <div className="w-16 h-16 bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400 rounded-full flex items-center justify-center mb-4 shadow-inner">
+                  <AlertTriangle className="w-8 h-8 animate-bounce" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Reset Savings?</h3>
-                <p className="text-gray-500 mb-8 font-medium">This will permanently delete your savings history. This cannot be undone.</p>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Reset Savings?</h3>
+                <p className="text-gray-500 dark:text-gray-400 mb-8 font-medium text-sm">This will permanently delete your savings history. This cannot be undone.</p>
                 <div className="flex gap-3 w-full">
                   <button 
                     onClick={() => setShowConfirm(false)}
-                    className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-colors shadow-sm"
+                    className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold rounded-xl transition-colors shadow-sm"
                   >
                     Cancel
                   </button>
@@ -88,36 +102,122 @@ export function DashboardModal({ isOpen, onClose, logs, setLogs }: Props) {
                 exit={{ opacity: 0 }}
                 className="w-full flex flex-col items-center"
               >
-                <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-4">
+                <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mb-4 shadow-md">
                   <TrendingUp className="w-8 h-8" />
                 </div>
                 
-                <h2 className="text-2xl font-black text-gray-900 mb-2">My Savings</h2>
-                <p className="text-sm text-gray-500 mb-8 font-medium">Track your total cashbacks</p>
+                <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-1">My Savings</h2>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mb-6 font-bold tracking-widest uppercase">Track your total cashbacks</p>
 
-                <div className="bg-gray-50 w-full rounded-2xl p-6 border border-gray-100 mb-6">
-                  <div className="text-xs uppercase tracking-widest text-gray-500 font-bold mb-2">Earned This Month</div>
-                  <div className="text-4xl font-black text-green-600">₹{totalThisMonth.toFixed(2)}</div>
+                <div className="bg-gradient-to-br from-emerald-50/50 to-teal-50/20 dark:from-emerald-950/20 dark:to-teal-950/5 border border-emerald-100/60 dark:border-emerald-900/30 w-full rounded-2xl p-6 shadow-sm mb-6 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-400/10 dark:bg-emerald-500/5 rounded-full blur-2xl pointer-events-none -mr-8 -mt-8" />
+                  <div className="text-[10px] uppercase tracking-widest text-emerald-600 dark:text-emerald-400 font-black mb-2">Earned This Month</div>
+                  <div className="text-4xl font-black text-emerald-600 dark:text-emerald-400">₹{totalThisMonth.toFixed(2)}</div>
                 </div>
+
+                {logs.length > 0 && (
+                  <div className="w-full mb-6">
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-3 text-left">Top Categories</h3>
+                    
+                    <div className="bg-white/40 dark:bg-gray-800/20 backdrop-blur-xl border border-gray-100/30 dark:border-white/5 shadow-lg rounded-2xl p-4 w-full flex flex-col sm:flex-row items-center gap-4 relative overflow-hidden">
+                      <div className="absolute -left-12 -bottom-12 w-24 h-24 bg-blue-500/10 dark:bg-blue-400/5 rounded-full blur-xl pointer-events-none" />
+                      <div className="absolute -right-12 -top-12 w-24 h-24 bg-purple-500/10 dark:bg-purple-400/5 rounded-full blur-xl pointer-events-none" />
+
+                      {/* Donut Chart with Centered Dynamic Metric */}
+                      <div className="w-full sm:w-1/2 h-36 flex items-center justify-center relative select-none">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={categoryData}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={50}
+                              outerRadius={67}
+                              paddingAngle={4}
+                              dataKey="value"
+                            >
+                              {categoryData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                              ))}
+                            </Pie>
+                            <Tooltip 
+                              formatter={(value: number) => `₹${value.toFixed(2)}`}
+                              contentStyle={{
+                                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                                borderRadius: '12px',
+                                border: '1px solid rgba(0, 0, 0, 0.05)',
+                                boxShadow: '0 8px 16px -4px rgba(0, 0, 0, 0.1)',
+                                fontWeight: 'bold',
+                                fontSize: '11px',
+                                color: '#1f2937'
+                              }}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+                        <div className="absolute flex flex-col items-center justify-center pointer-events-none">
+                          <span className="text-[9px] font-black tracking-widest text-gray-400 dark:text-gray-500 uppercase leading-none">Top</span>
+                          <span className="text-sm font-black text-gray-800 dark:text-gray-200 truncate max-w-[70px] mt-0.5 leading-none">{categoryData[0]?.name || ''}</span>
+                        </div>
+                      </div>
+
+                      {/* High-quality Responsive Legend with HTML Flow (solves SVG overlaps) */}
+                      <div className="w-full sm:w-1/2 flex flex-col gap-2 z-10">
+                        {categoryData.map((item, index) => {
+                          const totalVal = categoryData.reduce((s, c) => s + c.value, 0);
+                          const pct = totalVal > 0 ? (item.value / totalVal) * 100 : 0;
+                          return (
+                            <div key={item.name} className="flex flex-col gap-1 w-full text-left">
+                              <div className="flex items-center justify-between text-[11px] font-bold">
+                                <div className="flex items-center gap-1.5 text-gray-700 dark:text-gray-300 min-w-0 pr-1">
+                                  <span 
+                                    className="w-2 h-2 rounded-full shrink-0" 
+                                    style={{ backgroundColor: COLORS[index % COLORS.length] }} 
+                                  />
+                                  <span className="truncate pr-1">{item.name}</span>
+                                </div>
+                                <div className="flex items-center gap-1 text-gray-900 dark:text-white font-black shrink-0">
+                                  <span>₹{item.value.toFixed(0)}</span>
+                                  <span className="text-[9px] font-bold text-gray-400 dark:text-gray-500">({pct.toFixed(0)}%)</span>
+                                </div>
+                              </div>
+                              <div className="w-full h-1 bg-gray-100 dark:bg-gray-800/60 rounded-full overflow-hidden">
+                                <motion.div 
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${pct}%` }}
+                                  transition={{ duration: 0.8, ease: "easeOut" }}
+                                  className="h-full rounded-full"
+                                  style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-3 w-full mb-6">
                   <button 
                     onClick={handleUndo}
                     disabled={logs.length === 0}
-                    className="py-3 px-4 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-700 font-bold rounded-xl transition-colors shadow-sm flex items-center justify-center gap-2"
+                    className="py-3 px-4 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 disabled:opacity-40 font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 active:scale-98"
                   >
                     <Undo2 className="w-4 h-4" /> Undo Last
                   </button>
                   <button 
                     onClick={() => setShowConfirm(true)}
                     disabled={logs.length === 0}
-                    className="py-3 px-4 bg-red-50 hover:bg-red-100 disabled:opacity-50 text-red-600 font-bold rounded-xl transition-colors shadow-sm flex items-center justify-center gap-2"
+                    className="py-3 px-4 bg-red-50 hover:bg-red-100 dark:bg-red-950/20 dark:hover:bg-red-950/40 text-red-600 dark:text-red-400 disabled:opacity-40 font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 active:scale-98"
                   >
                     <RotateCcw className="w-4 h-4" /> Reset
                   </button>
                 </div>
 
-                <button onClick={handleClose} className="w-full py-4 bg-gray-900 hover:bg-black text-white font-bold rounded-xl transition-colors shadow-lg">
+                <button 
+                  onClick={handleClose} 
+                  className="w-full py-4 bg-gray-900 hover:bg-black dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100 text-white font-bold rounded-xl transition-all shadow-lg hover:shadow-xl active:scale-[0.99]"
+                >
                   Close
                 </button>
               </motion.div>

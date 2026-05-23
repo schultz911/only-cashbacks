@@ -118,6 +118,7 @@ Output strictly a JSON object matching this TypeScript interface:
   platform?: string;
 }`;
 
+      const openRouterModel = process.env.OPENROUTER_MODEL || "openrouter/auto";
       let result = null;
 
       if (effectiveOpenRouterKey) {
@@ -131,7 +132,7 @@ Output strictly a JSON object matching this TypeScript interface:
             "X-Title": "Only Cashbacks"
           },
           body: JSON.stringify({
-            model: "google/gemini-2.0-flash-lite-001",
+            model: openRouterModel,
             temperature: 0,
             response_format: { type: "json_object" },
             messages: [
