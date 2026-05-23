@@ -13,6 +13,7 @@ interface Props {
 
 export function DashboardModal({ isOpen, onClose, logs, setLogs }: Props) {
   const [showConfirm, setShowConfirm] = useState(false);
+  const [viewMode, setViewMode] = useState<'category' | 'card'>('category');
 
   // calculate this month's cashback
   const currentMonth = new Date().getMonth();
@@ -25,13 +26,14 @@ export function DashboardModal({ isOpen, onClose, logs, setLogs }: Props) {
 
   const totalThisMonth = thisMonthLogs.reduce((acc, log) => acc + log.amount, 0);
 
-  // Group logs by category for Pie Chart
-  const categoryData = logs.reduce((acc, log) => {
-    const existing = acc.find(item => item.name === log.category);
+  // Group logs by category or card for Pie Chart
+  const chartData = logs.reduce((acc, log) => {
+    const key = viewMode === 'category' ? log.category : log.cardName;
+    const existing = acc.find(item => item.name === key);
     if (existing) {
       existing.value += log.amount;
     } else {
-      acc.push({ name: log.category, value: log.amount });
+      acc.push({ name: key, value: log.amount });
     }
     return acc;
   }, [] as { name: string; value: number }[]).sort((a, b) => b.value - a.value).slice(0, 5);
@@ -117,7 +119,13 @@ export function DashboardModal({ isOpen, onClose, logs, setLogs }: Props) {
 
                 {logs.length > 0 && (
                   <div className="w-full mb-6">
-                    <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-3 text-left">Top Categories</h3>
+                    <div className="flex justify-between items-center mb-3">
+                       <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 text-left">Top {viewMode === 'category' ? 'Categories' : 'Cards'}</h3>
+                       <div className="flex bg-gray-100 dark:bg-gray-800 p-0.5 rounded-lg">
+                          <button onClick={() => setViewMode('category')} className={`px-2 py-1 text-[10px] font-bold rounded-md uppercase tracking-wider transition-colors ${viewMode === 'category' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Category</button>
+                          <button onClick={() => setViewMode('card')} className={`px-2 py-1 text-[10px] font-bold rounded-md uppercase tracking-wider transition-colors ${viewMode === 'card' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Card</button>
+                       </div>
+                    </div>
                     
                     <div className="bg-white/40 dark:bg-gray-800/20 backdrop-blur-xl border border-gray-100/30 dark:border-white/5 shadow-lg rounded-2xl p-4 w-full flex flex-col sm:flex-row items-center gap-4 relative overflow-hidden">
                       <div className="absolute -left-12 -bottom-12 w-24 h-24 bg-blue-500/10 dark:bg-blue-400/5 rounded-full blur-xl pointer-events-none" />
@@ -128,7 +136,7 @@ export function DashboardModal({ isOpen, onClose, logs, setLogs }: Props) {
                         <ResponsiveContainer width="100%" height="100%">
                           <PieChart>
                             <Pie
-                              data={categoryData}
+                              data={chartData}
                               cx="50%"
                               cy="50%"
                               innerRadius={50}
@@ -136,7 +144,7 @@ export function DashboardModal({ isOpen, onClose, logs, setLogs }: Props) {
                               paddingAngle={4}
                               dataKey="value"
                             >
-                              {categoryData.map((entry, index) => (
+                              {chartData.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                               ))}
                             </Pie>
@@ -156,14 +164,14 @@ export function DashboardModal({ isOpen, onClose, logs, setLogs }: Props) {
                         </ResponsiveContainer>
                         <div className="absolute flex flex-col items-center justify-center pointer-events-none">
                           <span className="text-[9px] font-black tracking-widest text-gray-400 dark:text-gray-500 uppercase leading-none">Top</span>
-                          <span className="text-sm font-black text-gray-800 dark:text-gray-200 truncate max-w-[70px] mt-0.5 leading-none">{categoryData[0]?.name || ''}</span>
+                          <span className="text-sm font-black text-gray-800 dark:text-gray-200 truncate max-w-[70px] mt-0.5 leading-none">{chartData[0]?.name || ''}</span>
                         </div>
                       </div>
 
                       {/* High-quality Responsive Legend with HTML Flow (solves SVG overlaps) */}
                       <div className="w-full sm:w-1/2 flex flex-col gap-2 z-10">
-                        {categoryData.map((item, index) => {
-                          const totalVal = categoryData.reduce((s, c) => s + c.value, 0);
+                        {chartData.map((item, index) => {
+                          const totalVal = chartData.reduce((s, c) => s + c.value, 0);
                           const pct = totalVal > 0 ? (item.value / totalVal) * 100 : 0;
                           return (
                             <div key={item.name} className="flex flex-col gap-1 w-full text-left">
@@ -173,7 +181,7 @@ export function DashboardModal({ isOpen, onClose, logs, setLogs }: Props) {
                                     className="w-2 h-2 rounded-full shrink-0" 
                                     style={{ backgroundColor: COLORS[index % COLORS.length] }} 
                                   />
-                                  <span className="truncate pr-1">{item.name}</span>
+                                  <span className="truncate pr-1" title={item.name}>{item.name}</span>
                                 </div>
                                 <div className="flex items-center gap-1 text-gray-900 dark:text-white font-black shrink-0">
                                   <span>₹{item.value.toFixed(0)}</span>

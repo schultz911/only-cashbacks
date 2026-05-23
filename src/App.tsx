@@ -30,37 +30,65 @@ import { doc, getDoc, getDocFromServer, setDoc, deleteDoc, onSnapshot } from 'fi
 import Fuse from 'fuse.js';
 import { KNOWN_MERCHANTS } from './data/merchants';
 
+
+import { useWalletState } from './hooks/useWalletState';
+import { useAuthAndSync } from './hooks/useAuthAndSync';
+import { useSearchAndCurrency } from './hooks/useSearchAndCurrency';
+import { usePushNotifications } from './hooks/usePushNotifications';
 export default function App() {
-  const getInitialState = <T,>(key: string, defaultValue: T): T => {
-    try {
-      const stored = localStorage.getItem(key);
-      if (stored) return JSON.parse(stored);
-    } catch { }
-    return defaultValue;
-  };
+  const skipSyncRef = useRef(false);
 
-  const safeSetItem = (key: string, value: any) => {
-    try {
-      localStorage.setItem(key, JSON.stringify(value));
-    } catch (e) {
-      console.warn(`Could not save ${key} to localStorage`, e);
-    }
-  };
+  const {
+    user, isAuthLoading, isDataLoaded,
+    syncError, isSyncing, isSyncPaused, setIsSyncPaused,
+    isDirty, setIsDirty, isDirtyRef, markDirty,
+    theme, setTheme,
+    handleLogin, handleLogout,
+    saveData, useSyncEffect
+  } = useAuthAndSync(useRef({}), skipSyncRef);
 
-  const [query, setQuery] = useState('');
-  const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [focusedSuggestionIndex, setFocusedSuggestionIndex] = useState(-1);
-  const suggestionRef = useRef<HTMLDivElement>(null);
+  const {
+    exhaustedCards, setExhaustedCards, normalizedExhaustedCards,
+    cardBillDates, setCardBillDates,
+    paidBills, setPaidBills, markBillPaid,
+    loungePassesUsed, setLoungePassesUsed,
+    loungeMilestonesVerified, setLoungeMilestonesVerified,
+    offerUsage, setOfferUsage,
+    walletCards, setWalletCards,
+    cashbackLogs, setCashbackLogs,
+    kiwiNeonEarnRate, setKiwiNeonEarnRate
+  } = useWalletState(skipSyncRef, setIsDirty);
 
-  const [amount, setAmount] = useState<string>('');
-  const [foreignAmount, setForeignAmount] = useState<string>('');
-  const [baseCurrency, setBaseCurrency] = useState('USD');
-  const [exchangeRates, setExchangeRates] = useState<Record<string, number>>({});
+  const {
+    query, setQuery,
+    suggestions, setSuggestions,
+    showSuggestions, setShowSuggestions,
+    focusedSuggestionIndex, setFocusedSuggestionIndex,
+    suggestionRef,
+    amount, setAmount,
+    foreignAmount, setForeignAmount,
+    baseCurrency, setBaseCurrency,
+    exchangeRates,
+    isIntl, setIsIntl,
+    isOnline, setIsOnline,
+    isScanToPay, setIsScanToPay,
+    openRouterApiKey, setOpenRouterApiKey
+  } = useSearchAndCurrency();
 
-  const [isIntl, setIsIntl] = useState(false);
-  const [isOnline, setIsOnline] = useState(true);
-  const [isScanToPay, setIsScanToPay] = useState(false);
+  useSyncEffect({
+    setExhaustedCards, setCardBillDates, setPaidBills, setLoungePassesUsed,
+    setLoungeMilestonesVerified, setOfferUsage, setOpenRouterApiKey,
+    setKiwiNeonEarnRate, setWalletCards, setCashbackLogs
+  });
+
+  const latestStateRef = useRef({
+    exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, cardBillDates, paidBills, openRouterApiKey, kiwiNeonEarnRate, walletCards, cashbackLogs, theme
+  });
+  useEffect(() => {
+    latestStateRef.current = {
+      exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, cardBillDates, paidBills, openRouterApiKey, kiwiNeonEarnRate, walletCards, cashbackLogs, theme
+    };
+  }, [exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, cardBillDates, paidBills, openRouterApiKey, kiwiNeonEarnRate, walletCards, cashbackLogs, theme]);
 
   const [loading, setLoading] = useState(false);
   const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
@@ -72,44 +100,19 @@ export default function App() {
   const [showOffersOverlay, setShowOffersOverlay] = useState(false);
   const [selectedCardForDetails, setSelectedCardForDetails] = useState<{ card: Card, source: string } | null>(null);
 
-  // Toast Notification State
   const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' | 'info' } | null>(null);
-
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
   };
 
-  const [exhaustedCards, setExhaustedCards] = useState<Record<string, any>>(() => getInitialState('oc_exhaustedCards', {}));
-  const [cardBillDates, setCardBillDates] = useState<Record<string, number>>(() => getInitialState('oc_cardBillDates', {}));
-
-  const normalizedExhaustedCards = useMemo(() => {
-    const result: Record<string, boolean> = {};
-    for (const card of CARD_DATA) {
-      const cycle = getCycleForCard(card.id, cardBillDates);
-      const ex = exhaustedCards[card.id];
-      if (ex === true) result[card.id] = true;
-      else if (ex === cycle) result[card.id] = true;
-    }
-    return result;
-  }, [exhaustedCards, cardBillDates]);
-
-  const [paidBills, setPaidBills] = useState<Record<string, string>>(() => getInitialState('oc_paidBills', {}));
-
-  const [loungeTab, setLoungeTab] = useState<'Domestic' | 'International'>('Domestic');
-  const [loungePassesUsed, setLoungePassesUsed] = useState<Record<string, number>>(() => getInitialState('oc_loungePassesUsed', {}));
-  const [loungeMilestonesVerified, setLoungeMilestonesVerified] = useState<Record<string, boolean>>(() => getInitialState('oc_loungeMilestonesVerified', {}));
-  const [offerUsage, setOfferUsage] = useState<Record<string, number>>(() => getInitialState('oc_offerUsage', {}));
-  const [openRouterApiKey, setOpenRouterApiKey] = useState(() => getInitialState('oc_openRouterApiKey', ''));
   const [isApiModalOpen, setIsApiModalOpen] = useState(false);
   const [tempApiKey, setTempApiKey] = useState('');
-  const [kiwiNeonEarnRate, setKiwiNeonEarnRate] = useState(() => getInitialState('oc_kiwiNeonEarnRate', 2));
 
-  // Feature states
-  const [walletCards, setWalletCards] = useState<string[]>(() => getInitialState('oc_walletCards', []));
   const [isWalletOpen, setIsWalletOpen] = useState(false);
-  const [cashbackLogs, setCashbackLogs] = useState<CashbackLog[]>(() => getInitialState('oc_cashbackLogs', []));
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
+
+  const [loungeTab, setLoungeTab] = useState<'Domestic' | 'International'>('Domestic');
 
   const isAndroidApp = useMemo(() => {
     if (typeof window !== 'undefined') {
@@ -120,49 +123,7 @@ export default function App() {
     }
     return false;
   }, []);
-  const [theme, setTheme] = useState<'light' | 'dark' | 'oled'>(() => {
-    const saved = getInitialState('oc_theme', null);
-    if (saved) return saved;
-    if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      return 'dark';
-    }
-    return getInitialState('oc_isDarkMode', false) ? 'dark' : 'light';
-  });
-  const [isSyncPaused, setIsSyncPaused] = useState(() => getInitialState('oc_isSyncPaused', false));
 
-  // Apply theme
-  useEffect(() => {
-    document.documentElement.classList.remove('dark', 'oled');
-    let themeColor = '#F5F5F7';
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-      themeColor = '#0f172a';
-    } else if (theme === 'oled') {
-      document.documentElement.classList.add('dark', 'oled');
-      themeColor = '#000000';
-    }
-    
-    // Dynamically update theme-color for seamless status bar
-    let metaThemeColor = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement;
-    if (!metaThemeColor) {
-      metaThemeColor = document.createElement('meta');
-      metaThemeColor.name = "theme-color";
-      document.head.appendChild(metaThemeColor);
-    }
-    metaThemeColor.content = themeColor;
-    
-    // Clean up any extra theme-color tags
-    document.querySelectorAll('meta[name="theme-color"]').forEach(meta => {
-      if (meta !== metaThemeColor) meta.remove();
-    });
-
-    safeSetItem('oc_theme', theme);
-  }, [theme]);
-
-  const [user, setUser] = useState<User | null>(null);
-  const [isAuthLoading, setIsAuthLoading] = useState(true);
-
-  // Initialize fuse
   const fuse = useMemo(() => new Fuse(KNOWN_MERCHANTS, { threshold: 0.3 }), []);
 
   useEffect(() => {
@@ -185,7 +146,6 @@ export default function App() {
     setFocusedSuggestionIndex(-1);
   }, [query, showSuggestions, fuse]);
 
-  // Debounce hook
   const useDebouncedValue = <T,>(value: T, delay: number): T => {
     const [debouncedValue, setDebouncedValue] = useState<T>(value);
     useEffect(() => {
@@ -198,26 +158,6 @@ export default function App() {
   const debouncedAmount = useDebouncedValue(amount, 300);
   const debouncedForeignAmount = useDebouncedValue(foreignAmount, 300);
 
-  const skipSyncRef = useRef(false);
-
-  const [isDataLoaded, setIsDataLoaded] = useState(false);
-  const [syncError, setSyncError] = useState<string | null>(null);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [isDirty, setIsDirty] = useState(false);
-  const isDirtyRef = useRef(false);
-  const pendingSyncCounterRef = useRef(0);
-  
-  const latestStateRef = useRef({
-    exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, cardBillDates, paidBills, openRouterApiKey, kiwiNeonEarnRate, walletCards, cashbackLogs, theme
-  });
-
-  useEffect(() => {
-    latestStateRef.current = {
-      exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, cardBillDates, paidBills, openRouterApiKey, kiwiNeonEarnRate, walletCards, cashbackLogs, theme
-    };
-  }, [exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, cardBillDates, paidBills, openRouterApiKey, kiwiNeonEarnRate, walletCards, cashbackLogs, theme]);
-  
-  // Note: markDirty is managed down below, leaving layout similar
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
@@ -233,11 +173,8 @@ export default function App() {
         );
       }
     };
-
-    // Slight delay to ensure DOM has painted the w-max width before measuring
     const timeout = setTimeout(updateConstraint, 50);
     window.addEventListener('resize', updateConstraint);
-
     return () => {
       clearTimeout(timeout);
       window.removeEventListener('resize', updateConstraint);
@@ -255,192 +192,26 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setIsDataLoaded(false); // ALWAYS set to false when auth state changes so we don't accidentally sync before data loads
-      setIsDirty(false); // Reset dirty flag so we don't save guest data to the authenticated profile
-      isDirtyRef.current = false;
-      setUser(currentUser);
-      setIsAuthLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
-
-
-  useEffect(() => {
-    if (!user) {
-      // Load from localStorage if not signed in
-      skipSyncRef.current = true;
-      setExhaustedCards(getInitialState('oc_exhaustedCards', {}));
-      setLoungePassesUsed(getInitialState('oc_loungePassesUsed', {}));
-      setLoungeMilestonesVerified(getInitialState('oc_loungeMilestonesVerified', {}));
-      setOfferUsage(getInitialState('oc_offerUsage', {}));
-      setOpenRouterApiKey(getInitialState('oc_openRouterApiKey', ''));
-      setKiwiNeonEarnRate(getInitialState('oc_kiwiNeonEarnRate', 2));
-      setCardBillDates(getInitialState('oc_cardBillDates', {}));
-      setPaidBills(getInitialState('oc_paidBills', {}));
-      setWalletCards(getInitialState('oc_walletCards', []));
-      setCashbackLogs(getInitialState('oc_cashbackLogs', []));
-      
-      const savedTheme = getInitialState('oc_theme', null);
-      if (savedTheme) {
-        setTheme(savedTheme);
-      } else {
-        setTheme('light');
-      }
-
-      setTimeout(() => { skipSyncRef.current = false; setIsDataLoaded(true); }, 100);
-      return;
-    }
-
-    const docRef = doc(db, 'users', user.uid);
-    const unsubscribe = onSnapshot(docRef, (docSnap) => {
-      if (docSnap.metadata.hasPendingWrites) return;
-      
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        skipSyncRef.current = true;
-        if (data.exhaustedCards) setExhaustedCards(data.exhaustedCards);
-        if (data.cardBillDates) setCardBillDates(data.cardBillDates);
-        if (data.paidBills) setPaidBills(data.paidBills);
-        if (data.loungePassesUsed) setLoungePassesUsed(data.loungePassesUsed);
-        if (data.loungeMilestonesVerified) setLoungeMilestonesVerified(data.loungeMilestonesVerified);
-        if (data.offerUsage) setOfferUsage(data.offerUsage);
-        if (data.openRouterApiKey !== undefined) setOpenRouterApiKey(data.openRouterApiKey);
-        if (data.kiwiNeonEarnRate !== undefined) setKiwiNeonEarnRate(data.kiwiNeonEarnRate);
-        if (data.walletCards) setWalletCards(data.walletCards);
-        if (data.cashbackLogs) setCashbackLogs(data.cashbackLogs);
-        if (data.theme) setTheme(data.theme);
-        else if (data.isDarkMode !== undefined) setTheme(data.isDarkMode ? 'dark' : 'light');
-        setTimeout(() => { skipSyncRef.current = false; }, 100);
-      }
-      setIsDataLoaded(true);
-      setSyncError(null);
-    }, (error: any) => {
-      setSyncError(error.message || 'Failed to sync with cloud');
-      setIsDataLoaded(true);
-    });
-
-    return () => unsubscribe();
-  }, [user]);
-
-  // Persistent refresh when app visibility changes
-  useEffect(() => {
-    const handleVisibilityChange = async () => {
-      if (document.visibilityState === 'visible' && user) {
-        try {
-          const docRef = doc(db, 'users', user.uid);
-          // Use getDocFromServer to bypass local cache and always fetch the absolute newest state from the backend
-          const docSnap = await getDocFromServer(docRef);
-          if (docSnap.exists() && !isDirtyRef.current) {
-            const data = docSnap.data();
-            skipSyncRef.current = true;
-            if (data.exhaustedCards) setExhaustedCards(data.exhaustedCards);
-            if (data.cardBillDates) setCardBillDates(data.cardBillDates);
-            if (data.paidBills) setPaidBills(data.paidBills);
-            if (data.loungePassesUsed) setLoungePassesUsed(data.loungePassesUsed);
-            if (data.loungeMilestonesVerified) setLoungeMilestonesVerified(data.loungeMilestonesVerified);
-            if (data.offerUsage) setOfferUsage(data.offerUsage);
-            if (data.openRouterApiKey !== undefined) setOpenRouterApiKey(data.openRouterApiKey);
-            if (data.kiwiNeonEarnRate !== undefined) setKiwiNeonEarnRate(data.kiwiNeonEarnRate);
-            if (data.walletCards) setWalletCards(data.walletCards);
-            if (data.cashbackLogs) setCashbackLogs(data.cashbackLogs);
-            if (data.theme) setTheme(data.theme);
-            else if (data.isDarkMode !== undefined) setTheme(data.isDarkMode ? 'dark' : 'light');
-            setTimeout(() => { skipSyncRef.current = false; }, 100);
-          }
-        } catch (e) {
-          console.error("Failed to persistently refresh data on visibility change", e);
-        }
-      }
-    };
-    
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    // Also set an interval to fetch data periodically just in case
-    const interval = setInterval(() => {
-       if (document.visibilityState === 'visible' && user && !isDirtyRef.current) {
-          handleVisibilityChange();
-       }
-    }, 30000); // 30 seconds
-
-    return () => {
-       document.removeEventListener("visibilitychange", handleVisibilityChange);
-       clearInterval(interval);
-    }
-  }, [user]);
-
-  const saveData = async () => {
-    if (!user) return;
-    setIsSyncing(true);
-    
-    // Capture the exact sync counter before we start the async operation
-    const syncCounterAtStart = pendingSyncCounterRef.current;
-    // Capture the latest state without relying on the closure environment 
-    const dataToSave = latestStateRef.current;
-
-    try {
-      const docRef = doc(db, 'users', user.uid);
-      await setDoc(docRef, {
-        userId: user.uid,
-        ...dataToSave,
-        isDarkMode: dataToSave.theme !== 'light',
-        updatedAt: Date.now()
-      }, { merge: true });
-      
-      setSyncError(null);
-      // Only clear dirty if no new changes were triggered during the upload
-      if (pendingSyncCounterRef.current === syncCounterAtStart) {
-        setIsDirty(false);
-        isDirtyRef.current = false;
-      }
-    } catch (error: any) {
-      setSyncError(error.message || 'Failed to save to cloud');
-      try {
-        handleFirestoreError(error, OperationType.WRITE, `users/${user.uid}`);
-      } catch (e) {
-        console.warn('Save failed, state is local only.');
-      }
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
-  // Consolidated auto-save logic
-  useEffect(() => {
     if (!user || isAuthLoading || !isDataLoaded || skipSyncRef.current || !isDirty || isSyncing || isSyncPaused) return;
-
     const timer = setTimeout(() => {
       saveData();
-    }, 1000); // 1s batch window
-
+    }, 1000);
     return () => clearTimeout(timer);
   }, [isDirty, user, isAuthLoading, isDataLoaded, isSyncPaused, isSyncing, exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, cardBillDates, paidBills, openRouterApiKey, kiwiNeonEarnRate, walletCards, cashbackLogs, theme]);
 
-  const markDirty = () => {
-    if (!skipSyncRef.current) {
-      pendingSyncCounterRef.current += 1;
-      setIsDirty(true);
-      isDirtyRef.current = true;
-    }
-  };
-
-  // Watch for state changes to mark dirty
   useEffect(() => markDirty(), [exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, cardBillDates, paidBills, walletCards, cashbackLogs, theme, openRouterApiKey, kiwiNeonEarnRate]);
 
   useEffect(() => {
     if (!isDataLoaded || !walletCards || walletCards.length === 0) return;
-
-    // Use a small timeout to avoid showing immediately on load
     const timer = setTimeout(() => {
       let hasUnpaidPastDue = false;
       const today = new Date();
       for (const cardId of walletCards) {
         const card = CARD_DATA.find(c => c.id === cardId);
         if (!card || card.isDummy || card.type !== 'Credit') continue;
-
         const billDay = cardBillDates[cardId] || 1;
         const cycle = getCycleForCard(cardId, cardBillDates);
         const isPaid = paidBills[cardId] === cycle;
-
         if (!isPaid) {
           if (today.getDate() >= billDay + 2) {
             hasUnpaidPastDue = true;
@@ -448,24 +219,18 @@ export default function App() {
           }
         }
       }
-
       if (hasUnpaidPastDue) {
         showToast('You have unpaid credit card bills past their billing dates.', 'info');
       }
     }, 2000);
-
     return () => clearTimeout(timer);
   }, [isDataLoaded, walletCards, paidBills, cardBillDates]);
 
-  // Proactive offer & exhausted-card reset on billing cycle rollover
   useEffect(() => {
     if (!isDataLoaded) return;
-
     const today = new Date();
     const todayDate = today.getDate();
     const todayKey = `${today.getFullYear()}-${today.getMonth() + 1}-${todayDate}`;
-
-    // Load last-reset timestamps per card to avoid redundant cleanup
     let lastResetDates: Record<string, string> = {};
     try {
       const stored = localStorage.getItem('oc_lastOfferResetDates');
@@ -479,57 +244,31 @@ export default function App() {
 
     for (const card of CARD_DATA) {
       if (card.isDummy) continue;
-
-      // Determine the reset day: billing date for credit cards, 1st for debit cards
-      const resetDay = card.type === 'Credit'
-        ? (cardBillDates[card.id] || 1)
-        : 1; // Debit cards always reset on the 1st
-
-      // Only run cleanup if today is the reset day and we haven't already cleaned today
+      const resetDay = card.type === 'Credit' ? (cardBillDates[card.id] || 1) : 1;
       if (todayDate !== resetDay) continue;
       if (lastResetDates[card.id] === todayKey) continue;
-
-      // Current cycle for this card (after the reset day, this is the new cycle)
       const currentCycle = getCycleForCard(card.id, cardBillDates);
-
-      // Clean up stale offerUsage keys for this card (any key not matching current cycle)
       for (const key of Object.keys(newOfferUsage)) {
         if (key.startsWith(`${card.id}-`) && !key.endsWith(`-${currentCycle}`)) {
           delete newOfferUsage[key];
           offerUsageDirty = true;
         }
       }
-
-      // For credit cards, also reset the accelerated limit
-      if (card.type === 'Credit') {
+      if (card.type === 'Credit' || card.type === 'Debit') {
         if (newExhaustedCards[card.id] !== undefined && newExhaustedCards[card.id] !== currentCycle) {
           delete newExhaustedCards[card.id];
           exhaustedDirty = true;
         }
       }
-
-      // For debit cards, also clean up exhaustedCards if applicable
-      if (card.type === 'Debit') {
-        if (newExhaustedCards[card.id] !== undefined && newExhaustedCards[card.id] !== currentCycle) {
-          delete newExhaustedCards[card.id];
-          exhaustedDirty = true;
-        }
-      }
-
       lastResetDates[card.id] = todayKey;
     }
-
-    // Quarterly offer cleanup (e.g., Niyo DCB ATM withdrawal resets each quarter)
-    // Quarter boundaries: Q1=Jan-Mar, Q2=Apr-Jun, Q3=Jul-Sep, Q4=Oct-Dec
-    // Cleanup runs on the first day of each new quarter (Jan 1, Apr 1, Jul 1, Oct 1)
-    const quarterStartMonths = [0, 3, 6, 9]; // JS months: Jan, Apr, Jul, Oct
+    const quarterStartMonths = [0, 3, 6, 9];
     const isQuarterStart = todayDate === 1 && quarterStartMonths.includes(today.getMonth());
     if (isQuarterStart && lastResetDates['_quarterly'] !== todayKey) {
-      const currentQuarter = getQuarterCycle(); // e.g., "2026-Q2"
+      const currentQuarter = getQuarterCycle();
       for (const key of Object.keys(newOfferUsage)) {
-        // Quarterly keys contain "-YYYY-Q#" pattern
-        const qMatch = key.match(/-(\d{4}-Q\d)$/);
-        if (qMatch && qMatch[1] !== currentQuarter) {
+        const qMatch = key.match(/-\d{4}-Q\d$/);
+        if (qMatch && qMatch[0] !== `-${currentQuarter}`) {
           delete newOfferUsage[key];
           offerUsageDirty = true;
         }
@@ -539,70 +278,14 @@ export default function App() {
 
     if (offerUsageDirty) setOfferUsage(newOfferUsage);
     if (exhaustedDirty) setExhaustedCards(newExhaustedCards);
-
-    // Persist the last-reset timestamps
-    safeSetItem('oc_lastOfferResetDates', lastResetDates);
+    localStorage.setItem('oc_lastOfferResetDates', JSON.stringify(lastResetDates));
   }, [isDataLoaded, cardBillDates]);
-
-  useEffect(() => {
-    // Save to localStorage regardless of user status
-    safeSetItem('oc_exhaustedCards', exhaustedCards);
-    safeSetItem('oc_cardBillDates', cardBillDates);
-    safeSetItem('oc_paidBills', paidBills);
-    safeSetItem('oc_loungePassesUsed', loungePassesUsed);
-    safeSetItem('oc_loungeMilestonesVerified', loungeMilestonesVerified);
-    safeSetItem('oc_offerUsage', offerUsage);
-    safeSetItem('oc_openRouterApiKey', openRouterApiKey);
-    safeSetItem('oc_kiwiNeonEarnRate', kiwiNeonEarnRate);
-    safeSetItem('oc_walletCards', walletCards);
-    safeSetItem('oc_cashbackLogs', cashbackLogs);
-    safeSetItem('oc_isDarkMode', theme !== 'light'); // back compat
-    safeSetItem('oc_theme', theme);
-    safeSetItem('oc_isSyncPaused', isSyncPaused);
-
-    if (isDataLoaded && !skipSyncRef.current) {
-      setIsDirty(true);
-    }
-  }, [exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, cardBillDates, paidBills, openRouterApiKey, kiwiNeonEarnRate, walletCards, cashbackLogs, theme, isDataLoaded]);
-
-
-  const handleLogin = async () => {
-    try {
-      await signInWithPopup(auth, googleProvider);
-    } catch (error: any) {
-      console.error('Login error with popup:', error);
-      if (error.code) {
-        try {
-          await signInWithRedirect(auth, googleProvider);
-        } catch (redirectError) {
-          console.error('Redirect login error:', redirectError);
-        }
-      }
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      setIsProfileMenuOpen(false);
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  };
-
-  const markBillPaid = (cardId: string) => {
-    const cycle = getCycleForCard(cardId, cardBillDates);
-    setPaidBills(prev => ({ ...prev, [cardId]: cycle }));
-  };
 
   const handleDeleteData = async () => {
     if (deleteConfirmText !== 'DELETE' || !user) return;
-
     try {
       const docRef = doc(db, 'users', user.uid);
       await deleteDoc(docRef);
-
-      // Reset local state
       skipSyncRef.current = true;
       setExhaustedCards({});
       setLoungePassesUsed({});
@@ -615,15 +298,11 @@ export default function App() {
       setCardBillDates({});
       setPaidBills({});
       setHistory([]);
-
       setShowDeleteConfirm(false);
       setDeleteConfirmText('');
       setIsProfileMenuOpen(false);
-      setSyncError(null);
       setIsDirty(false);
-
       showToast('All user data deleted permanently.', 'info');
-
       setTimeout(() => { skipSyncRef.current = false; }, 500);
     } catch (error: any) {
       console.error('Error deleting data:', error);
@@ -640,27 +319,6 @@ export default function App() {
     'Kiwi': 'YES Kiwi Neon',
     'Tata Neu': 'HDFC Tata Neu Infinity'
   };
-
-  useEffect(() => {
-    try {
-      const cachedRates = localStorage.getItem('oc_exchangeRates');
-      if (cachedRates) {
-        setExchangeRates(JSON.parse(cachedRates));
-      }
-    } catch (e) {
-      console.warn("Could not load cached exchange rates", e);
-    }
-
-    fetch('https://open.er-api.com/v6/latest/INR')
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.rates) {
-          setExchangeRates(data.rates);
-          safeSetItem('oc_exchangeRates', data.rates);
-        }
-      })
-      .catch(err => console.error("Could not fetch exchange rates:", err));
-  }, []);
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -680,7 +338,6 @@ export default function App() {
       const info = history[0];
       const parsedAmount = parseFloat(debouncedAmount) || 0;
       const parsedForeign = parseFloat(debouncedForeignAmount) || 0;
-
       let effectiveAmount = 0;
       if (isIntl) {
         if (exchangeRates[baseCurrency]) {
@@ -733,9 +390,6 @@ export default function App() {
     setIsLogged(false);
     const activeQuery = directQuery !== undefined ? directQuery : query;
     let activeAmountRaw = prefilledAmount !== undefined ? prefilledAmount : (isIntl ? foreignAmount : amount);
-
-    // We shouldn't enforce amount = 0 fail if user is just clicking a quick pill might have no amount
-    // But if there is no amount we default to what's in the state.
     const parsedAmount = parseFloat(prefilledAmount !== undefined ? prefilledAmount : amount) || 0;
     const parsedForeign = parseFloat(prefilledAmount !== undefined ? prefilledAmount : foreignAmount) || 0;
 
@@ -771,6 +425,8 @@ export default function App() {
       setLoading(false);
     }
   };
+
+  usePushNotifications(isDataLoaded, walletCards, cardBillDates, paidBills, getCycleForCard);
 
   return (
     <div className="min-h-screen bg-[#F5F5F7] text-[#1D1D1F] font-sans selection:bg-blue-100 pb-12 isolate relative z-0">
