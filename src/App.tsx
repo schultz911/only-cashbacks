@@ -37,7 +37,6 @@ import { useSearchAndCurrency } from './hooks/useSearchAndCurrency';
 import { usePushNotifications } from './hooks/usePushNotifications';
 export default function App() {
   const skipSyncRef = useRef(false);
-  const latestStateRef = useRef<any>({});
 
   const {
     user, isAuthLoading, isDataLoaded,
@@ -46,7 +45,7 @@ export default function App() {
     theme, setTheme,
     handleLogin, handleLogout,
     saveData, useSyncEffect
-  } = useAuthAndSync(latestStateRef, skipSyncRef);
+  } = useAuthAndSync(useRef({}), skipSyncRef);
 
   const {
     exhaustedCards, setExhaustedCards, normalizedExhaustedCards,
@@ -80,6 +79,10 @@ export default function App() {
     setExhaustedCards, setCardBillDates, setPaidBills, setLoungePassesUsed,
     setLoungeMilestonesVerified, setOfferUsage, setOpenRouterApiKey,
     setKiwiNeonEarnRate, setWalletCards, setCashbackLogs
+  });
+
+  const latestStateRef = useRef({
+    exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, cardBillDates, paidBills, openRouterApiKey, kiwiNeonEarnRate, walletCards, cashbackLogs, theme
   });
   useEffect(() => {
     latestStateRef.current = {
