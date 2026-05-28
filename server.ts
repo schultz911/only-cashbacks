@@ -88,9 +88,6 @@ setInterval(() => {
       if (apiKey && typeof apiKey !== 'string') {
         return res.status(400).json({ error: "Invalid API key format" });
       }
-      if (apiKey && typeof apiKey === 'string' && /[\r\n]/.test(apiKey)) {
-        return res.status(400).json({ error: "Invalid API key format: CRLF injection detected" });
-      }
 
       const sanitizedMerchantName = merchantName.trim();
       console.log(`Merchant to categorize: "${sanitizedMerchantName}"`);

@@ -141,10 +141,29 @@ export function getRecommendations(
     }
   }
 
+  const isNameGeneric = (name: string, cat: string) => {
+    if (name === cat) return true;
+    const generics = [
+      'flight', 'flights', 'hotel', 'hotels', 'travel', 'dining', 'food', 'grocery', 'groceries', 
+      'movie', 'movies', 'cinema', 'theatre', 'shopping', 'apparel', 'clothes', 'clothing', 'fashion', 
+      'electronics', 'pharmacy', 'health', 'medicine', 'utility', 'utilities', 'bill', 'bills', 'recharge', 
+      'rent', 'insurance', 'tax', 'jewellery', 'jewelry', 'fuel', 'petrol', 'diesel', 'gas',
+      'cab', 'taxi', 'commute', 'transport', 'train', 'bus', 'delivery', 'supermarket',
+      'online', 'booking', 'store', 'shop', 'ticket', 'tickets', 'restaurant', 'cafe',
+      'bistro', 'diner', 'eatery', 'pizza', 'burger', 'coffee', 'tea', 'bakery', 'sweet', 'sweets',
+      '&', 'and', 'or', 'in', 'of', 'for', 'to', 'the', 'a', 'an', 'at', 'on', 'with', 'accessory', 'accessories'
+    ];
+    const words = name.toLowerCase().split(/[\s,.-]+/);
+    return words.every(w => !w || generics.includes(w) || w === cat.toLowerCase());
+  };
+
+  const isGenericQuery = isNameGeneric(nameL, catL);
+
   const shouldShowOffer = (targetPlatform: string) => {
     let lowerTarget = targetPlatform.toLowerCase();
     if (lowerTarget === 'bms') lowerTarget = 'bookmyshow';
-    if (matchedSpecificPlatforms.size === 0) return true;
+    
+    if (isGenericQuery) return true;
     return matchedSpecificPlatforms.has(lowerTarget);
   };
 
@@ -281,14 +300,14 @@ export function getRecommendations(
         const eligible = Math.min(amount, 15000);
         cashbackAmount = (eligible * 0.10);
         benefitText = '10% Cashback';
-      } else if (isOnline && isNykaaOrBeauty) {
+      } else if (isOnline && isNykaaOrBeauty && shouldShowOffer('nykaa')) {
         const eligible = Math.min(amount, 30000);
         const over = Math.max(0, amount - 30000);
         cashbackAmount = (eligible * 0.05) + (over * 0.01);
         discountAmount = amount * 0.05;
         benefitText = `5% Cashback + 5% Instant Discount`;
         cashbackAmount += discountAmount;
-      } else if (isOnline && isCleartripOrTravel) {
+      } else if (isOnline && isCleartripOrTravel && shouldShowOffer('cleartrip')) {
         const eligible = Math.min(amount, 30000);
         const over = Math.max(0, amount - 30000);
         cashbackAmount = (eligible * 0.05) + (over * 0.01);
@@ -330,12 +349,12 @@ export function getRecommendations(
       if (isIntl) {
         cashbackAmount = Math.min(amount * 0.05, 100);
         benefitText = '5% Cashback';
-      } else if ((isMovie || isBmsName) && isOnline && movieUsed < 1 && amount > 399) {
+      } else if ((isMovie || isBmsName) && isOnline && movieUsed < 1 && amount > 399 && shouldShowOffer('bookmyshow')) {
         discountAmount = Math.min(amount * 0.5, 300);
         const remaining = amount - discountAmount;
         cashbackAmount = discountAmount + Math.min(remaining * 0.05, 100);
         benefitText = '1+1 Movie on BookMyShow + 5% Cashback';
-      } else if ((isDining || isDistrictName) && isOnline && diningUsed < 1 && amount > 1999) {
+      } else if ((isDining || isDistrictName) && isOnline && diningUsed < 1 && amount > 1999 && shouldShowOffer('district')) {
         discountAmount = Math.min(amount * 0.20, 750); // Assuming 20% up to 750 for District
         const remaining = amount - discountAmount;
         cashbackAmount = discountAmount + Math.min(remaining * 0.05, 100);
