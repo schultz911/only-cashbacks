@@ -1,8 +1,6 @@
 import express from "express";
 import path from "path";
 
-import { OpenRouter } from "@openrouter/sdk";
-import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -95,7 +93,6 @@ setInterval(() => {
       // Determine which API to use
       const userOpenRouterKey = apiKey;
       const envOpenRouterKey = process.env.OPENROUTER_API_KEY;
-      const envGeminiKey = process.env.GEMINI_API_KEY;
       
       const effectiveOpenRouterKey = userOpenRouterKey || envOpenRouterKey;
 
@@ -118,11 +115,10 @@ Output strictly a JSON object matching this TypeScript interface:
   platform?: string;
 }`;
 
-      const openRouterModel = process.env.OPENROUTER_MODEL || "openrouter/auto";
       let result = null;
 
       if (effectiveOpenRouterKey) {
-        console.log("Calling OpenRouter API via fetch...");
+        console.log("Calling OpenRouter API (google/gemini-3.1-flash-lite) via fetch...");
         const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
           method: "POST",
           headers: {
@@ -132,7 +128,7 @@ Output strictly a JSON object matching this TypeScript interface:
             "X-Title": "Only Cashbacks"
           },
           body: JSON.stringify({
-            model: openRouterModel,
+            model: "google/gemini-3.1-flash-lite",
             temperature: 0,
             response_format: { type: "json_object" },
             messages: [
@@ -148,23 +144,9 @@ Output strictly a JSON object matching this TypeScript interface:
         const data = await response.json();
         console.log("OpenRouter Response Received.");
         result = JSON.parse(data.choices[0]?.message?.content || "{}");
-      } else if (envGeminiKey) {
-        console.log("Calling Google Gemini Environment API...");
-        const ai = new GoogleGenAI({ apiKey: envGeminiKey });
-        const response = await ai.models.generateContent({
-          model: 'gemini-2.5-flash',
-          contents: sanitizedMerchantName,
-          config: {
-            systemInstruction: systemPrompt,
-            temperature: 0,
-            responseMimeType: "application/json"
-          }
-        });
-        console.log("Gemini Response Received.");
-        result = JSON.parse(response.text || "{}");
       } else {
-        console.warn("No valid API Key found (User Input APIs or Environment API).");
-        return res.status(400).json({ error: "API Key is required" });
+        console.warn("No OpenRouter API Key found.");
+        return res.status(400).json({ error: "OpenRouter API Key is required" });
       }
 
       res.json(result);
