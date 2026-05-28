@@ -116,8 +116,8 @@ export function getRecommendations(
   const isGamblingCat = catL.includes('gambling');
   const isTataNeuUtility = catL.includes('utilities') || nameL.includes('internet') || nameL.includes('bill') || nameL.includes('bills') || nameL.includes('toll') || nameL.includes('tata play') || nameL.includes('fastag');
   const isNykaaOrBeauty = nameL.includes('nykaa') || platL.includes('nykaa') || catL.includes('beauty');
-  const isCleartripOrTravel = nameL.includes('cleartrip') || catL.includes('travel') || platL.includes('cleartrip');
   const isHotelCatOrName = nameL.includes('hotel') || catL.includes('hotel');
+  const isCleartripOrTravel = nameL.includes('cleartrip') || catL.includes('travel') || platL.includes('cleartrip') || nameL.includes('flight') || isHotelCatOrName;
   const isHdfcSwiggyExcludedCat = catL.includes('utility') || nameL.includes('utility') || catL.includes('fuel') || nameL.includes('fuel') || catL.includes('gaming') || nameL.includes('gaming') || catL.includes('gambling') || nameL.includes('gambling') || catL.includes('finance') || nameL.includes('finance') || catL.includes('education') || nameL.includes('education') || catL.includes('school') || nameL.includes('school') || catL.includes('rail') || nameL.includes('rail') || catL.includes('travel') || nameL.includes('travel') || catL.includes('flights') || nameL.includes('flights') || catL.includes('hotel') || nameL.includes('hotel');
   const isBmsName = nameL.includes('bookmyshow') || nameL.includes('bms');
   const isDistrictName = nameL.includes('district');
@@ -151,6 +151,8 @@ export function getRecommendations(
       'cab', 'taxi', 'commute', 'transport', 'train', 'bus', 'delivery', 'supermarket',
       'online', 'booking', 'store', 'shop', 'ticket', 'tickets', 'restaurant', 'cafe',
       'bistro', 'diner', 'eatery', 'pizza', 'burger', 'coffee', 'tea', 'bakery', 'sweet', 'sweets',
+      'show', 'shows', 'concert', 'event', 'events', 'stay', 'trip', 'travels', 'vacation', 'air',
+      'airline', 'airlines', 'accommodation', 'beauty', 'cosmetics', 'cosmetic', 'makeup', 'fragrance',
       '&', 'and', 'or', 'in', 'of', 'for', 'to', 'the', 'a', 'an', 'at', 'on', 'with', 'accessory', 'accessories'
     ];
     const words = name.toLowerCase().split(/[\s,.-]+/);
@@ -296,7 +298,8 @@ export function getRecommendations(
       if (isIntl) {
         isExcluded = true;
         benefitText = 'Excluded from earning rewards on International';
-      } else if (isOnline && (isFoodDelivery || isDining || isGrocery) && shouldShowOffer('swiggy')) {
+  // HDFC Swiggy
+      } else if ((isOnline || isDining) && (isFoodDelivery || isDining || isGrocery) && shouldShowOffer('swiggy')) {
         const eligible = Math.min(amount, 15000);
         cashbackAmount = (eligible * 0.10);
         benefitText = '10% Cashback';
@@ -354,7 +357,7 @@ export function getRecommendations(
         const remaining = amount - discountAmount;
         cashbackAmount = discountAmount + Math.min(remaining * 0.05, 100);
         benefitText = '1+1 Movie on BookMyShow + 5% Cashback';
-      } else if ((isDining || isDistrictName) && isOnline && diningUsed < 1 && amount > 1999 && shouldShowOffer('district')) {
+      } else if ((isDining || isDistrictName) && (isOnline || isDining) && diningUsed < 1 && amount > 1999 && shouldShowOffer('district')) {
         discountAmount = Math.min(amount * 0.20, 750); // Assuming 20% up to 750 for District
         const remaining = amount - discountAmount;
         cashbackAmount = discountAmount + Math.min(remaining * 0.05, 100);
@@ -651,7 +654,7 @@ export function getRecommendations(
     }
   }
 
-  if (!isIntl && isDining && isOnline) {
+  if (!isIntl && isDining) {
     if ((offerUsage[`kotak-811-infinity-Dining-District-${kCycle}`] || 0) < 1 && shouldShowOffer('district')) {
       availableOffers.push({ id: 'k-dist', icon: '🍽️', title: 'Kotak 811', description: '20% off up to ₹750', category: 'District', cardId: 'kotak-811-infinity' });
     }

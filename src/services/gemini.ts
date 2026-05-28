@@ -9,7 +9,7 @@ const EXHAUSTIVE_MERCHANT_MAPPINGS = [
   // Swiggy & Zomato Ecosystem
   { pattern: /swiggy|toing/i, category: "Food Delivery", isOnline: true, isP2P: false, platform: "Swiggy" },
   { pattern: /zomato|bistro/i, category: "Food Delivery", isOnline: true, isP2P: false, platform: "Zomato" },
-  { pattern: /zepto ?cafe|eatsure|fresh ?menu|box8|eat ?club|uber ?eats/i, category: "Food Delivery", isOnline: true, isP2P: false },
+  { pattern: /zepto ?cafe|eatsure|fresh ?menu|box8|eat ?club|uber ?eats|food ?delivery/i, category: "Food Delivery", isOnline: true, isP2P: false },
 
   // Quick Commerce & Grocery
   { pattern: /zepto/i, category: "Grocery", isOnline: true, isP2P: false, platform: "Zepto" },
@@ -88,8 +88,8 @@ const EXHAUSTIVE_MERCHANT_MAPPINGS = [
   { pattern: /hpcl|hindustan petroleum|indianoil|indian oil|iocl|indane|bharat ?gas|bharat petroleum|bpcl|\bshell\b|nayara|jiobp|petrol|fuel|gas station|diesel|lpg|cng/i, category: "Fuel", isOnline: false, isP2P: false },
  
   // Dining
-  { pattern: /domino|pizza.?hut|papa ?johns|mcdonald|kfc|burger.?king|subway|starbucks|faasos|behrouz|oven.?story|box8|freshmenu|eat.?sure|magicpin|haldiram|bikanervala|barbeque.?nation|cafe.?coffee.?day|\bccd\b|chaayos|chai.?point|wow.?momo|wow.?china|taco.?bell|dunkin|krispy.?kreme|mad.?over.?donuts|baskin.?robbin|natural.?ice.?cream|giani|cream.?stone|ibaco|polar.?bear|burger.?singh|wat.?a.?burger|jumbo.?king|goli.?vada.?pav|tibbs|rolls.?mania|kathi.?junction|khan.?chacha|sagar.?ratna|saravana.?bhavan|adyar.?ananda.?bhavan|a2b|mavalli.?tiffin|\bmtr\b|paradise.?biryani|biryani.?by.?kilo|bbk|charcoal.?eats|mojo.?pizza|la.?pino|chicago.?pizza|smokin.?joe|pizza.?corner|us.?pizza|papa.?john|slay.?coffee|barista|costa.?coffee|chai.?sutta|mba.?chai|tea.?post|chocolate.?room|cookie.?man|belgian.?waffle|monginis|mio.?amore|karachi.?bakery|theobroma|glen.?s.?bakehouse|nik.?baker|flurys|keventers|drunken.?monkey|lassi.?n.?shake|frozen.?bottle|mainland.?china|asia.?seven|mamagoto|punjab.?grill|moti.?mahal|copper.?chimney|rajdhani|absolute.?barbecue|pirates.?of.?grill|sigree|oh!.?calcutta|little.?italy|cream.?centre|kailash.?parbat|bikaner.?sweets|nathu|aggarwal.?sweets|om.?sweets|kanti.?sweets|anand.?sweets|hatti.?kaapi|indian.?coffee.?house|social|farzi.?cafe|smoke.?house.?deli|chili.?s|tgi.?friday|\bnando\b|cinnabon|auntie.?anne|pa.?pa.?ya|yauatcha|pind.?balluchi|sankalp|sangeetha|vasudev.?adiga|nandini|empire|meghana.?food|mani.?s.?dum.?biryani|leon.?s.?burger|truffles|toscano|dining|food|meal|feast/i, category: "Dining", isOnline: true, isP2P: false },
-  { pattern: /cafe|restaurant|diner|eatery|\bpub\b|\bbar\b|coffee|bistro|lounge|grill|steakhouse/i, category: "Dining", isOnline: false, isP2P: false }
+  { pattern: /domino|pizza.?hut|papa ?johns|mcdonald|kfc|burger.?king|subway|starbucks|faasos|behrouz|oven.?story|box8|freshmenu|eat.?sure|magicpin|haldiram|bikanervala|barbeque.?nation|cafe.?coffee.?day|\bccd\b|chaayos|chai.?point|wow.?momo|wow.?china|taco.?bell|dunkin|krispy.?kreme|mad.?over.?donuts|baskin.?robbin|natural.?ice.?cream|giani|cream.?stone|ibaco|polar.?bear|burger.?singh|wat.?a.?burger|jumbo.?king|goli.?vada.?pav|tibbs|rolls.?mania|kathi.?junction|khan.?chacha|sagar.?ratna|saravana.?bhavan|adyar.?ananda.?bhavan|a2b|mavalli.?tiffin|\bmtr\b|paradise.?biryani|biryani.?by.?kilo|bbk|charcoal.?eats|mojo.?pizza|la.?pino|chicago.?pizza|smokin.?joe|pizza.?corner|us.?pizza|papa.?john|slay.?coffee|barista|costa.?coffee|chai.?sutta|mba.?chai|tea.?post|chocolate.?room|cookie.?man|belgian.?waffle|monginis|mio.?amore|karachi.?bakery|theobroma|glen.?s.?bakehouse|nik.?baker|flurys|keventers|drunken.?monkey|lassi.?n.?shake|frozen.?bottle|mainland.?china|asia.?seven|mamagoto|punjab.?grill|moti.?mahal|copper.?chimney|rajdhani|absolute.?barbecue|pirates.?of.?grill|sigree|oh!.?calcutta|little.?italy|cream.?centre|kailash.?parbat|bikaner.?sweets|nathu|aggarwal.?sweets|om.?sweets|kanti.?sweets|anand.?sweets|hatti.?kaapi|indian.?coffee.?house|social|farzi.?cafe|smoke.?house.?deli|chili.?s|tgi.?friday|\bnando\b|cinnabon|auntie.?anne|pa.?pa.?ya|yauatcha|pind.?balluchi|sankalp|sangeetha|vasudev.?adiga|nandini|empire|meghana.?food|mani.?s.?dum.?biryani|leon.?s.?burger|truffles|toscano/i, category: "Dining", isOnline: true, isP2P: false },
+  { pattern: /cafe|restaurant|diner|eatery|\bpub\b|\bbar\b|coffee|bistro|lounge|grill|steakhouse|dining|food|meal|feast/i, category: "Dining", isOnline: false, isP2P: false }
 ];
 
 function categorizeLocal(merchantName: string): MerchantInfo | null {
@@ -118,8 +118,11 @@ function categorizeLocal(merchantName: string): MerchantInfo | null {
   if (norm.includes('courier') || norm.includes('logistics') || norm.includes('urban company') || norm.includes('uber')) {
     return { name: merchantName, category: "Services", isOnline: true, isP2P: false };
   }
-  if (norm.includes('swiggy') || norm.includes('zomato') || norm.includes('food') || norm.includes('delivery') || norm.includes('restaurant')) {
-    return { name: merchantName, category: "Dining", isOnline: true, isP2P: false };
+  if (norm.includes('swiggy') || norm.includes('zomato') || norm.includes('delivery') || norm.includes('food delivery')) {
+    return { name: merchantName, category: "Food Delivery", isOnline: true, isP2P: false };
+  }
+  if (norm.includes('food') || norm.includes('restaurant') || norm.includes('dining') || norm.includes('cafe')) {
+    return { name: merchantName, category: "Dining", isOnline: false, isP2P: false };
   }
   if (norm.includes('paytm') || norm.includes('phonepe') || norm.includes('gpay') || norm.includes('bharatpe') || norm.includes('razorpay') || norm.includes('payu')) {
     return { name: merchantName, category: "Finance", isOnline: true, isP2P: false };
