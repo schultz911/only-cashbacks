@@ -256,3 +256,5 @@ export const CARD_DATA: Card[] = [
     ]
   }
 ];
+
+export const CARD_DICT: Record<string, Card> = Object.fromEntries(CARD_DATA.map(c => [c.id, c]));

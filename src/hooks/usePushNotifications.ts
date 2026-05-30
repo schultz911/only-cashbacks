@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { CARD_DATA } from '../data/cards';
+import { CARD_DICT } from '../data/cards';
 
 export function usePushNotifications(
   isDataLoaded: boolean,
@@ -27,7 +27,8 @@ export function usePushNotifications(
       const today = new Date();
       
       for (const cardId of walletCards) {
-        const card = CARD_DATA.find(c => c.id === cardId);
+        // Optimization: Use O(1) CARD_DICT lookup instead of O(N) CARD_DATA.find() to avoid performance bottlenecks inside loop
+        const card = CARD_DICT[cardId];
         if (!card || card.isDummy || card.type !== 'Credit') continue;
 
         const billDay = cardBillDates[cardId] || 1;
@@ -60,7 +61,8 @@ export function usePushNotifications(
       // Check for offers that have been reset today (e.g. 1st of month, or bill date)
       const resetCards = [];
       for (const cardId of walletCards) {
-        const card = CARD_DATA.find(c => c.id === cardId);
+        // Optimization: Use O(1) CARD_DICT lookup instead of O(N) CARD_DATA.find() to avoid performance bottlenecks inside loop
+        const card = CARD_DICT[cardId];
         if (!card || card.isDummy) continue;
         const resetDay = card.type === 'Credit' ? (cardBillDates[cardId] || 1) : 1;
         if (today.getDate() === resetDay) {
