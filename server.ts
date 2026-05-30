@@ -83,7 +83,7 @@ setInterval(() => {
       if (merchantName.length > 100) {
         return res.status(400).json({ error: "merchantName exceeds maximum length of 100 characters" });
       }
-      if (apiKey && typeof apiKey !== 'string') {
+      if (apiKey && (typeof apiKey !== 'string' || /[\r\n]/.test(apiKey))) {
         return res.status(400).json({ error: "Invalid API key format" });
       }
 
