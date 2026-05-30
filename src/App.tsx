@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useRef, useMemo, Suspense, lazy } from 'react';
-import { Search, History, Plane, Loader2, Sparkles, Globe, Wallet, QrCode, X, ChevronDown, Check, UserCircle, LogOut, AlertCircle, Ticket, Tag, Info, RefreshCw, Trash2, Store, Moon, Sun, CloudOff, Cloud, Undo2, RotateCcw, Banknote, Download, PiggyBank } from 'lucide-react';
+import { Search, Loader2, Sparkles, Wallet, X, ChevronDown, Check, AlertCircle, Ticket, Tag, Info, Trash2, Store, PiggyBank, Plane } from 'lucide-react';
 
 import { motion, AnimatePresence } from 'motion/react';
 import { categorizeMerchant } from './services/gemini';
@@ -14,7 +14,6 @@ import { CARD_DATA } from './data/cards';
 import { CardItem } from './components/CardItem';
 import { BillReminders } from './components/BillReminders';
 import { BillDateSelector } from './components/BillDateSelector';
-import { LoungeTrackerItem } from './components/LoungeTrackerItem';
 import { parseLoungeBenefit } from './components/LoungeTrackerModal';
 
 const LoungeTrackerModal = lazy(() => import('./components/LoungeTrackerModal').then(module => ({ default: module.LoungeTrackerModal })));
@@ -24,9 +23,9 @@ import { Header } from './components/Header';
 import { VoucherSection } from './components/VoucherSection';
 import { SearchSection } from './components/SearchSection';
 import { cn } from './lib/utils';
-import { auth, googleProvider, db, handleFirestoreError, OperationType } from './firebase';
-import { signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut, User } from 'firebase/auth';
-import { doc, getDoc, getDocFromServer, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
+import { db } from './firebase';
+import { User } from 'firebase/auth';
+import { doc, deleteDoc } from 'firebase/firestore';
 
 import Fuse from 'fuse.js';
 import { KNOWN_MERCHANTS } from './data/merchants';
@@ -117,15 +116,6 @@ export default function App() {
 
   const [loungeTab, setLoungeTab] = useState<'Domestic' | 'International'>('Domestic');
 
-  const isAndroidApp = useMemo(() => {
-    if (typeof window !== 'undefined') {
-      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.matchMedia('(display-mode: fullscreen)').matches;
-      const isTwaReferrer = document.referrer.includes('android-app://');
-      const isWebView = /Android/i.test(navigator.userAgent) && /wv/i.test(navigator.userAgent);
-      return isStandalone || isTwaReferrer || isWebView;
-    }
-    return false;
-  }, []);
 
   const fuse = useMemo(() => new Fuse(KNOWN_MERCHANTS, { threshold: 0.3 }), []);
 
@@ -1470,21 +1460,6 @@ export default function App() {
           <p>Crafted by Kiran Saldanha. Coded with Gemini.</p>
           <p>For non-commercial use only.</p>
         </div>
-        <motion.a
-          href={isAndroidApp ? "https://github.com/schultz911/onlycashbacks-android/releases/latest" : "https://drive.google.com/file/d/16OumI3KMnNJbR6m_OXeSm69Ij8HkDe0q"}
-          target="_blank"
-          rel="noopener noreferrer"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          animate={{ y: [0, -5, 0] }}
-          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-          className="flex items-center gap-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-600 dark:text-blue-400 px-5 py-2.5 rounded-full transition-colors font-bold shadow-sm border border-blue-200/50 dark:border-blue-800/50"
-        >
-          <motion.div animate={{ y: [0, 3, 0] }} transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}>
-            <Download className="w-5 h-5" />
-          </motion.div>
-          {isAndroidApp ? "Check for updates" : "Install App"}
-        </motion.a>
       </footer>
 
       <AnimatePresence>

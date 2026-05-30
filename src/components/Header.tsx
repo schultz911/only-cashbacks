@@ -1,9 +1,7 @@
 import React from 'react';
 import { 
-  Search, History, Plane, Loader2, Sparkles, Globe, Wallet, QrCode, X, 
-  ChevronDown, Check, UserCircle, LogOut, AlertCircle, Ticket, Tag, 
-  Info, RefreshCw, Trash2, Store, Moon, Sun, CloudOff, Cloud, Undo2, 
-  RotateCcw, Banknote, Download, PiggyBank 
+  Loader2, Check, UserCircle, LogOut, AlertCircle, 
+  RefreshCw, Trash2, Moon, Sun, CloudOff, Cloud 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { User } from 'firebase/auth';
