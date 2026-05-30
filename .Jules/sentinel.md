@@ -7,3 +7,11 @@
 2.  **Bypass logic flaws:** A non-string or whitespace-only value could cause downstream failures or unexpected behaviors in the prompt execution.
 
 **Prevention:** Always validate all user input on API endpoints (length checks, type checks, and content sanitation) before processing, especially before injecting into LLM contexts or making third party external API requests. Added `express.json({ limit: "10kb" })` for base payload protection and explicit bounds checking on `merchantName` and `apiKey`.
+
+## $(date +%Y-%m-%d) - HTTP Header Injection via API Key
+
+**Vulnerability:** The API endpoint `/api/categorize` allowed newline (\n) and carriage return (\r) characters in the `apiKey` property of the JSON body. This key was directly inserted into an HTTP Authorization header in an outgoing fetch request, which could allow an attacker to inject custom HTTP headers or modify the request payload.
+
+**Learning:** Any user-supplied data used to construct HTTP headers must be strictly sanitized to prevent HTTP Header Injection (CRLF injection).
+
+**Prevention:** Always validate that user-provided keys, tokens, or other header values do not contain carriage return (\r) or newline (\n) characters before setting them in HTTP requests.
