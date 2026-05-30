@@ -675,42 +675,6 @@ export function getRecommendations(
     .filter(o => Math.abs(o.netValue - bestResult.netValue) < 0.01)
     .map(o => ({ card: o.card, benefit: o.benefitText }));
 
-  // Voucher recommendation logic
-  let voucherOption: Recommendation['voucherOption'] | undefined = undefined;
-  if (!isIntl && isOnline) {
-    if (nameL.includes('swiggy') || platL === 'swiggy') {
-      voucherOption = {
-        platform: 'Kotak Maximize / Gyftr',
-        discount: 'up to 10%',
-        cardBenefit: 'Buy Swiggy Vouchers on Kotak Maximize using Kotak 811 Metal Debit Card for maximum savings.'
-      };
-    } else if (nameL.includes('zomato')) {
-      voucherOption = {
-        platform: 'Amazon Pay / Cred',
-        discount: 'up to 8%',
-        cardBenefit: 'Purchase Zomato Vouchers on Amazon Pay or CRED using SBI Cashback card.'
-      };
-    } else if (nameL.includes('amazon') || nameL.includes('amzn')) {
-      voucherOption = {
-        platform: 'Amazon Gift Card',
-        discount: '5%',
-        cardBenefit: 'Buy Amazon Shopping Vouchers using SBI Cashback to get 5% cashback on the gift card.'
-      };
-    } else if (nameL.includes('flipkart') || nameL.includes('fkrt')) {
-      voucherOption = {
-        platform: 'Flipkart Gift Cards',
-        discount: '5%',
-        cardBenefit: 'Buy Flipkart Gift Cards via Amazon/Cred using SBI Cashback to earn 5% cashback.'
-      };
-    } else if (nameL.includes('zepto') || nameL.includes('blinkit')) {
-      voucherOption = {
-        platform: 'Instant Vouchers',
-        discount: 'up to 6%',
-        cardBenefit: 'Check Amazon/Cred for Zepto/Blinkit vouchers using SBI Cashback.'
-      };
-    }
-  }
-
   return {
     bestCard: bestResult.card,
     tiedCards: tiedCards.length > 1 ? tiedCards : undefined,
@@ -720,7 +684,6 @@ export function getRecommendations(
     cashbackEarned: bestResult.cashbackEarned,
     feesPaid: bestResult.feesPaid,
     alternatives: validOptions.slice(tiedCards.length, tiedCards.length + 3).map(s => ({ card: s.card, benefit: s.benefitText, netValue: round2(s.netValue) })),
-    availableOffers: availableOffers.filter(o => !o.cardId || !calculationResults.find(r => r.card.id === o.cardId)?.isExcluded),
-    voucherOption
+    availableOffers: availableOffers.filter(o => !o.cardId || !calculationResults.find(r => r.card.id === o.cardId)?.isExcluded)
   };
 }
