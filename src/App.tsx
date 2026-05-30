@@ -50,6 +50,8 @@ export default function App() {
     };
   }, []);
 
+  const latestStateRef = useRef<any>({});
+
   const {
     user, isAuthLoading, isDataLoaded,
     syncError, isSyncing, isSyncPaused, setIsSyncPaused,
@@ -57,7 +59,7 @@ export default function App() {
     theme, setTheme,
     handleLogin, handleLogout,
     saveData, useSyncEffect
-  } = useAuthAndSync(useRef({}), skipSyncRef);
+  } = useAuthAndSync(latestStateRef, skipSyncRef);
 
   const {
     exhaustedCards, setExhaustedCards, normalizedExhaustedCards,
@@ -93,9 +95,9 @@ export default function App() {
     setKiwiNeonEarnRate, setWalletCards, setCashbackLogs
   });
 
-  const latestStateRef = useRef({
+  latestStateRef.current = {
     exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, cardBillDates, paidBills, openRouterApiKey, kiwiNeonEarnRate, walletCards, cashbackLogs, theme
-  });
+  };
   useEffect(() => {
     latestStateRef.current = {
       exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, cardBillDates, paidBills, openRouterApiKey, kiwiNeonEarnRate, walletCards, cashbackLogs, theme
@@ -259,6 +261,12 @@ export default function App() {
     }, 1000);
     return () => clearTimeout(timer);
   }, [isDirty, user, isAuthLoading, isDataLoaded, isSyncPaused, isSyncing, exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, cardBillDates, paidBills, openRouterApiKey, kiwiNeonEarnRate, walletCards, cashbackLogs, theme]);
+
+  useEffect(() => {
+    if (!isOffline && isDirty && user && !isSyncing && !isSyncPaused) {
+      saveData();
+    }
+  }, [isOffline, isDirty, user, isSyncing, isSyncPaused]);
 
   useEffect(() => markDirty(), [exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, cardBillDates, paidBills, walletCards, cashbackLogs, theme, openRouterApiKey, kiwiNeonEarnRate]);
 

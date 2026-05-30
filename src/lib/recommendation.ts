@@ -103,7 +103,7 @@ export function getRecommendations(
 
   // Optimization: Hoist DEFAULT_EXCLUSIONS.find out of the map loop since catL, nameL, and platL are constant
   const isExcludedCatCache = DEFAULT_EXCLUSIONS.find(ex => catL.includes(ex) || nameL.includes(ex) || platL.includes(ex));
-  
+
   const isBmsOrDistrict = BMS_DISTRICT_REGEX.test(nameL);
   const isBmsOrDistrictOrBms = BMS_DISTRICT_BMS_REGEX.test(nameL);
 
@@ -139,9 +139,9 @@ export function getRecommendations(
   const isNameGeneric = (name: string, cat: string) => {
     if (name === cat) return true;
     const generics = [
-      'flight', 'flights', 'hotel', 'hotels', 'travel', 'dining', 'food', 'grocery', 'groceries', 
-      'movie', 'movies', 'cinema', 'theatre', 'shopping', 'apparel', 'clothes', 'clothing', 'fashion', 
-      'electronics', 'pharmacy', 'health', 'medicine', 'utility', 'utilities', 'bill', 'bills', 'recharge', 
+      'flight', 'flights', 'hotel', 'hotels', 'travel', 'dining', 'food', 'grocery', 'groceries',
+      'movie', 'movies', 'cinema', 'theatre', 'shopping', 'apparel', 'clothes', 'clothing', 'fashion',
+      'electronics', 'pharmacy', 'health', 'medicine', 'utility', 'utilities', 'bill', 'bills', 'recharge',
       'rent', 'insurance', 'tax', 'jewellery', 'jewelry', 'fuel', 'petrol', 'diesel', 'gas',
       'cab', 'taxi', 'commute', 'transport', 'train', 'bus', 'delivery', 'supermarket',
       'online', 'booking', 'store', 'shop', 'ticket', 'tickets', 'restaurant', 'cafe',
@@ -159,7 +159,7 @@ export function getRecommendations(
   const shouldShowOffer = (targetPlatform: string) => {
     let lowerTarget = targetPlatform.toLowerCase();
     if (lowerTarget === 'bms') lowerTarget = 'bookmyshow';
-    
+
     if (isGenericQuery) return true;
     return matchedSpecificPlatforms.has(lowerTarget);
   };
@@ -293,7 +293,7 @@ export function getRecommendations(
       if (isIntl) {
         isExcluded = true;
         benefitText = 'Excluded from earning rewards on International';
-  // HDFC Swiggy
+        // HDFC Swiggy
       } else if ((isOnline || isDining) && (isFoodDelivery || isDining || isGrocery) && shouldShowOffer('swiggy')) {
         const eligible = Math.min(amount, 15000);
         cashbackAmount = (eligible * 0.10);
@@ -675,6 +675,42 @@ export function getRecommendations(
     .filter(o => Math.abs(o.netValue - bestResult.netValue) < 0.01)
     .map(o => ({ card: o.card, benefit: o.benefitText }));
 
+  // Voucher recommendation logic
+  let voucherOption: Recommendation['voucherOption'] | undefined = undefined;
+  if (!isIntl && isOnline) {
+    if (nameL.includes('swiggy') || platL === 'swiggy') {
+      voucherOption = {
+        platform: 'Kotak Maximize / Gyftr',
+        discount: 'up to 10%',
+        cardBenefit: 'Buy Swiggy Vouchers on Kotak Maximize using Kotak 811 Metal Debit Card for maximum savings.'
+      };
+    } else if (nameL.includes('zomato')) {
+      voucherOption = {
+        platform: 'Amazon Pay / Cred',
+        discount: 'up to 8%',
+        cardBenefit: 'Purchase Zomato Vouchers on Amazon Pay or CRED using SBI Cashback card.'
+      };
+    } else if (nameL.includes('amazon') || nameL.includes('amzn')) {
+      voucherOption = {
+        platform: 'Amazon Gift Card',
+        discount: '5%',
+        cardBenefit: 'Buy Amazon Shopping Vouchers using SBI Cashback to get 5% cashback on the gift card.'
+      };
+    } else if (nameL.includes('flipkart') || nameL.includes('fkrt')) {
+      voucherOption = {
+        platform: 'Flipkart Gift Cards',
+        discount: '5%',
+        cardBenefit: 'Buy Flipkart Gift Cards via Amazon/Cred using SBI Cashback to earn 5% cashback.'
+      };
+    } else if (nameL.includes('zepto') || nameL.includes('blinkit')) {
+      voucherOption = {
+        platform: 'Instant Vouchers',
+        discount: 'up to 6%',
+        cardBenefit: 'Check Amazon/Cred for Zepto/Blinkit vouchers using SBI Cashback.'
+      };
+    }
+  }
+
   return {
     bestCard: bestResult.card,
     tiedCards: tiedCards.length > 1 ? tiedCards : undefined,
@@ -684,6 +720,7 @@ export function getRecommendations(
     cashbackEarned: bestResult.cashbackEarned,
     feesPaid: bestResult.feesPaid,
     alternatives: validOptions.slice(tiedCards.length, tiedCards.length + 3).map(s => ({ card: s.card, benefit: s.benefitText, netValue: round2(s.netValue) })),
-    availableOffers: availableOffers.filter(o => !o.cardId || !calculationResults.find(r => r.card.id === o.cardId)?.isExcluded)
+    availableOffers: availableOffers.filter(o => !o.cardId || !calculationResults.find(r => r.card.id === o.cardId)?.isExcluded),
+    voucherOption
   };
 }

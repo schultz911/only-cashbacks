@@ -27,7 +27,7 @@ export const VoucherSection: React.FC<VoucherSectionProps> = React.memo(({
             value={selectedVoucherPortal}
             onChange={setSelectedVoucherPortal}
             options={Object.keys(voucherPortals).map(portal => ({ 
-              label: portal === 'tata neu' ? 'Tata Neu' : portal.charAt(0).toUpperCase() + portal.slice(1), 
+              label: portal.toLowerCase() === 'tata neu' ? 'Tata Neu' : portal.charAt(0).toUpperCase() + portal.slice(1), 
               value: portal 
             }))}
             placeholder="Select a portal..."
