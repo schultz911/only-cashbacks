@@ -140,6 +140,14 @@ export async function categorizeMerchant(merchantName: string, apiKey?: string):
     return localMatch;
   }
 
+  const cacheKey = `oc_merchant_${merchantName.toLowerCase()}`;
+  try {
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      return JSON.parse(cached) as MerchantInfo;
+    }
+  } catch (e) {}
+
   try {
     const response = await fetch("/api/categorize", {
       method: "POST",
@@ -152,6 +160,7 @@ export async function categorizeMerchant(merchantName: string, apiKey?: string):
     if (response.ok) {
       const data = await response.json();
       if (data && data.category) {
+        try { localStorage.setItem(cacheKey, JSON.stringify(data)); } catch (e) {}
         return data as MerchantInfo;
       }
     } else {

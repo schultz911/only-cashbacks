@@ -1,9 +1,18 @@
 import express from "express";
 import path from "path";
+import { z } from "zod";
 
 import dotenv from "dotenv";
 
 dotenv.config();
+
+const MerchantInfoSchema = z.object({
+  name: z.string(),
+  category: z.string(),
+  isOnline: z.boolean(),
+  isP2P: z.boolean().optional(),
+  platform: z.string().optional(),
+});
 
 async function startServer() {
   const app = express();
@@ -20,6 +29,7 @@ async function startServer() {
     res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
     res.setHeader("Permissions-Policy", "geolocation=(), microphone=(), camera=()");
+    res.setHeader("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https: wss:; font-src 'self' data: https:;");
     next();
   });
 
@@ -142,8 +152,7 @@ Output strictly a JSON object matching this TypeScript interface:
           throw new Error(`OpenRouter API Error: ${response.status} ${await response.text()}`);
         }
         const data = await response.json();
-        console.log("OpenRouter Response Received.");
-        result = JSON.parse(data.choices[0]?.message?.content || "{}");
+        result = MerchantInfoSchema.parse(JSON.parse(data.choices[0]?.message?.content || "{}"));
       } else {
         console.warn("No OpenRouter API Key found.");
         return res.status(400).json({ error: "OpenRouter API Key is required" });

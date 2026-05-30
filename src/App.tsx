@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, Suspense, lazy } from 'react';
 import { Search, History, Plane, Loader2, Sparkles, Globe, Wallet, QrCode, X, ChevronDown, Check, UserCircle, LogOut, AlertCircle, Ticket, Tag, Info, RefreshCw, Trash2, Store, Moon, Sun, CloudOff, Cloud, Undo2, RotateCcw, Banknote, Download, PiggyBank } from 'lucide-react';
 
 import { motion, AnimatePresence } from 'motion/react';
@@ -15,10 +15,12 @@ import { CardItem } from './components/CardItem';
 import { BillReminders } from './components/BillReminders';
 import { BillDateSelector } from './components/BillDateSelector';
 import { LoungeTrackerItem } from './components/LoungeTrackerItem';
-import { LoungeTrackerModal, parseLoungeBenefit } from './components/LoungeTrackerModal';
+import { parseLoungeBenefit } from './components/LoungeTrackerModal';
 import { CustomSelect } from './components/CustomSelect';
-import { WalletManagerModal } from './components/WalletManagerModal';
-import { DashboardModal } from './components/DashboardModal';
+
+const LoungeTrackerModal = lazy(() => import('./components/LoungeTrackerModal').then(module => ({ default: module.LoungeTrackerModal })));
+const WalletManagerModal = lazy(() => import('./components/WalletManagerModal').then(module => ({ default: module.WalletManagerModal })));
+const DashboardModal = lazy(() => import('./components/DashboardModal').then(module => ({ default: module.DashboardModal })));
 import { Header } from './components/Header';
 import { VoucherSection } from './components/VoucherSection';
 import { SearchSection } from './components/SearchSection';
@@ -244,7 +246,10 @@ export default function App() {
 
     for (const card of CARD_DATA) {
       if (card.isDummy) continue;
-      const resetDay = card.type === 'Credit' ? (cardBillDates[card.id] || 1) : 1;
+      let resetDay = card.type === 'Credit' ? (cardBillDates[card.id] || 1) : 1;
+      if (card.id === 'axis-myzone') {
+        resetDay = 1;
+      }
       if (todayDate !== resetDay) continue;
       if (lastResetDates[card.id] === todayKey) continue;
       const currentCycle = getCycleForCard(card.id, cardBillDates);
@@ -1125,17 +1130,19 @@ export default function App() {
       </AnimatePresence>
 
       <AnimatePresence>
-        <LoungeTrackerModal
-          isOpen={isLoungeOpen}
-          onClose={() => setIsLoungeOpen(false)}
-          loungeTab={loungeTab}
-          setLoungeTab={setLoungeTab}
-          loungePassesUsed={loungePassesUsed}
-          setLoungePassesUsed={setLoungePassesUsed}
-          loungeMilestonesVerified={loungeMilestonesVerified}
-          setLoungeMilestonesVerified={setLoungeMilestonesVerified}
-          kiwiNeonEarnRate={kiwiNeonEarnRate}
-        />
+        <Suspense fallback={null}>
+          <LoungeTrackerModal
+            isOpen={isLoungeOpen}
+            onClose={() => setIsLoungeOpen(false)}
+            loungeTab={loungeTab}
+            setLoungeTab={setLoungeTab}
+            loungePassesUsed={loungePassesUsed}
+            setLoungePassesUsed={setLoungePassesUsed}
+            loungeMilestonesVerified={loungeMilestonesVerified}
+            setLoungeMilestonesVerified={setLoungeMilestonesVerified}
+            kiwiNeonEarnRate={kiwiNeonEarnRate}
+          />
+        </Suspense>
       </AnimatePresence>
 
       <AnimatePresence>
@@ -1365,18 +1372,20 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      <WalletManagerModal
-        isOpen={isWalletOpen}
-        onClose={() => setIsWalletOpen(false)}
-        walletCards={walletCards}
-        setWalletCards={setWalletCards}
-      />
-      <DashboardModal
-        isOpen={isDashboardOpen}
-        onClose={() => setIsDashboardOpen(false)}
-        logs={cashbackLogs}
-        setLogs={setCashbackLogs}
-      />
+      <Suspense fallback={null}>
+        <WalletManagerModal
+          isOpen={isWalletOpen}
+          onClose={() => setIsWalletOpen(false)}
+          walletCards={walletCards}
+          setWalletCards={setWalletCards}
+        />
+        <DashboardModal
+          isOpen={isDashboardOpen}
+          onClose={() => setIsDashboardOpen(false)}
+          logs={cashbackLogs}
+          setLogs={setCashbackLogs}
+        />
+      </Suspense>
 
       <footer className="text-center py-6 mt-8 text-xs text-gray-400 font-medium px-6 flex flex-col items-center gap-3">
         <div>
