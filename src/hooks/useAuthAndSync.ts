@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { auth, db, handleFirestoreError, OperationType, googleProvider } from '../firebase';
 import { onAuthStateChanged, User, signInWithPopup, signInWithRedirect, signOut } from 'firebase/auth';
-import { doc, getDocFromServer, setDoc, onSnapshot, deleteDoc } from 'firebase/firestore';
+import { doc, getDocFromServer, setDoc, onSnapshot } from 'firebase/firestore';
 import { getInitialState, safeSetItem } from '../lib/storage';
 
 export function useAuthAndSync(latestStateRef: React.MutableRefObject<any>, skipSyncRef: React.MutableRefObject<boolean>) {

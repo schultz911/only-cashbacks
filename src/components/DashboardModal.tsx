@@ -71,6 +71,13 @@ export function DashboardModal({ isOpen, onClose, logs, setLogs }: Props) {
             onClick={(e) => e.stopPropagation()}
             className="bg-white/90 dark:bg-gray-900/90 oled:bg-black/95 backdrop-blur-xl border border-gray-100 dark:border-gray-800/80 rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl flex flex-col items-center text-center relative overflow-hidden"
           >
+            <button
+              onClick={handleClose}
+              aria-label="Close Savings Dashboard"
+              className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-500 dark:text-gray-400 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none z-10"
+            >
+              <X className="w-4 h-4" />
+            </button>
             {showConfirm ? (
               <motion.div 
                 initial={{ opacity: 0, scale: 0.9 }}

@@ -104,14 +104,11 @@ export function getRecommendations(
   // Optimization: Hoist DEFAULT_EXCLUSIONS.find out of the map loop since catL, nameL, and platL are constant
   const isExcludedCatCache = DEFAULT_EXCLUSIONS.find(ex => catL.includes(ex) || nameL.includes(ex) || platL.includes(ex));
   
-  const isMoviePlatName = MOVIE_PLATFORM_REGEX.test(nameL);
-  const isDiningPlatName = DINING_PLATFORM_REGEX.test(nameL);
   const isBmsOrDistrict = BMS_DISTRICT_REGEX.test(nameL);
   const isBmsOrDistrictOrBms = BMS_DISTRICT_BMS_REGEX.test(nameL);
 
   // Optimization: Precompute values that are constant across all cards
   const isUtilityCat = catL.includes('utility') || catL.includes('utilities');
-  const isGamingCat = catL.includes('gaming');
   const isGamblingName = nameL.includes('gambling');
   const isGamblingCat = catL.includes('gambling');
   const isTataNeuUtility = catL.includes('utilities') || nameL.includes('internet') || nameL.includes('bill') || nameL.includes('bills') || nameL.includes('toll') || nameL.includes('tata play') || nameL.includes('fastag');
@@ -129,8 +126,6 @@ export function getRecommendations(
   const cinepolisDiscount = Math.min(amount * 0.25, 75);
   const ajioDisc = amount * 0.20;
 
-  const isMovieCatOrName = catL.includes('movie') || nameL.includes('movie');
-  const isDiningCatOrName = catL.includes('dining') || nameL.includes('dining');
   const isDistrictPlat = platL && platL.includes('district');
   const isCinepolisName = nameL.includes('cinepolis');
 

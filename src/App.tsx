@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useRef, useMemo, Suspense, lazy } from 'react';
-import { Search, Loader2, Sparkles, Wallet, X, ChevronDown, Check, AlertCircle, Ticket, Tag, Info, Trash2, Store, PiggyBank, Plane } from 'lucide-react';
+import { Search, Loader2, Sparkles, Wallet, X, ChevronDown, Check, AlertCircle, Ticket, Tag, Info, Trash2, Store, PiggyBank, Plane, CloudOff } from 'lucide-react';
 
 import { motion, AnimatePresence } from 'motion/react';
 import { categorizeMerchant } from './services/gemini';
@@ -37,6 +37,18 @@ import { useSearchAndCurrency } from './hooks/useSearchAndCurrency';
 import { usePushNotifications } from './hooks/usePushNotifications';
 export default function App() {
   const skipSyncRef = useRef(false);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const {
     user, isAuthLoading, isDataLoaded,
@@ -504,6 +516,20 @@ export default function App() {
         handleLogin={handleLogin}
         setShowDeleteConfirm={setShowDeleteConfirm}
       />
+
+      <AnimatePresence>
+        {isOffline && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="bg-amber-500 text-white font-bold text-xs uppercase tracking-widest text-center py-2.5 px-4 flex items-center justify-center gap-2 shadow-inner"
+          >
+            <CloudOff className="w-4 h-4 shrink-0" />
+            <span>Offline Mode: Changes will be saved locally and synced when online.</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <main className="max-w-6xl mx-auto px-6 pt-8">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
