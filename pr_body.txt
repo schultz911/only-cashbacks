@@ -1,8 +1,0 @@
-🎯 **What:** The vulnerability fixed
-The `apiKey` submitted in the request body to `/api/categorize` was not being validated for carriage return (`\r`) or newline (`\n`) characters before being injected into the HTTP `Authorization` header of an external request.
-
-⚠️ **Risk:** The potential impact if left unfixed
-An attacker could perform an HTTP Header Injection (also known as CRLF injection) by submitting a malicious `apiKey` payload. This could allow them to inject custom HTTP headers into outgoing server-side requests (e.g., to OpenRouter), which could lead to request smuggling, authentication bypass, or other unintended behavior in upstream services.
-
-🛡️ **Solution:** How the fix addresses the vulnerability
-A simple regex check (`/[\r\n]/.test(apiKey)`) was added to the input validation for `apiKey`. If newline or carriage return characters are detected, the server immediately returns a 400 Bad Request error. We also documented this security learning in `.Jules/sentinel.md`.

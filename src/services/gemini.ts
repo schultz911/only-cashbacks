@@ -6,6 +6,9 @@
 import { MerchantInfo } from "../types";
 
 const EXHAUSTIVE_MERCHANT_MAPPINGS = [
+  // P2P / Personal Transfers
+  { pattern: /\b(?:p2p|splitwise|friend|family|mom|dad|brother|sister|wife|husband|upi transfer|transfer to|pay to|personal qr|self transfer|peer to peer)\b/i, category: "Personal", isOnline: false, isP2P: true },
+
   // Swiggy & Zomato Ecosystem
   { pattern: /swiggy|toing/i, category: "Food Delivery", isOnline: true, isP2P: false, platform: "Swiggy" },
   { pattern: /zomato|bistro/i, category: "Food Delivery", isOnline: true, isP2P: false, platform: "Zomato" },

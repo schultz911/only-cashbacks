@@ -35,7 +35,14 @@ import { useWalletState } from './hooks/useWalletState';
 import { useAuthAndSync } from './hooks/useAuthAndSync';
 import { useSearchAndCurrency } from './hooks/useSearchAndCurrency';
 import { usePushNotifications } from './hooks/usePushNotifications';
+import { useRegisterSW } from 'virtual:pwa-register/react';
+
 export default function App() {
+  const {
+    needRefresh: [needRefresh, setNeedRefresh],
+    updateServiceWorker,
+  } = useRegisterSW();
+
   const skipSyncRef = useRef(false);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
@@ -671,6 +678,18 @@ export default function App() {
                             </div>
                           )}
                         </div>
+
+                        {lastSearchInfo?.isP2P && (
+                          <div className="p-4 bg-amber-50/80 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 rounded-2xl flex items-start gap-3 text-left shadow-sm">
+                            <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5 animate-pulse" />
+                            <div className="space-y-0.5">
+                              <span className="text-xs font-bold text-amber-800 dark:text-amber-400 block uppercase tracking-wide">P2P UPI Exclusion Warning</span>
+                              <span className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed font-semibold block">
+                                Peer-to-peer personal transfers are excluded from standard credit card rewards. Use bank-account UPI (CRED, Amazon) or Kotak 811.
+                              </span>
+                            </div>
+                          </div>
+                        )}
 
                         <p className="text-sm font-medium text-gray-700 leading-relaxed whitespace-pre-line">{recommendation.reason}</p>
 
@@ -1508,6 +1527,28 @@ export default function App() {
             {toast.type === 'error' && <div className="w-6 h-6 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center"><AlertCircle className="w-4 h-4" /></div>}
             {toast.type === 'info' && <div className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center"><Info className="w-4 h-4" /></div>}
             <span className="text-white text-sm font-semibold tracking-wide pr-2">{toast.message}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {needRefresh && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 50, scale: 0.95 }}
+            className="fixed bottom-6 right-6 z-[450] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 px-5 py-4 rounded-3xl shadow-2xl flex items-center gap-4 font-semibold text-sm max-w-sm backdrop-blur-xl"
+          >
+            <div className="flex flex-col text-left">
+              <span className="text-gray-950 dark:text-white font-bold leading-tight">Update Available</span>
+              <span className="text-gray-500 dark:text-gray-400 text-xs font-medium mt-0.5">A new version of OnlyCashbacks is ready.</span>
+            </div>
+            <button 
+              onClick={() => updateServiceWorker(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-xl transition-all shadow hover:shadow-lg active:scale-95 shrink-0"
+            >
+              Reload
+            </button>
           </motion.div>
         )}
       </AnimatePresence>

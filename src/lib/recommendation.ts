@@ -175,7 +175,17 @@ export function getRecommendations(
     let discountAmount = 0;
     let cardToUse = { ...card };
 
-    if (isScanToPay) {
+    if (merchant.isP2P) {
+      if (!['amazon-pay-upi', 'cred-pay-upi', 'kotak-811-infinity'].includes(card.id)) {
+        isExcluded = true;
+        benefitText = card.id === 'kiwi-neon'
+          ? "RuPay Credit Cards cannot be used for personal P2P transfers"
+          : "Not supported for P2P transfers";
+      }
+      if (card.id === 'kotak-811-infinity') {
+        cardToUse.name = '811 Scan & Pay';
+      }
+    } else if (isScanToPay) {
       if (!ALLOWED_UPI_CARDS.includes(card.id)) {
         isExcluded = true;
         benefitText = "Not a Scan & Pay option";
@@ -607,7 +617,10 @@ export function getRecommendations(
   const bestResult = validOptions[0];
 
   let reason = '';
-  if (isIntl) {
+  if (merchant.isP2P) {
+    reason = "Personal P2P UPI transfers are excluded from standard credit card rewards. Use bank account-linked UPI (CRED, Amazon) or Kotak 811 Scan & Pay.";
+  }
+  else if (isIntl) {
     if (bestResult.card.id === 'kotak-811-infinity') reason = "Kotak 811 is best for small international purchases as the 5% cashback beats the forex markup, limited to ₹2,000 per transaction.";
     else reason = "Calculates exact net value factoring in Forex markup + 18% GST vs Cashback earned.";
   }
