@@ -16,7 +16,6 @@ import { BillReminders } from './components/BillReminders';
 import { BillDateSelector } from './components/BillDateSelector';
 import { LoungeTrackerItem } from './components/LoungeTrackerItem';
 import { parseLoungeBenefit } from './components/LoungeTrackerModal';
-import { CustomSelect } from './components/CustomSelect';
 
 const LoungeTrackerModal = lazy(() => import('./components/LoungeTrackerModal').then(module => ({ default: module.LoungeTrackerModal })));
 const WalletManagerModal = lazy(() => import('./components/WalletManagerModal').then(module => ({ default: module.WalletManagerModal })));
@@ -110,6 +109,8 @@ export default function App() {
 
   const [isApiModalOpen, setIsApiModalOpen] = useState(false);
   const [tempApiKey, setTempApiKey] = useState('');
+  const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
+  const [testErrorMessage, setTestErrorMessage] = useState('');
 
   const [isWalletOpen, setIsWalletOpen] = useState(false);
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
@@ -127,6 +128,62 @@ export default function App() {
   }, []);
 
   const fuse = useMemo(() => new Fuse(KNOWN_MERCHANTS, { threshold: 0.3 }), []);
+
+  useEffect(() => {
+    if (isApiModalOpen) {
+      setTestStatus('idle');
+      setTestErrorMessage('');
+    }
+  }, [isApiModalOpen]);
+
+  const handleTestConnection = async () => {
+    if (!tempApiKey.trim()) {
+      setTestStatus('error');
+      setTestErrorMessage('API key cannot be empty.');
+      return;
+    }
+    if (!tempApiKey.startsWith('sk-or-')) {
+      setTestStatus('error');
+      setTestErrorMessage('OpenRouter keys typically start with "sk-or-".');
+      return;
+    }
+
+    setTestStatus('testing');
+    setTestErrorMessage('');
+    try {
+      const response = await fetch("/api/categorize", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ merchantName: "Test Connection Check", apiKey: tempApiKey })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.category) {
+          setTestStatus('success');
+        } else {
+          setTestStatus('error');
+          setTestErrorMessage('Received invalid response structure.');
+        }
+      } else {
+        const errText = await response.text();
+        let parsedErr = "Validation failed.";
+        try {
+          const errObj = JSON.parse(errText);
+          if (errObj.error) parsedErr = errObj.error;
+        } catch {
+          if (errText) parsedErr = errText;
+        }
+        setTestStatus('error');
+        setTestErrorMessage(parsedErr);
+      }
+    } catch (error: any) {
+      setTestStatus('error');
+      setTestErrorMessage(error.message || 'Network request failed.');
+    }
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -496,8 +553,6 @@ export default function App() {
               voucherPortals={VOUCHER_PORTALS}
             />
 
-
-            {/* Deprecated Quick Categories shortcut area */}
           </div>
 
           {/* Right Column - Results */}
@@ -1282,6 +1337,29 @@ export default function App() {
                     placeholder="sk-or-v1-..."
                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 ring-blue-500 transition-all font-mono text-sm"
                   />
+                  <div className="flex items-center justify-between pt-2">
+                    <button
+                      type="button"
+                      onClick={handleTestConnection}
+                      disabled={testStatus === 'testing'}
+                      className="text-xs font-semibold text-blue-600 hover:text-blue-700 disabled:opacity-50 flex items-center gap-1.5"
+                    >
+                      {testStatus === 'testing' && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                      Test Connection
+                    </button>
+
+                    {testStatus === 'success' && (
+                      <span className="text-xs font-bold text-emerald-600 flex items-center gap-1">
+                        <Check className="w-3.5 h-3.5" strokeWidth={3} /> Connection OK
+                      </span>
+                    )}
+
+                    {testStatus === 'error' && (
+                      <span className="text-xs font-semibold text-red-500 max-w-[200px] text-right truncate" title={testErrorMessage}>
+                        {testErrorMessage}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex gap-3 pt-4">
