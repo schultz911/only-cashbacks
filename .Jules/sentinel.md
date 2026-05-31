@@ -8,7 +8,7 @@
 
 **Prevention:** Always validate all user input on API endpoints (length checks, type checks, and content sanitation) before processing, especially before injecting into LLM contexts or making third party external API requests. Added `express.json({ limit: "10kb" })` for base payload protection and explicit bounds checking on `merchantName` and `apiKey`.
 
-## $(date +%Y-%m-%d) - HTTP Header Injection via API Key
+## 2025-05-18 - HTTP Header Injection via API Key
 
 **Vulnerability:** The API endpoint `/api/categorize` allowed newline (\n) and carriage return (\r) characters in the `apiKey` property of the JSON body. This key was directly inserted into an HTTP Authorization header in an outgoing fetch request, which could allow an attacker to inject custom HTTP headers or modify the request payload.
 

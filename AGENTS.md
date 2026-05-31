@@ -17,6 +17,12 @@ Welcome to OnlyCashbacks! This file provides the context, structure, and standar
 - [vite.config.ts](file:///c:/only-cashbacks/vite.config.ts): Configuration for Vite bundler, PWA features, and tailwind.
 - [firestore.rules](file:///c:/only-cashbacks/firestore.rules): Security rules defining read/write permissions for Firestore databases.
 - [src/](file:///c:/only-cashbacks/src/): Source code of the frontend React application.
+- [setup.sh](file:///c:/only-cashbacks/setup.sh): Unix-based environment setup script for installing dependencies and preparing the app.
+- [setup.ps1](file:///c:/only-cashbacks/setup.ps1): Windows PowerShell environment setup script.
+- **[.Jules/](file:///c:/only-cashbacks/.Jules/)**: Directory containing agent guidelines, learnings, and guardrails:
+  - [bolt.md](file:///c:/only-cashbacks/.Jules/bolt.md): Performance optimization patterns (e.g., O(1) card lookup dictionaries).
+  - [palette.md](file:///c:/only-cashbacks/.Jules/palette.md): Accessibility/UX standards (e.g., ARIA labels for icon buttons).
+  - [sentinel.md](file:///c:/only-cashbacks/.Jules/sentinel.md): Security vulnerability learnings and prevention checklists.
 
 ## 🛠️ Environment Configuration
 
@@ -26,6 +32,9 @@ Ensure the following variables are set for fully functioning integrations:
 
 ## 🧪 Development Workflow
 
+- **Bootstrap/Setup environment:**
+  - Unix: `chmod +x setup.sh && ./setup.sh`
+  - Windows: `powershell -ExecutionPolicy Bypass -File .\setup.ps1`
 - **Install dependencies:** `npm install`
 - **Start development server:** `npm run dev`
 - **Build production bundle:** `npm run build`
