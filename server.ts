@@ -36,48 +36,48 @@ async function startServer() {
   app.use(express.json({ limit: "10kb" })); // Add payload size limit for security
 
 
-// Security: Custom in-memory rate limiter to protect external API calls
-const rateLimitCache = new Map<string, { count: number, resetTime: number }>();
-const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
-const RATE_LIMIT_MAX_REQUESTS = 30; // Max requests per window per IP
+  // Security: Custom in-memory rate limiter to protect external API calls
+  const rateLimitCache = new Map<string, { count: number, resetTime: number }>();
+  const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
+  const RATE_LIMIT_MAX_REQUESTS = 30; // Max requests per window per IP
 
-function rateLimiter(req: express.Request, res: express.Response, next: express.NextFunction) {
-  const ip = req.ip || req.connection.remoteAddress || 'unknown';
-  const now = Date.now();
+  function rateLimiter(req: express.Request, res: express.Response, next: express.NextFunction) {
+    const ip = req.ip || req.connection.remoteAddress || 'unknown';
+    const now = Date.now();
 
-  if (!rateLimitCache.has(ip)) {
-    rateLimitCache.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
-    return next();
-  }
-
-  const limitData = rateLimitCache.get(ip)!;
-
-  if (now > limitData.resetTime) {
-    // Reset window
-    limitData.count = 1;
-    limitData.resetTime = now + RATE_LIMIT_WINDOW_MS;
-    return next();
-  }
-
-  limitData.count += 1;
-
-  if (limitData.count > RATE_LIMIT_MAX_REQUESTS) {
-    console.warn(`Rate limit exceeded for IP: ${ip}`);
-    return res.status(429).json({ error: "Too many requests, please try again later." });
-  }
-
-  next();
-}
-
-// Optional: cleanup periodically to prevent memory leaks
-setInterval(() => {
-  const now = Date.now();
-  for (const [ip, data] of rateLimitCache.entries()) {
-    if (now > data.resetTime) {
-      rateLimitCache.delete(ip);
+    if (!rateLimitCache.has(ip)) {
+      rateLimitCache.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
+      return next();
     }
+
+    const limitData = rateLimitCache.get(ip)!;
+
+    if (now > limitData.resetTime) {
+      // Reset window
+      limitData.count = 1;
+      limitData.resetTime = now + RATE_LIMIT_WINDOW_MS;
+      return next();
+    }
+
+    limitData.count += 1;
+
+    if (limitData.count > RATE_LIMIT_MAX_REQUESTS) {
+      console.warn(`Rate limit exceeded for IP: ${ip}`);
+      return res.status(429).json({ error: "Too many requests, please try again later." });
+    }
+
+    next();
   }
-}, RATE_LIMIT_WINDOW_MS).unref();
+
+  // Optional: cleanup periodically to prevent memory leaks
+  setInterval(() => {
+    const now = Date.now();
+    for (const [ip, data] of rateLimitCache.entries()) {
+      if (now > data.resetTime) {
+        rateLimitCache.delete(ip);
+      }
+    }
+  }, RATE_LIMIT_WINDOW_MS).unref();
 
 
   // API Route for categorization
@@ -103,7 +103,7 @@ setInterval(() => {
       // Determine which API to use
       const userOpenRouterKey = apiKey;
       const envOpenRouterKey = process.env.OPENROUTER_API_KEY;
-      
+
       const effectiveOpenRouterKey = userOpenRouterKey || envOpenRouterKey;
 
       const systemPrompt = `You are a professional merchant analyst for a critical data collection organization. Analyze this transaction destination and categorize it. 
@@ -138,7 +138,7 @@ Output strictly a JSON object matching this TypeScript interface:
             "X-Title": "Only Cashbacks"
           },
           body: JSON.stringify({
-            model: "google/gemini-3.1-flash-lite",
+            model: "google/gemini-3-flash-preview",
             temperature: 0,
             response_format: { type: "json_object" },
             messages: [
