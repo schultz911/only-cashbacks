@@ -29,7 +29,7 @@ async function startServer() {
     res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
     res.setHeader("Permissions-Policy", "geolocation=(), microphone=(), camera=()");
-    res.setHeader("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; connect-src 'self' https: wss:; font-src 'self' data: https: https://fonts.gstatic.com;");
+    res.setHeader("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; connect-src 'self' https: wss:; font-src 'self' data: https: https://fonts.gstatic.com;");
     next();
   });
 
@@ -93,8 +93,8 @@ setInterval(() => {
       if (merchantName.length > 100) {
         return res.status(400).json({ error: "merchantName exceeds maximum length of 100 characters" });
       }
-      if (apiKey && (typeof apiKey !== 'string' || /[\r\n]/.test(apiKey))) {
-        return res.status(400).json({ error: "Invalid API key format" });
+      if (apiKey && (typeof apiKey !== 'string' || !/^sk-or-[a-zA-Z0-9_-]+$/.test(apiKey))) {
+        return res.status(400).json({ error: "Invalid API key format. Key must start with 'sk-or-' and consist of only alphanumeric characters, dashes, and underscores." });
       }
 
       const sanitizedMerchantName = merchantName.trim();

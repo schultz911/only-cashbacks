@@ -22,8 +22,6 @@ const FOOD_DELIVERY_EXCLUSIONS = ['dineout', 'district', 'eazydiner'];
 const DINING_KEYWORDS = ['dining', 'dine', 'restaurant', 'eatery', 'cafe', 'district', 'dineout', 'eazydiner'];
 const MOVIE_KEYWORDS = ['movie', ...MOVIE_PLATFORMS];
 
-const MOVIE_PLATFORM_REGEX = /cinepolis|pvr|inox|bookmyshow|district|bms|paytm insider|townscript|mera event|cinema|theatre/i;
-const DINING_PLATFORM_REGEX = /swiggy|zomato|eazydiner|dineout|district|toing|bistro|blinkit|zepto cafe|eatsure|fresh menu|box8|eat club|uber eats|domino|pizza hut|magicpin|starbucks|mcdonald|kfc|burger king|haldiram|bikanervala|cafe|restaurant|diner|eatery|pub|bar|coffee/i;
 const BMS_DISTRICT_REGEX = /bookmyshow|district/i;
 const BMS_DISTRICT_BMS_REGEX = /bookmyshow|bms|district/i;
 

@@ -26,7 +26,7 @@
       "node",
       "react",
       "react-dom",
-      "express", "bun",
+      "express",
       "vite-plugin-pwa/client"
     ]
   }

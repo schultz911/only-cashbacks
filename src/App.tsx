@@ -14,7 +14,6 @@ import { CARD_DATA } from './data/cards';
 import { CardItem } from './components/CardItem';
 import { BillReminders } from './components/BillReminders';
 import { BillDateSelector } from './components/BillDateSelector';
-import { parseLoungeBenefit } from './components/LoungeTrackerModal';
 
 const LoungeTrackerModal = lazy(() => import('./components/LoungeTrackerModal').then(module => ({ default: module.LoungeTrackerModal })));
 const WalletManagerModal = lazy(() => import('./components/WalletManagerModal').then(module => ({ default: module.WalletManagerModal })));
@@ -24,7 +23,6 @@ import { VoucherSection } from './components/VoucherSection';
 import { SearchSection } from './components/SearchSection';
 import { cn } from './lib/utils';
 import { db } from './firebase';
-import { User } from 'firebase/auth';
 import { doc, deleteDoc } from 'firebase/firestore';
 
 import Fuse from 'fuse.js';
