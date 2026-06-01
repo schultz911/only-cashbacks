@@ -50,6 +50,29 @@ describe('getCycleForCard', () => {
     const dates = { 'credit-card-1': 20 };
     expect(getCycleForCard('credit-card-1', dates)).toBe('2023-12');
   });
+
+  it('should return current month/year if today == bill day exactly', () => {
+    const dates = { 'credit-card-1': 15 }; // today is 15
+    expect(getCycleForCard('credit-card-1', dates)).toBe('2024-5');
+  });
+
+  it('should fall back correctly for unknown cards not in CARD_DICT', () => {
+    const dates = { 'unknown-card-123': 20 }; // not in mock CARD_DICT
+    expect(getCycleForCard('unknown-card-123', dates)).toBe('2024-4');
+  });
+
+  it('should handle leap year correctly (Feb 29)', () => {
+    vi.setSystemTime(new Date(2024, 1, 29)); // Feb 29, 2024
+    const dates = { 'credit-card-1': 30 }; // bill day is 30, so today (29) < 30
+    expect(getCycleForCard('credit-card-1', dates)).toBe('2024-1');
+  });
+
+  it('should handle non-leap year correctly for end of Feb', () => {
+    vi.setSystemTime(new Date(2023, 1, 28)); // Feb 28, 2023
+    const dates = { 'credit-card-1': 30 }; // bill day is 30, today (28) < 30
+    expect(getCycleForCard('credit-card-1', dates)).toBe('2023-1');
+  });
+
 });
 
 
