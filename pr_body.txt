@@ -1,0 +1,3 @@
+🎯 **What:** Tested the `getQuarterCycle` function in `src/lib/recommendation.ts` and fixed an underlying bug where the string formatter was slightly off the intended contract `Q{quarter}-{year}`.
+📊 **Coverage:** Mocked dates successfully using Vitest fake timers and setSystemTime, covering scenarios at the start and end of all 4 quarters, edge cases including Feb 29 for a leap year, and various other years. Added a basic vitest.config.ts.
+✨ **Result:** Enhanced the unit test suite with 100% test coverage over `getQuarterCycle`, securing codebase reliability and making sure future refactoring does not break the expected cycle return string format.
