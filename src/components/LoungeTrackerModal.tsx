@@ -6,7 +6,13 @@ import { CustomSelect } from './CustomSelect';
 import { cn } from '../lib/utils';
 import React from 'react';
 
+const BENEFIT_CACHE = new Map<string, { spend: number, isFree: boolean, passesStr: string, passesCount: number, description: string }>();
+
 export const parseLoungeBenefit = (b: { value: string, description: string }) => {
+  const cacheKey = `${b.value}|${b.description}`;
+  const cached = BENEFIT_CACHE.get(cacheKey);
+  if (cached) return cached;
+
   let spend = 0;
   let isFree = false;
   const descLocal = b.description.toLowerCase();
@@ -21,9 +27,10 @@ export const parseLoungeBenefit = (b: { value: string, description: string }) =>
     }
   }
 
-  let passesStr = b.value.replace('/qtr', ' / Quarter')
-    .replace('/milestone', ' / Milestone')
-    .replace('/qr', ' / Quarter');
+  let passesStr = b.value;
+  if (passesStr.includes('/qtr')) passesStr = passesStr.replace('/qtr', ' / Quarter');
+  else if (passesStr.includes('/milestone')) passesStr = passesStr.replace('/milestone', ' / Milestone');
+  else if (passesStr.includes('/qr')) passesStr = passesStr.replace('/qr', ' / Quarter');
 
   let passesCount = 0;
   const numMatch = passesStr.match(/(\d+)/);
@@ -31,7 +38,9 @@ export const parseLoungeBenefit = (b: { value: string, description: string }) =>
     passesCount = parseInt(numMatch[1], 10);
   }
 
-  return { spend, isFree, passesStr, passesCount, description: b.description };
+  const result = { spend, isFree, passesStr, passesCount, description: b.description };
+  BENEFIT_CACHE.set(cacheKey, result);
+  return result;
 };
 
 interface LoungeTrackerModalProps {
