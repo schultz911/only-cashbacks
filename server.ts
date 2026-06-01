@@ -1,4 +1,5 @@
 import express from "express";
+import compression from "compression";
 import path from "path";
 import { z } from "zod";
 
@@ -19,6 +20,7 @@ async function startServer() {
   const PORT = Number(process.env.PORT) || 3000;
 
   app.disable("x-powered-by"); // Security: Hide Express technology stack
+  app.use(compression()); // Compress all responses to reduce network egress
   app.set("trust proxy", 1); // Security: Ensure req.ip works behind reverse proxies for rate limiting
 
   // Security headers middleware
