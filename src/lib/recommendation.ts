@@ -33,9 +33,11 @@ const hasKeyword = (targets: string[], keywords: string[]) =>
   keywords.some(keyword => targets.some(target => target.includes(keyword)));
 
 export function getQuarterCycle(): string {
-  const now = new Date();
-  const quarter = Math.floor(now.getMonth() / 3) + 1;
-  return `${now.getFullYear()}-Q${quarter}`;
+  const date = new Date();
+  const month = date.getMonth();
+  const year = date.getFullYear();
+  const quarter = Math.floor(month / 3) + 1;
+  return `Q${quarter}-${year}`;
 }
 
 
