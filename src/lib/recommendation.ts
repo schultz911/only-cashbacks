@@ -4,7 +4,7 @@
  */
 
 import { Card, MerchantInfo, Recommendation } from '../types';
-import { CARD_DATA } from '../data/cards';
+import { CARD_DATA, CARD_DICT } from '../data/cards';
 
 const TATA_NEU_MERCHANTS = ['croma', 'westside', 'zudio', 'ihcl', 'bigbasket', '1mg', 'cliq', 'air india', 'air india express', 'qmin', 'cult', 'tata play', 'titan', 'tanishq', 'mia', 'fastrack', 'caratlane', 'helios', 'zoya'];
 const ALLOWED_UPI_CARDS = ['kiwi-neon', 'amazon-pay-upi', 'cred-pay-upi', 'kotak-811-infinity'];
@@ -40,8 +40,11 @@ export function getQuarterCycle(): string {
 
 export function getCycleForCard(cardId: string, cardBillDates: Record<string, number>): string {
   let billDay = cardBillDates[cardId] || 1;
-  const card = CARD_DATA.find(c => c.id === cardId);
+  const card = CARD_DICT[cardId];
   if (card && card.type === 'Debit') {
+    billDay = 1;
+  }
+  if (cardId === 'axis-myzone') {
     billDay = 1;
   }
 
@@ -642,6 +645,26 @@ export function getRecommendations(
     reason += " Also, don't forget to redeem your Indigo BluChips!";
   }
 
+  // Fallback for offline Kiwi Neon
+  let finalBestResult = bestResult;
+  if (!isOnline && !isScanToPay && walletCards?.includes('kiwi-neon')) {
+    const kiwiNeonNetValueScan = amount * (kiwiNeonEarnRate / 100);
+    if (kiwiNeonNetValueScan > bestResult.netValue) {
+      const kiwiCard = CARD_DICT['kiwi-neon'];
+      if (kiwiCard) {
+        finalBestResult = {
+          card: kiwiCard,
+          netValue: kiwiNeonNetValueScan,
+          cashbackEarned: kiwiNeonNetValueScan,
+          feesPaid: 0,
+          benefitText: `${kiwiNeonEarnRate}% Cashback on Scan & Pay`,
+          isExcluded: false
+        };
+        reason = `Instead of using a card normally, you will get better returns if you scan and pay using the Kiwi Neon card (${kiwiNeonEarnRate}% back).`;
+      }
+    }
+  }
+
   const availableOffers: { id: string; icon: string; title: string; description: string; cardId?: string; category: string; }[] = [];
 
   const kCycle = getCycleForCard('kotak-811-infinity', cardBillDates);
@@ -686,17 +709,17 @@ export function getRecommendations(
   }
 
   const tiedCards = validOptions
-    .filter(o => Math.abs(o.netValue - bestResult.netValue) < 0.01)
+    .filter(o => Math.abs(o.netValue - finalBestResult.netValue) < 0.01)
     .map(o => ({ card: o.card, benefit: o.benefitText }));
 
   return {
-    bestCard: bestResult.card,
+    bestCard: finalBestResult.card,
     tiedCards: tiedCards.length > 1 ? tiedCards : undefined,
     reason,
-    expectedBenefit: bestResult.benefitText,
-    netValue: bestResult.netValue,
-    cashbackEarned: bestResult.cashbackEarned,
-    feesPaid: bestResult.feesPaid,
+    expectedBenefit: finalBestResult.benefitText,
+    netValue: finalBestResult.netValue,
+    cashbackEarned: finalBestResult.cashbackEarned,
+    feesPaid: finalBestResult.feesPaid,
     alternatives: validOptions.slice(tiedCards.length, tiedCards.length + 3).map(s => ({ card: s.card, benefit: s.benefitText, netValue: round2(s.netValue) })),
     availableOffers: availableOffers.filter(o => !o.cardId || !calculationResults.find(r => r.card.id === o.cardId)?.isExcluded)
   };
