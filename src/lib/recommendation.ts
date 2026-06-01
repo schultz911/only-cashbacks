@@ -59,7 +59,10 @@ export function getOfferCycleForCard(cardId: string, cardBillDates: Record<strin
 }
 
 export function getCycleForCard(cardId: string, cardBillDates: Record<string, number>): string {
-  let billDay = cardBillDates[cardId] || 1;
+  const billDate = cardBillDates[cardId];
+  if (!billDate) return new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
+
+  let billDay = billDate;
   const card = CARD_DICT[cardId];
   if (card && card.type === 'Debit') {
     billDay = 1;
