@@ -23,3 +23,8 @@
 **Learning:** Direct assignment to `innerHTML` can lead to XSS vulnerabilities, especially if the content being assigned is derived from user input or external sources. Even for static content, it's a poor security practice.
 
 **Prevention:** Always prefer `textContent` or `innerText` when assigning text to DOM elements to prevent script injection.
+
+## 2024-05-24 - Rate Limit Bypass via IP Spoofing
+**Vulnerability:** Setting `app.set("trust proxy", 1);` in Express instructs it to trust the immediate preceding proxy. However, if the server can be directly reached by external users (or via a proxy that forwards unverified headers), attackers can spoof the `X-Forwarded-For` header. This spoofed IP is then used by the Express `req.ip` object and subsequently by IP-based rate limiters, allowing attackers to trivially bypass rate limits by providing a different, fake IP address in every request.
+**Learning:** `trust proxy` should never be configured globally with `1` or `true` unless the deployment environment strictly guarantees that the server is physically isolated and only reachable through the trusted load balancer/proxy, and that the proxy correctly strips/overwrites any client-provided `X-Forwarded-For` headers.
+**Prevention:** Configure `trust proxy` using explicit subnets or specific IP ranges of trusted proxies (e.g., `app.set("trust proxy", ["loopback", "linklocal", "uniquelocal"]);`) or write a custom function to dynamically validate `req.socket.remoteAddress` against a list of trusted reverse proxy IPs.

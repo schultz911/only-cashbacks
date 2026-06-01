@@ -21,7 +21,7 @@ async function startServer() {
 
   app.disable("x-powered-by"); // Security: Hide Express technology stack
   app.use(compression()); // Compress all responses to reduce network egress
-  app.set("trust proxy", 1); // Security: Ensure req.ip works behind reverse proxies for rate limiting
+  app.set("trust proxy", ["loopback", "linklocal", "uniquelocal"]); // Security: Ensure req.ip works behind reverse proxies for rate limiting and prevents IP spoofing
 
   // Security headers middleware
   app.use((req, res, next) => {
