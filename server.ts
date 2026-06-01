@@ -109,10 +109,10 @@ async function startServer() {
       const effectiveOpenRouterKey = userOpenRouterKey || envOpenRouterKey;
 
       const systemPrompt = `You are a professional merchant analyst for a critical data collection organization. Analyze this transaction destination and categorize it. 
-Return the most relevant category for the query (Food, Grocery, E-commerce, Fuel, Travel, Utilities, Dining, Gaming, Entertainment, etc.).
-Scrape google maps data if needed to categorize a merchant, particularly local stores and restaurants.
+Return the most relevant category for the query (Food Delivery, Grocery, E-commerce, Fuel, Travel, Fashion, Utilities, Dining, Gaming, Movies, Software, Services, Hobbies, Activities, Entertainment, etc.).
+Scrape google maps data to categorize merchants, particularly local stores and restaurants. Be very precise - if a merchant is a cinema, the category should be movies, not entertainment.
 Determine if it is online or offline.
-Also flag if it seems to be a personal P2P UPI payment (like paying a friend, a person's name, or unregistered store or shop) versus a business/merchant with online presence.
+Also flag if it seems to be a personal P2P payment (like paying a friend, a person's name, or unregistered store or shop) versus a business/merchant with online presence. Always check to see if a merchant is a registered business before categorizing.
 IMPORTANT PLATFORM MATCHING:
 - If it is part of the Tata ecosystem (e.g. Croma, Westside, Zudio, BigBasket, 1mg, Qmin, IHCL, Tata Cliq, Taj), set 'platform' exactly to "Tata Brands".
 - If it is a Swiggy property (Swiggy, Instamart, Dineout), set 'platform' to "Swiggy".
@@ -130,7 +130,7 @@ Output strictly a JSON object matching this TypeScript interface:
       let result = null;
 
       if (effectiveOpenRouterKey) {
-        console.log("Calling OpenRouter API (google/gemini-3.1-flash-lite) via fetch...");
+        console.log("Calling OpenRouter API (google/gemini-3-flash-preview) via fetch...");
         const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
           method: "POST",
           headers: {
