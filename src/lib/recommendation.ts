@@ -38,13 +38,30 @@ export function getQuarterCycle(): string {
   return `${now.getFullYear()}-Q${quarter}`;
 }
 
-export function getCycleForCard(cardId: string, cardBillDates: Record<string, number>): string {
+
+export function getOfferCycleForCard(cardId: string, cardBillDates: Record<string, number>): string {
   let billDay = cardBillDates[cardId] || 1;
   const card = CARD_DICT[cardId];
   if (card && card.type === 'Debit') {
     billDay = 1;
   }
   if (cardId === 'axis-myzone') {
+    billDay = 1;
+  }
+
+  const now = new Date();
+  if (now.getDate() >= billDay) {
+    return `${now.getFullYear()}-${now.getMonth() + 1}`;
+  } else {
+    const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    return `${prev.getFullYear()}-${prev.getMonth() + 1}`;
+  }
+}
+
+export function getCycleForCard(cardId: string, cardBillDates: Record<string, number>): string {
+  let billDay = cardBillDates[cardId] || 1;
+  const card = CARD_DICT[cardId];
+  if (card && card.type === 'Debit') {
     billDay = 1;
   }
 
@@ -352,7 +369,7 @@ export function getRecommendations(
       }
     } else if (card.id === 'kotak-811-infinity' && !isScanToPay) {
       // Special logic for Kotak 811 offers + cashback
-      const kCycle = getCycleForCard('kotak-811-infinity', cardBillDates);
+      const kCycle = getOfferCycleForCard('kotak-811-infinity', cardBillDates);
       const movieUsed = offerUsage[`kotak-811-infinity-Movies-BMS-${kCycle}`] || 0;
       const diningUsed = offerUsage[`kotak-811-infinity-Dining-District-${kCycle}`] || 0;
 
@@ -380,7 +397,7 @@ export function getRecommendations(
       if (isExcluded) {
         // Skip benefit matching for excluded cards
       } else {
-        const cardCycle = getCycleForCard(card.id, cardBillDates); // Optimize: compute once per card
+        const cardCycle = getOfferCycleForCard(card.id, cardBillDates); // Optimize: compute once per card
 
         for (const benefit of card.benefits) {
           if (benefit.type === 'exclusion' || benefit.type === 'lounge' || (benefit.type as any) === 'milestone') continue;
@@ -667,9 +684,9 @@ export function getRecommendations(
 
   const availableOffers: { id: string; icon: string; title: string; description: string; cardId?: string; category: string; }[] = [];
 
-  const kCycle = getCycleForCard('kotak-811-infinity', cardBillDates);
-  const aCycle = getCycleForCard('axis-myzone', cardBillDates);
-  const iCycle = getCycleForCard('hdfc-imperia', cardBillDates);
+  const kCycle = getOfferCycleForCard('kotak-811-infinity', cardBillDates);
+  const aCycle = getOfferCycleForCard('axis-myzone', cardBillDates);
+  const iCycle = getOfferCycleForCard('hdfc-imperia', cardBillDates);
 
   if (!isIntl && isMovie && isOnline) {
     if ((offerUsage[`kotak-811-infinity-Movies-BMS-${kCycle}`] || 0) < 1 && shouldShowOffer('bookmyshow')) {
