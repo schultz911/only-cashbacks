@@ -13,7 +13,67 @@ const DEFAULT_EXCLUSIONS = ['fuel', 'wallet', 'rent', 'housing', 'gambling', 'ga
 const MOVIE_PLATFORMS = ['bookmyshow', 'bms', 'paytm insider', 'townscript', 'mera event', 'pvr', 'inox', 'cinepolis', 'movie', 'cinema', 'theatre', 'district'];
 const DINING_PLATFORMS = ['dineout', 'eazydiner', 'district', 'magicpin', 'cafe', 'restaurant', 'diner', 'eatery', 'pub', 'bar', 'coffee'];
 const FOOD_PLATFORMS = ['swiggy', 'zomato', 'toing', 'bistro', 'eatsure', 'fresh menu', 'box8', 'eat club', 'uber eats', 'domino', 'pizza hut', 'starbucks', 'mcdonald', 'kfc', 'burger king', 'haldiram', 'bikanervala'];
+
+
+
+
+const MERCHANT_AGGREGATORS: Record<string, string[]> = {
+  'district': ['movie', 'movies', 'dining', 'food', 'restaurant', 'cafe', 'bistro', 'diner', 'eatery', 'pizza', 'burger', 'coffee', 'cinema', 'theatre'],
+  'bookmyshow': ['movie', 'movies', 'cinema', 'theatre', 'show', 'shows', 'concert', 'event', 'events'],
+  'bms': ['movie', 'movies', 'cinema', 'theatre', 'show', 'shows', 'concert', 'event', 'events'],
+  'paytm insider': ['movie', 'movies', 'cinema', 'theatre', 'show', 'shows', 'concert', 'event', 'events'],
+  'townscript': ['show', 'shows', 'concert', 'event', 'events'],
+  'mera event': ['show', 'shows', 'concert', 'event', 'events'],
+  'pvr': ['movie', 'movies', 'cinema', 'theatre'],
+  'inox': ['movie', 'movies', 'cinema', 'theatre'],
+  'cinepolis': ['movie', 'movies', 'cinema', 'theatre'],
+
+  'ajio': ['fashion', 'beauty', 'apparel', 'clothes', 'clothing', 'shopping', 'cosmetics', 'makeup', 'accessory', 'accessories'],
+  'nykaa': ['fashion', 'beauty', 'apparel', 'clothes', 'clothing', 'shopping', 'cosmetics', 'makeup', 'fragrance', 'accessory', 'accessories'],
+  'myntra': ['fashion', 'beauty', 'apparel', 'clothes', 'clothing', 'shopping', 'cosmetics', 'makeup', 'accessory', 'accessories'],
+  'amazon': ['fashion', 'beauty', 'apparel', 'clothes', 'clothing', 'shopping', 'electronics', 'grocery', 'groceries', 'online', 'store'],
+  'flipkart': ['fashion', 'beauty', 'apparel', 'clothes', 'clothing', 'shopping', 'electronics', 'grocery', 'groceries', 'online', 'store'],
+  'meesho': ['fashion', 'beauty', 'apparel', 'clothes', 'clothing', 'shopping', 'accessory', 'accessories'],
+  'tata cliq': ['fashion', 'beauty', 'apparel', 'clothes', 'clothing', 'shopping', 'electronics', 'accessory', 'accessories'],
+  'purplle': ['beauty', 'cosmetics', 'cosmetic', 'makeup', 'fragrance'],
+  'tira': ['beauty', 'cosmetics', 'cosmetic', 'makeup', 'fragrance'],
+  'mac': ['beauty', 'cosmetics', 'cosmetic', 'makeup', 'fragrance'],
+  'sephora': ['beauty', 'cosmetics', 'cosmetic', 'makeup', 'fragrance'],
+
+  'eazydiner': ['dining', 'food', 'restaurant', 'cafe', 'bistro', 'diner', 'eatery', 'pizza', 'burger', 'coffee', 'tea'],
+  'dineout': ['dining', 'food', 'restaurant', 'cafe', 'bistro', 'diner', 'eatery', 'pizza', 'burger', 'coffee', 'tea'],
+  'magicpin': ['dining', 'food', 'restaurant', 'cafe', 'bistro', 'diner', 'eatery', 'pizza', 'burger', 'coffee', 'tea'],
+
+  'swiggy': ['food delivery', 'delivery', 'food', 'dining', 'restaurant', 'cafe', 'bistro', 'diner', 'eatery', 'pizza', 'burger', 'coffee', 'tea'],
+  'zomato': ['food delivery', 'delivery', 'food', 'dining', 'restaurant', 'cafe', 'bistro', 'diner', 'eatery', 'pizza', 'burger', 'coffee', 'tea'],
+  'eatsure': ['food delivery', 'delivery', 'food', 'restaurant', 'pizza', 'burger'],
+  'eat club': ['food delivery', 'delivery', 'food', 'restaurant', 'pizza', 'burger'],
+
+  'cleartrip': ['travel', 'flight', 'flights', 'hotel', 'hotels', 'stay', 'trip', 'travels', 'vacation', 'air', 'airline', 'airlines', 'accommodation', 'booking'],
+  'makemytrip': ['travel', 'flight', 'flights', 'hotel', 'hotels', 'stay', 'trip', 'travels', 'vacation', 'air', 'airline', 'airlines', 'accommodation', 'booking'],
+  'mmt': ['travel', 'flight', 'flights', 'hotel', 'hotels', 'stay', 'trip', 'travels', 'vacation', 'air', 'airline', 'airlines', 'accommodation', 'booking'],
+  'goibibo': ['travel', 'flight', 'flights', 'hotel', 'hotels', 'stay', 'trip', 'travels', 'vacation', 'air', 'airline', 'airlines', 'accommodation', 'booking'],
+  'yatra': ['travel', 'flight', 'flights', 'hotel', 'hotels', 'stay', 'trip', 'travels', 'vacation', 'air', 'airline', 'airlines', 'accommodation', 'booking'],
+  'ixigo': ['travel', 'flight', 'flights', 'hotel', 'hotels', 'stay', 'trip', 'travels', 'vacation', 'air', 'airline', 'airlines', 'accommodation', 'booking'],
+  'agoda': ['travel', 'hotel', 'hotels', 'stay', 'trip', 'travels', 'vacation', 'accommodation', 'booking'],
+  'booking.com': ['travel', 'hotel', 'hotels', 'stay', 'trip', 'travels', 'vacation', 'accommodation', 'booking'],
+  'expedia': ['travel', 'flight', 'flights', 'hotel', 'hotels', 'stay', 'trip', 'travels', 'vacation', 'air', 'airline', 'airlines', 'accommodation', 'booking'],
+  'skyscanner': ['travel', 'flight', 'flights', 'air', 'airline', 'airlines', 'booking'],
+
+  'blinkit': ['grocery', 'groceries', 'supermarket', 'delivery', 'pharmacy', 'medicine'],
+  'zepto': ['grocery', 'groceries', 'supermarket', 'delivery', 'pharmacy', 'medicine'],
+  'instamart': ['grocery', 'groceries', 'supermarket', 'delivery'],
+  'bigbasket': ['grocery', 'groceries', 'supermarket', 'delivery'],
+  'dunzo': ['grocery', 'groceries', 'supermarket', 'delivery', 'pharmacy', 'medicine'],
+  'jiomart': ['grocery', 'groceries', 'supermarket', 'delivery', 'shopping'],
+  'amazon fresh': ['grocery', 'groceries', 'supermarket', 'delivery'],
+  'flipkart grocery': ['grocery', 'groceries', 'supermarket', 'delivery']
+};
+
 const SPECIFIC_PLATFORMS = ['bookmyshow', 'district', 'swiggy', 'zomato', 'dineout', 'eazydiner', 'nykaa', 'cleartrip', 'ajio', 'amazon', 'flipkart', 'cinepolis', 'myntra', 'qmin', 'bigbasket', 'blinkit', 'zepto', 'instamart'];
+
+
+
 const SBI_CASHBACK_CARD = CARD_DATA.find(c => c.id === 'sbi-cashback')!;
 
 const GROCERY_KEYWORDS = ['grocery', 'groce', 'bigbasket', 'blinkit', 'zepto', 'instamart', 'dunzo', 'jiomart'];
@@ -154,6 +214,7 @@ export function getRecommendations(
     }
   }
 
+
   const isNameGeneric = (name: string, cat: string) => {
     if (name === cat) return true;
     const generics = [
@@ -174,13 +235,78 @@ export function getRecommendations(
 
   const isGenericQuery = isNameGeneric(nameL, catL);
 
+
+
+  const determineQueryAggregators = () => {
+    const aggregatorsInQuery = new Set<string>();
+    const queryWords = [...nameL.split(/[\s,.-]+/), ...platL.split(/[\s,.-]+/)].filter(Boolean);
+    // Look for aggregators even in generic queries, because the user could search "dineout" and the category could be "dining", making it generic.
+    for (const [aggregator, _] of Object.entries(MERCHANT_AGGREGATORS)) {
+      if (queryWords.includes(aggregator) || nameL === aggregator || platL === aggregator || (nameL.includes(aggregator) && aggregator.includes(' '))) {
+        // use queryWords to avoid partial matches like 'mac' in 'pharmacy',
+        // but still allow spaces if aggregator name has spaces e.g. 'paytm insider'
+        let matched = false;
+        if (aggregator.includes(' ')) {
+          if (nameL.includes(aggregator) || platL.includes(aggregator)) matched = true;
+        } else {
+          if (queryWords.includes(aggregator)) matched = true;
+        }
+
+        if (matched) aggregatorsInQuery.add(aggregator);
+      }
+    }
+    return aggregatorsInQuery;
+  };
+
+
+  const queryAggregators = determineQueryAggregators();
+
   const shouldShowOffer = (targetPlatform: string) => {
     let lowerTarget = targetPlatform.toLowerCase();
     if (lowerTarget === 'bms') lowerTarget = 'bookmyshow';
 
-    if (isGenericQuery) return true;
-    return matchedSpecificPlatforms.has(lowerTarget);
+    const targetCategories = MERCHANT_AGGREGATORS[lowerTarget];
+
+    if (matchedSpecificPlatforms.has(lowerTarget)) return true;
+
+    if (targetCategories) {
+      // Check if ANY aggregator in the query shares a category with the target aggregator
+      let sharesCategoryWithAnotherAggregatorInQuery = false;
+      for (const queryAgg of queryAggregators) {
+        if (queryAgg === lowerTarget) continue; // Should have been caught by matchedSpecificPlatforms
+        const queryAggCategories = MERCHANT_AGGREGATORS[queryAgg];
+        if (queryAggCategories) {
+          const intersection = targetCategories.filter(c => queryAggCategories.includes(c));
+          if (intersection.length > 0) {
+            sharesCategoryWithAnotherAggregatorInQuery = true;
+            break;
+          }
+        }
+      }
+
+      // If a competing aggregator is explicitly in the query, DO NOT show this offer.
+      if (sharesCategoryWithAnotherAggregatorInQuery) {
+        return false;
+      }
+
+      // If we reach here, it means the query does NOT explicitly contain this target platform,
+      // AND the query does NOT contain a competing aggregator.
+      // Should we show it? Only if the query's generic parts match the target's categories,
+      // or if it's a generic query.
+      if (isGenericQuery) return true;
+
+      const queryWords = [...nameL.split(/[\s,.-]+/), catL, platL].filter(w => w);
+      const categoryMatch = targetCategories.some(tc => queryWords.some(qw => tc.includes(qw) || qw.includes(tc)));
+      if (categoryMatch) {
+        return true;
+      }
+    } else {
+      if (isGenericQuery) return true;
+    }
+
+    return false;
   };
+
 
   const cardsToEvaluate = walletCards
     ? CARD_DATA.filter(c => walletCards.includes(c.id) && !c.isDummy)
@@ -721,7 +847,7 @@ export function getRecommendations(
     }
   }
 
-  if (!isIntl && (nameL.includes('ajio') || platL.includes('ajio') || catL.includes('apparel')) && amount >= 999 && shouldShowOffer('ajio')) {
+  if (!isIntl && (nameL.includes('ajio') || platL.includes('ajio') || catL.includes('apparel') || catL.includes('shopping') || catL.includes('fashion') || catL.includes('beauty')) && amount >= 999 && shouldShowOffer('ajio')) {
     availableOffers.push({ id: 's-ajio', icon: '🛍️', title: 'Swiggy oneBLCK', description: 'Flat 20% off on select styles', category: 'Ajio', cardId: 'hdfc-swiggy' });
   }
 
