@@ -171,7 +171,7 @@ export function getRecommendations(
     let benefitText = 'Base Rewards';
     let isExcluded = false;
     let discountAmount = 0;
-    let cardToUse = { ...card };
+    let cardToUse = card; // Optimize: only clone if modification is needed
 
     if (merchant.isP2P) {
       if (!['amazon-pay-upi', 'cred-pay-upi', 'kotak-811-infinity'].includes(card.id)) {
@@ -181,7 +181,7 @@ export function getRecommendations(
           : "Not supported for P2P transfers";
       }
       if (card.id === 'kotak-811-infinity') {
-        cardToUse.name = '811 Scan & Pay';
+        cardToUse = { ...cardToUse, name: '811 Scan & Pay' };
       }
     } else if (isScanToPay) {
       if (!ALLOWED_UPI_CARDS.includes(card.id)) {
@@ -189,7 +189,7 @@ export function getRecommendations(
         benefitText = "Not a Scan & Pay option";
       }
       if (card.id === 'kotak-811-infinity') {
-        cardToUse.name = '811 Scan & Pay';
+        cardToUse = { ...cardToUse, name: '811 Scan & Pay' };
       }
     }
 
@@ -235,10 +235,11 @@ export function getRecommendations(
     }
 
     // Default Exclusions checking
-    const exclusion = card.benefits.find(b =>
-      b.type === 'exclusion' &&
-      (catL === b.category.toLowerCase() || nameL.includes(b.category.toLowerCase()) || platL === b.category.toLowerCase())
-    );
+    const exclusion = card.benefits.find(b => {
+      if (b.type !== 'exclusion') return false;
+      const bCatL = b.category.toLowerCase(); // Optimize string allocation
+      return catL === bCatL || nameL.includes(bCatL) || platL === bCatL;
+    });
 
     if (exclusion) {
       // Special bypass for HSBC Live+ and Gaming (if it was accidentally categorized as an exclusion)
@@ -376,27 +377,29 @@ export function getRecommendations(
       if (isExcluded) {
         // Skip benefit matching for excluded cards
       } else {
+        const cardCycle = getCycleForCard(card.id, cardBillDates); // Optimize: compute once per card
 
         for (const benefit of card.benefits) {
           if (benefit.type === 'exclusion' || benefit.type === 'lounge' || (benefit.type as any) === 'milestone') continue;
           if (isIntl && benefit.type === 'offer' && benefit.category !== 'International') continue;
           let matchScore = -1;
 
-          const isQuarterly = benefit.description.toLowerCase().includes('quarter') || benefit.description.toLowerCase().includes('qtr');
-          const cycle = isQuarterly ? currentQuarterCycle : getCycleForCard(card.id, cardBillDates);
+          const bDescL = benefit.description.toLowerCase();
+          const isQuarterly = bDescL.includes('quarter') || bDescL.includes('qtr');
+          const cycle = isQuarterly ? currentQuarterCycle : cardCycle;
           const usageKey = `${card.id}-${benefit.category}-${benefit.value}-${cycle}`;
           const usedCount = offerUsage[usageKey] || 0;
           if (benefit.usageLimit && usedCount >= benefit.usageLimit) {
             continue;
           }
 
-          const descLForOnline = `${benefit.category} ${benefit.value} ${benefit.description || ''}`.toLowerCase();
+          const descLForOnline = (benefit.category + " " + benefit.value + " " + (benefit.description || '')).toLowerCase();
           if (!isOnline && descLForOnline.includes('online') && !descLForOnline.includes('offline')) {
             continue;
           }
 
           if (benefit.type === 'offer') {
-            const descL = benefit.description.toLowerCase();
+            const descL = bDescL;
             const valLower = benefit.value.toLowerCase();
             const isMovieOffer = benefit.category.toLowerCase().includes('movie') || descL.includes('movie') || descL.includes('ticket');
             const isDiningOffer = benefit.category.toLowerCase().includes('dining') || benefit.category.toLowerCase().includes('swiggy') || benefit.category.toLowerCase().includes('zomato');
@@ -465,7 +468,7 @@ export function getRecommendations(
             if (skip) continue;
           }
 
-          const pLower = `${benefit.category} ${benefit.value} ${benefit.description || ''}`.toLowerCase();
+          const pLower = descLForOnline; // Reuse already calculated lowercase string
           if (platL && pLower.includes(platL)) matchScore = 100 + (benefit.percentValue || 0);
           else if (pLower.includes(catL) && catL !== 'other') matchScore = 50 + (benefit.percentValue || 0);
           else if (card.id === 'hsbc-live-plus' && !isIntl && (isGrocery || isFoodDelivery || isDining)) {
