@@ -1,70 +1,53 @@
-import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
-import { getQuarterCycle } from './recommendation';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { getCycleForCard } from './recommendation';
 
-describe('getQuarterCycle', () => {
+vi.mock('../data/cards', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../data/cards')>();
+  return {
+    ...actual,
+    CARD_DICT: {
+      ...actual.CARD_DICT,
+      'credit-card-1': { type: 'Credit' } as any,
+      'debit-card-1': { type: 'Debit' } as any,
+    }
+  };
+});
+
+describe('getCycleForCard', () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    vi.setSystemTime(new Date(2024, 4, 15)); // Month is 0-indexed (4 = May)
   });
 
   afterEach(() => {
     vi.useRealTimers();
   });
 
-  it('returns Q1 for January (start of quarter)', () => {
-    vi.setSystemTime(new Date(2024, 0, 1)); // Jan 1, 2024
-    expect(getQuarterCycle()).toBe('Q1-2024');
+  it('should return current month/year if today >= bill day', () => {
+    const dates = { 'credit-card-1': 10 };
+    expect(getCycleForCard('credit-card-1', dates)).toBe('2024-5');
   });
 
-  it('returns Q1 for February', () => {
-    vi.setSystemTime(new Date(2024, 1, 15)); // Feb 15, 2024
-    expect(getQuarterCycle()).toBe('Q1-2024');
+  it('should return previous month/year if today < bill day', () => {
+    const dates = { 'credit-card-1': 20 };
+    expect(getCycleForCard('credit-card-1', dates)).toBe('2024-4');
   });
 
-  it('returns Q1 for March (end of quarter)', () => {
-    vi.setSystemTime(new Date(2024, 2, 31)); // Mar 31, 2024
-    expect(getQuarterCycle()).toBe('Q1-2024');
+  it('should default to long month name and year if not in cardBillDates', () => {
+    const dates = {};
+    // Depending on timezone, could be localized. Default is english: "May 2024"
+    expect(getCycleForCard('credit-card-1', dates)).toMatch(/May 2024/i);
   });
 
-  it('returns Q2 for April (start of quarter)', () => {
-    vi.setSystemTime(new Date(2024, 3, 1)); // Apr 1, 2024
-    expect(getQuarterCycle()).toBe('Q2-2024');
+  it('should still use bill day 1 for Debit cards if a billDate is provided', () => {
+    const dates = { 'debit-card-1': 20 };
+    // Even if provided, Debit forces billDay = 1. Since today (15) >= 1 -> current month
+    expect(getCycleForCard('debit-card-1', dates)).toBe('2024-5');
   });
 
-  it('returns Q2 for June (end of quarter)', () => {
-    vi.setSystemTime(new Date(2024, 5, 30)); // Jun 30, 2024
-    expect(getQuarterCycle()).toBe('Q2-2024');
-  });
-
-  it('returns Q3 for July (start of quarter)', () => {
-    vi.setSystemTime(new Date(2024, 6, 1)); // Jul 1, 2024
-    expect(getQuarterCycle()).toBe('Q3-2024');
-  });
-
-  it('returns Q3 for September (end of quarter)', () => {
-    vi.setSystemTime(new Date(2024, 8, 30)); // Sep 30, 2024
-    expect(getQuarterCycle()).toBe('Q3-2024');
-  });
-
-  it('returns Q4 for October (start of quarter)', () => {
-    vi.setSystemTime(new Date(2024, 9, 1)); // Oct 1, 2024
-    expect(getQuarterCycle()).toBe('Q4-2024');
-  });
-
-  it('returns Q4 for December (end of quarter)', () => {
-    vi.setSystemTime(new Date(2024, 11, 31)); // Dec 31, 2024
-    expect(getQuarterCycle()).toBe('Q4-2024');
-  });
-
-  it('works correctly for a leap year date (Feb 29)', () => {
-    vi.setSystemTime(new Date(2024, 1, 29)); // Feb 29, 2024
-    expect(getQuarterCycle()).toBe('Q1-2024');
-  });
-
-  it('works correctly for different years', () => {
-    vi.setSystemTime(new Date(2023, 7, 15)); // Aug 15, 2023
-    expect(getQuarterCycle()).toBe('Q3-2023');
-
-    vi.setSystemTime(new Date(2025, 11, 25)); // Dec 25, 2025
-    expect(getQuarterCycle()).toBe('Q4-2025');
+  it('should handle January correctly when today < bill day (wrap to December previous year)', () => {
+    vi.setSystemTime(new Date(2024, 0, 15)); // Jan 15, 2024
+    const dates = { 'credit-card-1': 20 };
+    expect(getCycleForCard('credit-card-1', dates)).toBe('2023-12');
   });
 });
