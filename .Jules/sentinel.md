@@ -15,3 +15,11 @@
 **Learning:** Any user-supplied data used to construct HTTP headers must be strictly sanitized to prevent HTTP Header Injection (CRLF injection).
 
 **Prevention:** Always validate that user-provided keys, tokens, or other header values do not contain carriage return (\r) or newline (\n) characters before setting them in HTTP requests.
+
+## 2026-06-01 - Fix XSS Vulnerability in Confetti Animation
+
+**Vulnerability:** Cross-Site Scripting (XSS) vulnerability via `innerHTML` assignment when generating confetti elements in `App.tsx`.
+
+**Learning:** Direct assignment to `innerHTML` can lead to XSS vulnerabilities, especially if the content being assigned is derived from user input or external sources. Even for static content, it's a poor security practice.
+
+**Prevention:** Always prefer `textContent` or `innerText` when assigning text to DOM elements to prevent script injection.
