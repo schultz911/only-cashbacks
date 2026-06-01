@@ -8,7 +8,7 @@ import { Search, Loader2, Sparkles, Wallet, X, ChevronDown, Check, AlertCircle, 
 
 import { motion, AnimatePresence } from 'motion/react';
 import { categorizeMerchant } from './services/gemini';
-import { getCycleForCard, getQuarterCycle, getRecommendations } from './lib/recommendation';
+import { getCycleForCard, getOfferCycleForCard, getQuarterCycle, getRecommendations } from './lib/recommendation';
 import { Recommendation, MerchantInfo, Card, CashbackLog } from './types';
 import { CARD_DATA } from './data/cards';
 import { CardItem } from './components/CardItem';
@@ -318,26 +318,44 @@ export default function App() {
 
     for (const card of CARD_DATA) {
       if (card.isDummy) continue;
-      let resetDay = card.type === 'Credit' ? (cardBillDates[card.id] || 1) : 1;
-      if (card.id === 'axis-myzone') {
-        resetDay = 1;
-      }
-      if (todayDate !== resetDay) continue;
-      if (lastResetDates[card.id] === todayKey) continue;
-      const currentCycle = getCycleForCard(card.id, cardBillDates);
-      for (const key of Object.keys(newOfferUsage)) {
-        if (key.startsWith(`${card.id}-`) && !key.endsWith(`-${currentCycle}`)) {
-          delete newOfferUsage[key];
-          offerUsageDirty = true;
+
+      const billResetDay = card.type === 'Credit' ? (cardBillDates[card.id] || 1) : 1;
+      const offerResetDay = card.id === 'axis-myzone' ? 1 : billResetDay;
+
+      // Handle offer usage resets
+      if (todayDate === offerResetDay) {
+        const offerLastResetKey = lastResetDates[`${card.id}_offer`] || lastResetDates[card.id];
+        if (offerLastResetKey !== todayKey) {
+          const offerCycle = getOfferCycleForCard(card.id, cardBillDates);
+          for (const key of Object.keys(newOfferUsage)) {
+            if (key.startsWith(`${card.id}-`) && !key.endsWith(`-${offerCycle}`)) {
+              delete newOfferUsage[key];
+              offerUsageDirty = true;
+            }
+          }
+          lastResetDates[`${card.id}_offer`] = todayKey;
         }
       }
-      if (card.type === 'Credit' || card.type === 'Debit') {
-        if (newExhaustedCards[card.id] !== undefined && newExhaustedCards[card.id] !== currentCycle) {
-          delete newExhaustedCards[card.id];
-          exhaustedDirty = true;
+
+      // Handle card exhaustion resets
+      if (todayDate === billResetDay) {
+        const billLastResetKey = lastResetDates[`${card.id}_bill`] || lastResetDates[card.id];
+        if (billLastResetKey !== todayKey) {
+          if (card.type === 'Credit' || card.type === 'Debit') {
+            const billCycle = getCycleForCard(card.id, cardBillDates);
+            if (newExhaustedCards[card.id] !== undefined && newExhaustedCards[card.id] !== billCycle) {
+              delete newExhaustedCards[card.id];
+              exhaustedDirty = true;
+            }
+          }
+          lastResetDates[`${card.id}_bill`] = todayKey;
         }
       }
-      lastResetDates[card.id] = todayKey;
+
+      // Keep backward compatibility so old format resets don't cause issues
+      if (todayDate === offerResetDay && todayDate === billResetDay) {
+         lastResetDates[card.id] = todayKey;
+      }
     }
     const quarterStartMonths = [0, 3, 6, 9];
     const isQuarterStart = todayDate === 1 && quarterStartMonths.includes(today.getMonth());
@@ -1066,7 +1084,7 @@ export default function App() {
               <div className="overflow-y-auto pr-2 space-y-3 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent relative z-10 pb-4">
                 {selectedCardForDetails.card.benefits.filter(b => b.type !== 'exclusion' && b.type !== 'lounge' && !b.isHidden).map((b, i) => {
                   const isQuarterly = b.description.toLowerCase().includes('quarter') || b.description.toLowerCase().includes('qtr');
-                  const cycle = isQuarterly ? getQuarterCycle() : getCycleForCard(selectedCardForDetails.card.id, cardBillDates);
+                  const cycle = isQuarterly ? getQuarterCycle() : getOfferCycleForCard(selectedCardForDetails.card.id, cardBillDates);
                   const usageKey = `${selectedCardForDetails.card.id}-${b.category}-${b.value}-${cycle}`;
                   const usedCount = offerUsage[usageKey] || 0;
                   return (
