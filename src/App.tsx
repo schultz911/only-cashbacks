@@ -374,15 +374,22 @@ export default function App() {
 
       const prefixesLen = resetPrefixes.length;
 
-      for (const key in newOfferUsage) {
+      // ⚡ Bolt: Avoid for-in loops and object allocations in hot path
+      // Iterate over Object.keys() to avoid prototype chain checks and
+      // pre-compile Regex to avoid allocations inside the loop.
+      const keys = Object.keys(newOfferUsage);
+      const expectedQ = `-${currentQuarter}`;
+      const qRegex = /-\d{4}-Q\d$/;
+
+      for (let k = 0, len = keys.length; k < len; k++) {
+        const key = keys[k];
         let deleted = false;
 
         if (shouldResetQuarterly) {
           const keyLen = key.length;
           // Fast check for Quarterly pattern (ends with -YYYY-QX)
           if (keyLen >= 7 && key[keyLen - 2] === 'Q') {
-            const qMatch = key.match(/-\d{4}-Q\d$/);
-            if (qMatch && qMatch[0] !== `-${currentQuarter}`) {
+            if (!key.endsWith(expectedQ) && qRegex.test(key)) {
               delete newOfferUsage[key];
               offerUsageDirty = true;
               deleted = true;
