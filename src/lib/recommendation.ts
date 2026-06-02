@@ -6,6 +6,19 @@
 import { Card, MerchantInfo, Recommendation } from '../types';
 import { CARD_DATA, CARD_DICT } from '../data/cards';
 
+const TATA_NEU_PARTNER_MERCHANTS = ['pharmacy', 'medical', 'health', 'apparel', 'clothing', 'fashion', 'electronics', 'gadgets', 'footwear', 'watches', 'accessories', 'jewelry', 'jewellery', 'hotel', 'resort', 'travel', 'luxury'];
+const GENERICS = [
+      'flight', 'flights', 'hotel', 'hotels', 'travel', 'dining', 'food', 'grocery', 'groceries',
+      'movie', 'movies', 'cinema', 'theatre', 'shopping', 'apparel', 'clothes', 'clothing', 'fashion',
+      'electronics', 'pharmacy', 'health', 'medicine', 'utility', 'utilities', 'bill', 'bills', 'recharge',
+      'rent', 'insurance', 'tax', 'jewellery', 'jewelry', 'fuel', 'petrol', 'diesel', 'gas',
+      'cab', 'taxi', 'commute', 'transport', 'train', 'bus', 'delivery', 'supermarket',
+      'online', 'booking', 'store', 'shop', 'ticket', 'tickets', 'restaurant', 'cafe',
+      'bistro', 'diner', 'eatery', 'pizza', 'burger', 'coffee', 'tea', 'bakery', 'sweet', 'sweets',
+      'show', 'shows', 'concert', 'event', 'events', 'stay', 'trip', 'travels', 'vacation', 'air',
+      'airline', 'airlines', 'accommodation', 'beauty', 'cosmetics', 'cosmetic', 'makeup', 'fragrance',
+      '&', 'and', 'or', 'in', 'of', 'for', 'to', 'the', 'a', 'an', 'at', 'on', 'with', 'accessory', 'accessories'
+    ];
 const TATA_NEU_MERCHANTS = ['croma', 'westside', 'zudio', 'ihcl', 'bigbasket', '1mg', 'cliq', 'air india', 'air india express', 'qmin', 'cult', 'tata play', 'titan', 'tanishq', 'mia', 'fastrack', 'caratlane', 'helios', 'zoya'];
 const DEFAULT_EXCLUSIONS = ['fuel', 'wallet', 'rent', 'housing', 'gambling', 'gaming', 'tolls', 'toll', 'finance', 'school', 'education', 'jewellery', 'insurance', 'railway', 'rail', 'government', 'tax', 'utilities', 'utility', 'bills', 'bill', 'telecom', 'internet', 'atm', 'cash', 'charity', 'donation'];
 const MOVIE_PLATFORMS = ['bookmyshow', 'bms', 'paytm insider', 'townscript', 'mera event', 'pvr', 'inox', 'cinepolis', 'movie', 'cinema', 'theatre', 'district'];
@@ -72,7 +85,7 @@ const SPECIFIC_PLATFORMS = ['bookmyshow', 'district', 'swiggy', 'zomato', 'dineo
 
 
 
-const SBI_CASHBACK_CARD = CARD_DATA.find(c => c.id === 'sbi-cashback')!;
+const SBI_CASHBACK_CARD = CARD_DICT['sbi-cashback'];
 
 const GROCERY_KEYWORDS = ['grocery', 'groce', 'bigbasket', 'blinkit', 'zepto', 'instamart', 'dunzo', 'jiomart'];
 const FOOD_DELIVERY_KEYWORDS = ['food delivery', 'delivery', 'food', 'swig', 'zomat', ...FOOD_PLATFORMS];
@@ -217,7 +230,7 @@ export function findBestBenefit(card: Card, cardCycle: string, ctx: Recommendati
       }
 
       if (!isCustomMatched) {
-        const SPECIFIC_PLATFORMS = ['bookmyshow', 'district', 'swiggy', 'zomato', 'dineout', 'eazydiner', 'nykaa', 'cleartrip', 'ajio', 'amazon', 'flipkart', 'cinepolis', 'myntra', 'qmin', 'bigbasket', 'blinkit', 'zepto', 'instamart'];
+        // Uses top-level SPECIFIC_PLATFORMS
         for (const plat of SPECIFIC_PLATFORMS) {
           if (descL.includes(plat) || valLower.includes(plat)) {
             if (!ctx.shouldShowOffer(plat)) {
@@ -683,7 +696,7 @@ export function getRecommendations(
 
   // Tata Neu merchants
   const isTataNeuAppMerchant = TATA_NEU_MERCHANTS.some(tm => nameL.includes(tm) || catL.includes(tm) || platL.includes(tm));
-  const isTataNeuPartnerMerchant = ['pharmacy', 'medical', 'health', 'apparel', 'clothing', 'fashion', 'electronics', 'gadgets', 'footwear', 'watches', 'accessories', 'jewelry', 'jewellery', 'hotel', 'resort', 'travel', 'luxury'].some(k => nameL.includes(k));
+  const isTataNeuPartnerMerchant = TATA_NEU_PARTNER_MERCHANTS.some(k => nameL.includes(k));
 
   // Optimization: Hoist DEFAULT_EXCLUSIONS.find out of the map loop since catL, nameL, and platL are constant
   const isExcludedCatCache = DEFAULT_EXCLUSIONS.find(ex => catL.includes(ex) || nameL.includes(ex) || platL.includes(ex));
@@ -721,50 +734,36 @@ export function getRecommendations(
   }
 
 
+
+
+
+
+
   const isNameGeneric = (name: string, cat: string) => {
     if (name === cat) return true;
-    const generics = [
-      'flight', 'flights', 'hotel', 'hotels', 'travel', 'dining', 'food', 'grocery', 'groceries',
-      'movie', 'movies', 'cinema', 'theatre', 'shopping', 'apparel', 'clothes', 'clothing', 'fashion',
-      'electronics', 'pharmacy', 'health', 'medicine', 'utility', 'utilities', 'bill', 'bills', 'recharge',
-      'rent', 'insurance', 'tax', 'jewellery', 'jewelry', 'fuel', 'petrol', 'diesel', 'gas',
-      'cab', 'taxi', 'commute', 'transport', 'train', 'bus', 'delivery', 'supermarket',
-      'online', 'booking', 'store', 'shop', 'ticket', 'tickets', 'restaurant', 'cafe',
-      'bistro', 'diner', 'eatery', 'pizza', 'burger', 'coffee', 'tea', 'bakery', 'sweet', 'sweets',
-      'show', 'shows', 'concert', 'event', 'events', 'stay', 'trip', 'travels', 'vacation', 'air',
-      'airline', 'airlines', 'accommodation', 'beauty', 'cosmetics', 'cosmetic', 'makeup', 'fragrance',
-      '&', 'and', 'or', 'in', 'of', 'for', 'to', 'the', 'a', 'an', 'at', 'on', 'with', 'accessory', 'accessories'
-    ];
+    const generics = GENERICS;
     const words = name.toLowerCase().split(/[\s,.-]+/);
     return words.every(w => !w || generics.includes(w) || w === cat.toLowerCase());
   };
 
   const isGenericQuery = isNameGeneric(nameL, catL);
 
-
-
   const determineQueryAggregators = () => {
     const aggregatorsInQuery = new Set<string>();
     const queryWords = [...nameL.split(/[\s,.-]+/), ...platL.split(/[\s,.-]+/)].filter(Boolean);
-    // Look for aggregators even in generic queries, because the user could search "dineout" and the category could be "dining", making it generic.
     for (const [aggregator, _] of Object.entries(MERCHANT_AGGREGATORS)) {
       if (queryWords.includes(aggregator) || nameL === aggregator || platL === aggregator || (nameL.includes(aggregator) && aggregator.includes(' '))) {
-        // use queryWords to avoid partial matches like 'mac' in 'pharmacy',
-        // but still allow spaces if aggregator name has spaces e.g. 'paytm insider'
         let matched = false;
         if (aggregator.includes(' ')) {
           if (nameL.includes(aggregator) || platL.includes(aggregator)) matched = true;
         } else {
           if (queryWords.includes(aggregator)) matched = true;
         }
-
         if (matched) aggregatorsInQuery.add(aggregator);
       }
     }
     return aggregatorsInQuery;
   };
-
-
   const queryAggregators = determineQueryAggregators();
 
   const shouldShowOffer = (targetPlatform: string) => {

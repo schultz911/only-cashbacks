@@ -16,3 +16,4 @@
 ## 2026-06-02 - [LoungeTrackerModal Render Optimization]
 **Learning:** React renders could become costly if expensive data filtering and mappings were performed twice inside the render block.
 **Action:** Replaced double-filter pattern in LoungeTrackerModal with `useMemo` and cached the array, avoiding double evaluation and allocations.
+## 2026-06-02 - Performance Optimization: O(N) Array Searches & Loops\n**Learning:** Repeated lookups using `Array.find` in heavily mapped loops can significantly impact performance, and creating dictionary lookups (`O(1)`) is safer and much more optimal. Also, dynamically recreating constant regex/arrays within loops increases CPU overhead.\n**Action:** Replaced `CARD_DATA.find` with `CARD_DICT` lookups throughout the application. Hoisted static configurations like arrays and regexes out of repetitive evaluation blocks inside `src/lib/recommendation.ts`.
