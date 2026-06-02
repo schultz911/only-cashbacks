@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { categorizeMerchant } from './services/gemini';
 import { getCycleForCard, getOfferCycleForCard, getQuarterCycle, getRecommendations } from './lib/recommendation';
 import { Recommendation, MerchantInfo, Card, CashbackLog } from './types';
-import { CARD_DATA } from './data/cards';
+import { CARD_DATA, CARD_DICT } from './data/cards';
 import { CardItem } from './components/CardItem';
 import { BillReminders } from './components/BillReminders';
 import { BillDateSelector } from './components/BillDateSelector';
@@ -281,7 +281,7 @@ export default function App() {
       let hasUnpaidPastDue = false;
       const today = new Date();
       for (const cardId of walletCards) {
-        const card = CARD_DATA.find(c => c.id === cardId);
+        const card = CARD_DICT[cardId];
         if (!card || card.isDummy || card.type !== 'Credit') continue;
         const billDay = cardBillDates[cardId] || 1;
         const cycle = getCycleForCard(cardId, cardBillDates);
@@ -1383,7 +1383,7 @@ export default function App() {
                         <button
                           onClick={() => {
                             if (offer.cardId) {
-                              const card = CARD_DATA.find(c => c.id === offer.cardId);
+                              const card = CARD_DICT[offer.cardId];
                               if (card) {
                                 setShowOffersOverlay(false);
                                 setSelectedCardForDetails({ card, source: 'offer' });
