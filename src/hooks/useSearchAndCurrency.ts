@@ -21,7 +21,9 @@ export function useSearchAndCurrency() {
     try {
       const stored = localStorage.getItem('oc_openRouterApiKey');
       if (stored) return JSON.parse(stored);
-    } catch {}
+    } catch (e) {
+      console.warn("Could not load cached OpenRouter API key", e);
+    }
     return '';
   });
 
