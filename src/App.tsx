@@ -362,26 +362,42 @@ export default function App() {
     const currentQuarter = getQuarterCycle();
 
     if (cardsToResetOffers.size > 0 || shouldResetQuarterly) {
+      const resetPrefixes: string[] = [];
+      const resetCycles: string[] = [];
+
+      if (cardsToResetOffers.size > 0) {
+        for (const cardId of cardsToResetOffers) {
+          resetPrefixes.push(`${cardId}-`);
+          resetCycles.push(`-${cardCycles[cardId]}`);
+        }
+      }
+
+      const prefixesLen = resetPrefixes.length;
+
       for (const key in newOfferUsage) {
         let deleted = false;
 
         if (shouldResetQuarterly) {
-          const qMatch = key.match(/-\d{4}-Q\d$/);
-          if (qMatch && qMatch[0] !== `-${currentQuarter}`) {
-            delete newOfferUsage[key];
-            offerUsageDirty = true;
-            deleted = true;
+          const keyLen = key.length;
+          // Fast check for Quarterly pattern (ends with -YYYY-QX)
+          if (keyLen >= 7 && key[keyLen - 2] === 'Q') {
+            const qMatch = key.match(/-\d{4}-Q\d$/);
+            if (qMatch && qMatch[0] !== `-${currentQuarter}`) {
+              delete newOfferUsage[key];
+              offerUsageDirty = true;
+              deleted = true;
+            }
           }
         }
 
-        if (!deleted && cardsToResetOffers.size > 0) {
-          for (const cardId of cardsToResetOffers) {
-            if (key.startsWith(`${cardId}-`)) {
-              if (!key.endsWith(`-${cardCycles[cardId]}`)) {
+        if (!deleted && prefixesLen > 0) {
+          for (let i = 0; i < prefixesLen; i++) {
+            if (key.startsWith(resetPrefixes[i])) {
+              if (!key.endsWith(resetCycles[i])) {
                 delete newOfferUsage[key];
                 offerUsageDirty = true;
               }
-              break; // Key belongs to this card, no need to check other cards
+              break;
             }
           }
         }
