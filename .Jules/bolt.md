@@ -9,3 +9,7 @@
 ## 2026-06-02 - Optimize Dictionary Key Iterations
 **Learning:** Calling `Object.keys()` inside a loop (like iterating through cards) creates unnecessary array allocations and results in O(N*M) time complexity. For large objects or frequent evaluations, this degrades performance significantly.
 **Action:** When filtering or resetting keys based on multiple active entities or conditions, consolidate the operation into a single `for...in` pass over the object. Evaluate all necessary conditions within this single traversal to achieve O(M) complexity and avoid creating intermediate arrays.
+
+## 2026-06-02 - Optimize string replacement with RegExp and Map
+**Learning:** When optimizing multiple specific substring replacements in performance-critical paths, avoid chained `.replace()` calls or sequential `.includes()` checks. Prefer a single pre-compiled regular expression combined with a dictionary map for a safe, single-pass replacement that avoids edge cases with trailing characters.
+**Action:** Replaced chained `includes` and `replace` with `value.replace(PASSES_REPLACE_REGEX, match => PASSES_REPLACE_MAP[match])`.
