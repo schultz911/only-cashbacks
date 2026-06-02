@@ -22,3 +22,4 @@
 ## 2026-06-02 - Array Allocation Optimization
 **Learning:** Shadowing variables inside loops with identical constants unnecessarily re-allocates memory and wastes CPU cycles, especially in hot paths like `findBestBenefit` which evaluates over many cards.
 **Action:** Always utilize top-level constant definitions and avoid re-declaring them inside loops. Removed `SPECIFIC_PLATFORMS` re-declaration in `src/lib/recommendation.ts`.
+## 2026-06-02 - App.tsx O(N) lookup inside loop optimization\n**Learning:** CARD_DATA.find inside walletCards loops taking O(N^2) was identified.\n**Action:** Replaced O(N) array search with O(1) dictionary lookup using CARD_DICT from src/data/cards.ts.
