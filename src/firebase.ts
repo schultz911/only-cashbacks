@@ -22,12 +22,6 @@ export interface FirestoreErrorInfo {
   error: string;
   operationType: OperationType;
   path: string | null;
-  authInfo: {
-    userId?: string | null;
-    emailVerified?: boolean | null;
-    isAnonymous?: boolean | null;
-    tenantId?: string | null;
-  }
 }
 
 export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
@@ -36,12 +30,6 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
 
   const errInfo: FirestoreErrorInfo = {
     error: errorMessage,
-    authInfo: {
-      userId: auth.currentUser?.uid,
-      emailVerified: auth.currentUser?.emailVerified,
-      isAnonymous: auth.currentUser?.isAnonymous,
-      tenantId: auth.currentUser?.tenantId
-    },
     operationType,
     path
   };
