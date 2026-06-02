@@ -13,3 +13,6 @@
 ## 2026-06-02 - Optimize string replacement with RegExp and Map
 **Learning:** When optimizing multiple specific substring replacements in performance-critical paths, avoid chained `.replace()` calls or sequential `.includes()` checks. Prefer a single pre-compiled regular expression combined with a dictionary map for a safe, single-pass replacement that avoids edge cases with trailing characters.
 **Action:** Replaced chained `includes` and `replace` with `value.replace(PASSES_REPLACE_REGEX, match => PASSES_REPLACE_MAP[match])`.
+## 2026-06-02 - [LoungeTrackerModal Render Optimization]
+**Learning:** React renders could become costly if expensive data filtering and mappings were performed twice inside the render block.
+**Action:** Replaced double-filter pattern in LoungeTrackerModal with `useMemo` and cached the array, avoiding double evaluation and allocations.
