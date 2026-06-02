@@ -6,3 +6,6 @@
 ## 2024-11-20 - Memoizing Expensive Replacements in Render Loops
 **Learning:** During React renders, executing multiple string replacements (`.replace()`) and regular expressions within `Array.map()` operations can be surprisingly expensive and cause unnecessary GC pressure and CPU overhead, especially when the underlying data source is mostly static (e.g., parsing constant card benefit objects).
 **Action:** Implement module-level Maps (e.g., `BENEFIT_CACHE`) to memoize the results of these string manipulations based on the input values, effectively converting O(N) regex operations per render into O(1) dictionary lookups. Additionally, use `.includes()` checks to guard string replacement operations to avoid unnecessary string allocations when no match is found.
+## 2026-06-02 - Optimize Dictionary Key Iterations
+**Learning:** Calling `Object.keys()` inside a loop (like iterating through cards) creates unnecessary array allocations and results in O(N*M) time complexity. For large objects or frequent evaluations, this degrades performance significantly.
+**Action:** When filtering or resetting keys based on multiple active entities or conditions, consolidate the operation into a single `for...in` pass over the object. Evaluate all necessary conditions within this single traversal to achieve O(M) complexity and avoid creating intermediate arrays.

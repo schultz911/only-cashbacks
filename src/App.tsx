@@ -316,6 +316,9 @@ export default function App() {
     const newOfferUsage = { ...offerUsage };
     const newExhaustedCards = { ...exhaustedCards };
 
+    const cardsToResetOffers = new Set<string>();
+    const cardCycles: Record<string, string> = {};
+
     for (const card of CARD_DATA) {
       if (card.isDummy) continue;
 
@@ -326,13 +329,8 @@ export default function App() {
       if (todayDate === offerResetDay) {
         const offerLastResetKey = lastResetDates[`${card.id}_offer`] || lastResetDates[card.id];
         if (offerLastResetKey !== todayKey) {
-          const offerCycle = getOfferCycleForCard(card.id, cardBillDates);
-          for (const key of Object.keys(newOfferUsage)) {
-            if (key.startsWith(`${card.id}-`) && !key.endsWith(`-${offerCycle}`)) {
-              delete newOfferUsage[key];
-              offerUsageDirty = true;
-            }
-          }
+          cardsToResetOffers.add(card.id);
+          cardCycles[card.id] = getOfferCycleForCard(card.id, cardBillDates);
           lastResetDates[`${card.id}_offer`] = todayKey;
         }
       }
@@ -357,18 +355,41 @@ export default function App() {
          lastResetDates[card.id] = todayKey;
       }
     }
+
     const quarterStartMonths = [0, 3, 6, 9];
     const isQuarterStart = todayDate === 1 && quarterStartMonths.includes(today.getMonth());
-    if (isQuarterStart && lastResetDates['_quarterly'] !== todayKey) {
-      const currentQuarter = getQuarterCycle();
-      for (const key of Object.keys(newOfferUsage)) {
-        const qMatch = key.match(/-\d{4}-Q\d$/);
-        if (qMatch && qMatch[0] !== `-${currentQuarter}`) {
-          delete newOfferUsage[key];
-          offerUsageDirty = true;
+    const shouldResetQuarterly = isQuarterStart && lastResetDates['_quarterly'] !== todayKey;
+    const currentQuarter = getQuarterCycle();
+
+    if (cardsToResetOffers.size > 0 || shouldResetQuarterly) {
+      for (const key in newOfferUsage) {
+        let deleted = false;
+
+        if (shouldResetQuarterly) {
+          const qMatch = key.match(/-\d{4}-Q\d$/);
+          if (qMatch && qMatch[0] !== `-${currentQuarter}`) {
+            delete newOfferUsage[key];
+            offerUsageDirty = true;
+            deleted = true;
+          }
+        }
+
+        if (!deleted && cardsToResetOffers.size > 0) {
+          for (const cardId of cardsToResetOffers) {
+            if (key.startsWith(`${cardId}-`)) {
+              if (!key.endsWith(`-${cardCycles[cardId]}`)) {
+                delete newOfferUsage[key];
+                offerUsageDirty = true;
+              }
+              break; // Key belongs to this card, no need to check other cards
+            }
+          }
         }
       }
-      lastResetDates['_quarterly'] = todayKey;
+
+      if (shouldResetQuarterly) {
+        lastResetDates['_quarterly'] = todayKey;
+      }
     }
 
     if (offerUsageDirty) setOfferUsage(newOfferUsage);
