@@ -309,7 +309,9 @@ export default function App() {
     try {
       const stored = localStorage.getItem('oc_lastOfferResetDates');
       if (stored) lastResetDates = JSON.parse(stored);
-    } catch { }
+    } catch (error) {
+      console.warn('Failed to parse oc_lastOfferResetDates from localStorage:', error);
+    }
 
     let offerUsageDirty = false;
     let exhaustedDirty = false;
