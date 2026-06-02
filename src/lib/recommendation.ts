@@ -217,7 +217,6 @@ export function findBestBenefit(card: Card, cardCycle: string, ctx: Recommendati
       }
 
       if (!isCustomMatched) {
-        const SPECIFIC_PLATFORMS = ['bookmyshow', 'district', 'swiggy', 'zomato', 'dineout', 'eazydiner', 'nykaa', 'cleartrip', 'ajio', 'amazon', 'flipkart', 'cinepolis', 'myntra', 'qmin', 'bigbasket', 'blinkit', 'zepto', 'instamart'];
         for (const plat of SPECIFIC_PLATFORMS) {
           if (descL.includes(plat) || valLower.includes(plat)) {
             if (!ctx.shouldShowOffer(plat)) {
