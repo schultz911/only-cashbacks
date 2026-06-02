@@ -8,6 +8,14 @@ import React from 'react';
 
 const BENEFIT_CACHE = new Map<string, { spend: number, isFree: boolean, passesStr: string, passesCount: number, description: string }>();
 
+const PASSES_REPLACE_MAP: Record<string, string> = {
+  '/qtr': ' / Quarter',
+  '/milestone': ' / Milestone',
+  '/qr': ' / Quarter'
+};
+
+const PASSES_REPLACE_REGEX = /\/(qtr|milestone|qr)/;
+
 export const parseLoungeBenefit = (b: { value: string, description: string }) => {
   const cacheKey = `${b.value}|${b.description}`;
   const cached = BENEFIT_CACHE.get(cacheKey);
@@ -27,10 +35,7 @@ export const parseLoungeBenefit = (b: { value: string, description: string }) =>
     }
   }
 
-  let passesStr = b.value;
-  if (passesStr.includes('/qtr')) passesStr = passesStr.replace('/qtr', ' / Quarter');
-  else if (passesStr.includes('/milestone')) passesStr = passesStr.replace('/milestone', ' / Milestone');
-  else if (passesStr.includes('/qr')) passesStr = passesStr.replace('/qr', ' / Quarter');
+  let passesStr = b.value.replace(PASSES_REPLACE_REGEX, match => PASSES_REPLACE_MAP[match]);
 
   let passesCount = 0;
   const numMatch = passesStr.match(/(\d+)/);
