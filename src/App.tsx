@@ -35,13 +35,16 @@ import { useSearchAndCurrency } from './hooks/useSearchAndCurrency';
 import { usePushNotifications } from './hooks/usePushNotifications';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 
+import { useAuthSyncContext } from './contexts/AuthSyncContext';
+import { useWalletContext } from './contexts/WalletContext';
+import { useSearchContext } from './contexts/SearchContext';
+
 export default function App() {
   const {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
   } = useRegisterSW();
 
-  const skipSyncRef = useRef(false);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
   useEffect(() => {
@@ -55,16 +58,14 @@ export default function App() {
     };
   }, []);
 
-  const latestStateRef = useRef<any>({});
-
   const {
     user, isAuthLoading, isDataLoaded,
     syncError, isSyncing, isSyncPaused, setIsSyncPaused,
     isDirty, setIsDirty, isDirtyRef, markDirty,
     theme, setTheme,
     handleLogin, handleLogout,
-    saveData, useSyncEffect
-  } = useAuthAndSync(latestStateRef, skipSyncRef);
+    saveData, useSyncEffect, skipSyncRef, latestStateRef
+  } = useAuthSyncContext();
 
   const {
     exhaustedCards, setExhaustedCards, normalizedExhaustedCards,
@@ -76,7 +77,7 @@ export default function App() {
     walletCards, setWalletCards,
     cashbackLogs, setCashbackLogs,
     kiwiNeonEarnRate, setKiwiNeonEarnRate
-  } = useWalletState(skipSyncRef, setIsDirty);
+  } = useWalletContext();
 
   const {
     query, setQuery,
@@ -92,7 +93,7 @@ export default function App() {
     isOnline, setIsOnline,
     isScanToPay, setIsScanToPay,
     openRouterApiKey, setOpenRouterApiKey
-  } = useSearchAndCurrency();
+  } = useSearchContext();
 
   useSyncEffect({
     setExhaustedCards, setCardBillDates, setPaidBills, setLoungePassesUsed,
@@ -100,9 +101,6 @@ export default function App() {
     setKiwiNeonEarnRate, setWalletCards, setCashbackLogs
   });
 
-  latestStateRef.current = {
-    exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, cardBillDates, paidBills, openRouterApiKey, kiwiNeonEarnRate, walletCards, cashbackLogs, theme
-  };
   useEffect(() => {
     latestStateRef.current = {
       exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, cardBillDates, paidBills, openRouterApiKey, kiwiNeonEarnRate, walletCards, cashbackLogs, theme

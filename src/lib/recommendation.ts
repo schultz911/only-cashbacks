@@ -70,6 +70,8 @@ const MERCHANT_AGGREGATORS: Record<string, string[]> = {
 
 const SPECIFIC_PLATFORMS = ['bookmyshow', 'district', 'swiggy', 'zomato', 'dineout', 'eazydiner', 'nykaa', 'cleartrip', 'ajio', 'amazon', 'flipkart', 'cinepolis', 'myntra', 'qmin', 'bigbasket', 'blinkit', 'zepto', 'instamart'];
 
+const MERCHANT_AGGREGATOR_KEYS = Object.keys(MERCHANT_AGGREGATORS);
+
 
 
 const SBI_CASHBACK_CARD = CARD_DATA.find(c => c.id === 'sbi-cashback')!;
@@ -746,7 +748,8 @@ export function getRecommendations(
     const aggregatorsInQuery = new Set<string>();
     const queryWords = [...nameL.split(/[\s,.-]+/), ...platL.split(/[\s,.-]+/)].filter(Boolean);
     // Look for aggregators even in generic queries, because the user could search "dineout" and the category could be "dining", making it generic.
-    for (const [aggregator, _] of Object.entries(MERCHANT_AGGREGATORS)) {
+    for (let i = 0, len = MERCHANT_AGGREGATOR_KEYS.length; i < len; i++) {
+      const aggregator = MERCHANT_AGGREGATOR_KEYS[i];
       if (queryWords.includes(aggregator) || nameL === aggregator || platL === aggregator || (nameL.includes(aggregator) && aggregator.includes(' '))) {
         // use queryWords to avoid partial matches like 'mac' in 'pharmacy',
         // but still allow spaces if aggregator name has spaces e.g. 'paytm insider'

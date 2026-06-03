@@ -68,7 +68,7 @@ export default defineConfig(({ mode }) => {
               if (id.includes('firebase')) {
                 return 'vendor-firebase';
               }
-              if (id.includes('recharts') || id.includes('d3') || id.includes('classnames')) {
+              if (id.includes('recharts') || id.includes('d3')) {
                 return 'vendor-recharts';
               }
               if (id.includes('motion')) {

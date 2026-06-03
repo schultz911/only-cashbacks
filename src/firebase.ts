@@ -1,11 +1,20 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import { getFunctions } from 'firebase/functions';
+import { initializeAppCheck, ReCaptchaEnterpriseProvider } from 'firebase/app-check';
 import firebaseConfig from '../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export const auth = getAuth(app);
+export const functions = getFunctions(app, 'asia-south1');
+
+export const appCheck = initializeAppCheck(app, {
+  provider: new ReCaptchaEnterpriseProvider('6LfnhQotAAAAAB1XErbfPkc2uPW7DCUWzGu-osYlR'),
+  isTokenAutoRefreshEnabled: true
+});
+
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
 
@@ -39,7 +48,7 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   }
 
   console.error('Firestore Error: ', JSON.stringify(errInfo));
-  
+
   // We throw a more descriptive error object
   const finalError = new Error(errorMessage);
   (finalError as any).firestoreInfo = errInfo;
