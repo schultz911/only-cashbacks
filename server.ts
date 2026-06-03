@@ -48,6 +48,11 @@ async function startServer() {
     const now = Date.now();
 
     if (!rateLimitCache.has(ip)) {
+      // Security: Bound the Map size to prevent OOM (Out Of Memory) DoS attacks via IP spoofing flood
+      if (rateLimitCache.size >= 10000) {
+        console.warn('Rate limit cache size exceeded (possible DoS attack). Rejecting new IP.');
+        return res.status(429).json({ error: "Server under heavy load, please try again later." });
+      }
       rateLimitCache.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
       return next();
     }
@@ -131,6 +136,8 @@ Output strictly a JSON object matching this TypeScript interface:
 
       if (effectiveOpenRouterKey) {
         console.log("Calling OpenRouter API (google/gemini-3-flash-preview) via fetch...");
+
+        // Security: Add AbortSignal timeout to prevent indefinite hanging (DoS) if external API is unresponsive
         const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
           method: "POST",
           headers: {
@@ -147,7 +154,8 @@ Output strictly a JSON object matching this TypeScript interface:
               { role: "system", content: systemPrompt },
               { role: "user", content: sanitizedMerchantName }
             ]
-          })
+          }),
+          signal: AbortSignal.timeout(10000) // 10 second timeout
         });
 
         if (!response.ok) {
