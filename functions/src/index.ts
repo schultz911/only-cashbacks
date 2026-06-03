@@ -6,7 +6,6 @@ admin.initializeApp();
 // Ensure the function is deployed in a region closest to the user for optimal latency
 export const categorize = onCall(
   {
-    enforceAppCheck: true, // Requires App Check token to prevent bot abuse
     maxInstances: 10, // Prevent runaway costs
     region: "asia-south1", // Mumbai region for Indian app
   },
