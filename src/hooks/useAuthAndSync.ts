@@ -67,11 +67,13 @@ export function useAuthAndSync(latestStateRef: React.MutableRefObject<any>, skip
       await signInWithPopup(auth, googleProvider);
     } catch (error: any) {
       console.error('Login error with popup:', error);
+      alert(`Login Error: ${error.message || error.code || 'Unknown error'}`);
       if (error.code) {
         try {
           await signInWithRedirect(auth, googleProvider);
-        } catch (redirectError) {
+        } catch (redirectError: any) {
           console.error('Redirect login error:', redirectError);
+          alert(`Redirect Error: ${redirectError.message || redirectError.code}`);
         }
       }
     }

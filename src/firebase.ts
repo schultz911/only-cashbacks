@@ -11,7 +11,7 @@ export const auth = getAuth(app);
 export const functions = getFunctions(app, 'asia-south1');
 
 export const appCheck = initializeAppCheck(app, {
-  provider: new ReCaptchaEnterpriseProvider('6LfnhQotAAAAAB1XErbfPkc2uPW7DCUWzGu-osYlR'),
+  provider: new ReCaptchaEnterpriseProvider('6LfnhQotAAAAAMoWJ1ETW8R2aVY7-aTMNtTqwGCS'),
   isTokenAutoRefreshEnabled: true
 });
 
