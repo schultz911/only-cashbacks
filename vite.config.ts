@@ -33,6 +33,25 @@ export default defineConfig(({ mode }) => {
               purpose: 'any maskable'
             }
           ]
+        },
+        workbox: {
+          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+          runtimeCaching: [
+            {
+              urlPattern: ({ request }) => request.destination === 'style' || request.destination === 'script' || request.destination === 'worker' || request.destination === 'font',
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'static-assets-cache',
+                expiration: {
+                  maxEntries: 100,
+                  maxAgeSeconds: 30 * 24 * 60 * 60 // 30 days
+                },
+                cacheableResponse: {
+                  statuses: [0, 200]
+                }
+              }
+            }
+          ]
         }
       })
     ],
@@ -65,6 +84,10 @@ export default defineConfig(({ mode }) => {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       // Do not modify—file watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',
+    },
+    test: {
+      environment: 'jsdom',
+      globals: true,
     },
   };
 });

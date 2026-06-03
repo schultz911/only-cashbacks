@@ -5,6 +5,14 @@
 
 import { MerchantInfo } from "../types";
 
+const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+const CACHE_PREFIX = 'oc_merchant_';
+
+interface CachedMerchant {
+  data: MerchantInfo;
+  timestamp: number;
+}
+
 const EXHAUSTIVE_MERCHANT_MAPPINGS = [
   // P2P / Personal Transfers
   { pattern: /\b(?:p2p|splitwise|friend|family|mom|dad|brother|sister|wife|husband|upi transfer|transfer to|pay to|personal qr|self transfer|peer to peer)\b/i, category: "Personal", isOnline: false, isP2P: true },
@@ -143,11 +151,17 @@ export async function categorizeMerchant(merchantName: string, apiKey?: string):
     return localMatch;
   }
 
-  const cacheKey = `oc_merchant_${merchantName.toLowerCase()}`;
+  const cacheKey = `${CACHE_PREFIX}${merchantName.toLowerCase()}`;
   try {
-    const cached = localStorage.getItem(cacheKey);
-    if (cached) {
-      return JSON.parse(cached) as MerchantInfo;
+    const cachedStr = localStorage.getItem(cacheKey);
+    if (cachedStr) {
+      const cached = JSON.parse(cachedStr) as CachedMerchant;
+      // Check TTL
+      if (Date.now() - cached.timestamp < CACHE_TTL_MS) {
+        return cached.data;
+      } else {
+        localStorage.removeItem(cacheKey);
+      }
     }
   } catch (e) {}
 
@@ -163,7 +177,27 @@ export async function categorizeMerchant(merchantName: string, apiKey?: string):
     if (response.ok) {
       const data = await response.json();
       if (data && data.category) {
-        try { localStorage.setItem(cacheKey, JSON.stringify(data)); } catch (e) {}
+        const cacheEntry: CachedMerchant = {
+          data: data as MerchantInfo,
+          timestamp: Date.now()
+        };
+        try {
+          localStorage.setItem(cacheKey, JSON.stringify(cacheEntry));
+        } catch (e: any) {
+          // If quota exceeded, do a simple eviction of all old entries
+          if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+            try {
+              for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith(CACHE_PREFIX)) {
+                  localStorage.removeItem(key);
+                }
+              }
+              // Try saving again after clearing
+              localStorage.setItem(cacheKey, JSON.stringify(cacheEntry));
+            } catch (clearErr) {}
+          }
+        }
         return data as MerchantInfo;
       }
     } else {

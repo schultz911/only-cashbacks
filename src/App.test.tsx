@@ -1,0 +1,65 @@
+import { render } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import App from './App';
+
+// Mock the virtual modules injected by Vite PWA plugin
+vi.mock('virtual:pwa-register/react', () => ({
+  useRegisterSW: () => ({
+    needRefresh: [false, vi.fn()],
+    offlineReady: [false, vi.fn()],
+    updateServiceWorker: vi.fn(),
+  }),
+}));
+
+// Mock Firebase initialization to prevent network requests during tests
+vi.mock('./firebase', () => ({
+  db: {},
+  app: {},
+  auth: {
+    onAuthStateChanged: vi.fn(() => vi.fn()),
+  },
+}));
+
+// Mock localStorage
+const localStorageMock = (function() {
+  let store: Record<string, string> = {};
+  return {
+    getItem: function(key: string) {
+      return store[key] || null;
+    },
+    setItem: function(key: string, value: string) {
+      store[key] = value.toString();
+    },
+    removeItem: function(key: string) {
+      delete store[key];
+    },
+    clear: function() {
+      store = {};
+    },
+    get length() {
+      return Object.keys(store).length;
+    },
+    key: function(i: number) {
+      return Object.keys(store)[i] || null;
+    }
+  };
+})();
+Object.defineProperty(window, 'localStorage', {
+  value: localStorageMock
+});
+
+describe('App Smoke Test', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.clearAllTimers();
+    vi.useRealTimers();
+  });
+
+  it('renders without crashing', () => {
+    const { container } = render(<App />);
+    expect(container).toBeTruthy();
+  });
+});
