@@ -275,6 +275,12 @@ export default function App() {
 
   useEffect(() => markDirty(), [exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, cardBillDates, paidBills, walletCards, cashbackLogs, theme, openRouterApiKey, kiwiNeonEarnRate]);
 
+  const activeWalletCards = useMemo(() => {
+    return walletCards.length > 0
+      ? CARD_DATA.filter(c => walletCards.includes(c.id) && !c.isDummy)
+      : CARD_DATA.filter(c => !c.isDummy);
+  }, [walletCards]);
+
   useEffect(() => {
     if (!isDataLoaded || !walletCards || walletCards.length === 0) return;
     const timer = setTimeout(() => {
@@ -982,7 +988,7 @@ export default function App() {
               <Wallet className="w-5 h-5 text-gray-500" />
               My Wallet
               <span className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 rounded-full px-2 py-0.5 text-[10px] font-black ml-1">
-                {(walletCards.length > 0 ? CARD_DATA.filter(c => walletCards.includes(c.id) && !c.isDummy) : CARD_DATA.filter(c => !c.isDummy)).length}
+                {activeWalletCards.length}
               </span>
             </h3>
             <div className="flex items-center gap-3">
@@ -1011,7 +1017,7 @@ export default function App() {
               className="flex sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 overflow-x-auto pt-8 pb-4 px-1 snap-x scrollbar-hide relative z-40 isolate"
               style={{ paddingBottom: '2rem', WebkitTransform: 'translateZ(0)', transform: 'translateZ(0)' }} // ensure enough overflow room
             >
-              {(walletCards.length > 0 ? CARD_DATA.filter(c => walletCards.includes(c.id) && !c.isDummy) : CARD_DATA.filter(c => !c.isDummy)).map((card) => (
+              {activeWalletCards.map((card) => (
                 <div key={card.id} className={cn("snap-start shrink-0 w-72 sm:w-auto", selectedCardForDetails?.card.id === card.id ? "opacity-0 pointer-events-none" : "opacity-100")}>
                   <CardItem layoutId={`card-list-${card.id}`} card={card} onClick={() => setSelectedCardForDetails({ card, source: 'list' })} className="h-full shadow-sm hover:shadow-md transition-shadow cursor-pointer" isExhausted={normalizedExhaustedCards[card.id]} />
                 </div>
