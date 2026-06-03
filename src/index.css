@@ -105,6 +105,12 @@ html.oled .bg-white\/40, html.oled .bg-white\/80, html.oled .bg-white\/90 {
     scrollbar-width: none;
   }
 
+  /* Optimize off-screen rendering for heavy lists and grids */
+  .render-optimized {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 300px;
+  }
+
   @keyframes coin-drop {
     0% {
       opacity: 0;

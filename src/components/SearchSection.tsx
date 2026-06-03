@@ -252,7 +252,7 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
 
       {/* Recent History Shortcuts */}
       {history.length > 0 && (
-        <div className="space-y-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+        <div className="space-y-3 pt-4 border-t border-gray-100 dark:border-gray-800 render-optimized">
           <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest pl-1">Recent Searches</h3>
           <div className="flex flex-wrap gap-2">
             {history.slice(0, 4).map((item, idx) => (

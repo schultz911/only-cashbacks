@@ -1012,7 +1012,7 @@ export default function App() {
           <div className="relative z-30 isolate" style={{ WebkitTransform: 'translate3d(0,0,0)', transform: 'translate3d(0,0,0)' }}>
             <motion.div 
               layoutScroll
-              className="flex sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 overflow-x-auto pt-8 pb-4 px-1 snap-x scrollbar-hide relative z-40 isolate"
+              className="flex sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 overflow-x-auto pt-8 pb-4 px-1 snap-x scrollbar-hide relative z-40 isolate render-optimized"
               style={{ paddingBottom: '2rem', WebkitTransform: 'translateZ(0)', transform: 'translateZ(0)' }} // ensure enough overflow room
             >
               {activeWalletCards.map((card) => (
