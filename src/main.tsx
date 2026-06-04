@@ -8,6 +8,10 @@ import { AuthSyncProvider } from './contexts/AuthSyncContext.tsx';
 import { WalletProvider } from './contexts/WalletContext.tsx';
 import { SearchProvider } from './contexts/SearchContext.tsx';
 
+window.addEventListener('unhandledrejection', (event) => {
+  console.error('Unhandled Promise Rejection:', event.reason);
+});
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>

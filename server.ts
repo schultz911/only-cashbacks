@@ -50,8 +50,9 @@ async function startServer() {
     if (!rateLimitCache.has(ip)) {
       // Security: Bound the Map size to prevent OOM (Out Of Memory) DoS attacks via IP spoofing flood
       if (rateLimitCache.size >= 10000) {
-        console.warn('Rate limit cache size exceeded (possible DoS attack). Rejecting new IP.');
-        return res.status(429).json({ error: "Server under heavy load, please try again later." });
+        // Evict oldest to make room and prevent DoS while keeping legitimate users
+        const firstKey = rateLimitCache.keys().next().value;
+        if (firstKey) rateLimitCache.delete(firstKey);
       }
       rateLimitCache.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
       return next();
@@ -111,7 +112,7 @@ async function startServer() {
         return res.status(400).json({ error: "Invalid API key format. Key must start with 'sk-or-' and consist of only alphanumeric characters, dashes, and underscores." });
       }
 
-      const sanitizedMerchantName = merchantName.trim();
+      const sanitizedMerchantName = merchantName.replace(/[<>{}()]/g, '').trim();
       console.log(`Merchant to categorize: "${sanitizedMerchantName}"`);
 
       // Determine which API to use
@@ -192,7 +193,15 @@ Output strictly a JSON object matching this TypeScript interface:
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
+    app.use(express.static(distPath, {
+      maxAge: '1y',
+      immutable: true,
+      setHeaders: (res, path) => {
+        if (path.endsWith('.html')) {
+          res.setHeader('Cache-Control', 'no-cache');
+        }
+      }
+    }));
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });

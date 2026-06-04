@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, X, Loader2, Globe, Plane, QrCode, Store, History } from 'lucide-react';
+import { Search, X, Loader2, Globe, Plane, QrCode, Store, History, CloudOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { CustomSelect } from './CustomSelect';
@@ -31,6 +31,7 @@ interface SearchSectionProps {
   history: MerchantInfo[];
   suggestionRef: React.RefObject<HTMLDivElement>;
   formatAmountStr: (val: string) => string;
+  isOffline: boolean;
 }
 
 export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
@@ -58,7 +59,8 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
   setFocusedSuggestionIndex,
   history,
   suggestionRef,
-  formatAmountStr
+  formatAmountStr,
+  isOffline
 }) => {
   return (
     <section className="space-y-4">
@@ -174,9 +176,12 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
           <motion.button
             whileTap={{ scale: 0.95 }}
             disabled={loading}
-            className="absolute right-2 top-1/2 -translate-y-1/2 bg-[#0095f6] text-white rounded-xl px-4 py-2 text-sm font-semibold hover:bg-blue-600 transition-colors disabled:opacity-50 shadow"
+            className={cn(
+              "absolute right-2 top-1/2 -translate-y-1/2 text-white rounded-xl px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-50 shadow flex items-center gap-1.5",
+              isOffline ? "bg-amber-500 hover:bg-amber-600" : "bg-[#0095f6] hover:bg-blue-600"
+            )}
           >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Check'}
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : isOffline ? <><CloudOff className="w-4 h-4" /> Check</> : 'Check'}
           </motion.button>
         </div>
 

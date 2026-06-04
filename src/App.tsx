@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect, useRef, useMemo, Suspense, lazy } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback, Suspense, lazy } from 'react';
 import { Search, Loader2, Sparkles, Wallet, X, ChevronDown, Check, AlertCircle, Ticket, Tag, Info, Trash2, Store, PiggyBank, Plane, CloudOff } from 'lucide-react';
 
 import { motion, AnimatePresence } from 'motion/react';
@@ -27,11 +27,6 @@ import { doc, deleteDoc } from 'firebase/firestore';
 
 import Fuse from 'fuse.js';
 import { KNOWN_MERCHANTS } from './data/merchants';
-
-
-import { useWalletState } from './hooks/useWalletState';
-import { useAuthAndSync } from './hooks/useAuthAndSync';
-import { useSearchAndCurrency } from './hooks/useSearchAndCurrency';
 import { usePushNotifications } from './hooks/usePushNotifications';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 
@@ -205,7 +200,7 @@ export default function App() {
 
   useEffect(() => {
     if (query && showSuggestions) {
-      const results = fuse.search(query).slice(0, 5).map(r => r.item);
+      const results = fuse.search(query, { limit: 5 }).map(r => r.item);
       setSuggestions(results);
     } else {
       setSuggestions([]);
@@ -504,12 +499,12 @@ export default function App() {
     }
   }, [normalizedExhaustedCards, offerUsage, cardBillDates, debouncedAmount, debouncedForeignAmount, isIntl, isOnline, isScanToPay, kiwiNeonEarnRate, exchangeRates, baseCurrency, walletCards]);
 
-  const formatAmountStr = (val: string) => {
+  const formatAmountStr = useCallback((val: string) => {
     if (!val) return '';
     const parts = val.split('.');
     parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     return parts.join('.');
-  };
+  }, []);
 
   const handleLogTransaction = () => {
     if (recommendation && recommendation.cashbackEarned > 0) {
@@ -643,6 +638,7 @@ export default function App() {
               history={history}
               suggestionRef={suggestionRef}
               formatAmountStr={formatAmountStr}
+              isOffline={isOffline}
             />
 
             <VoucherSection

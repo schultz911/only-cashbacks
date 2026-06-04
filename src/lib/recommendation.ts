@@ -88,8 +88,16 @@ const BMS_DISTRICT_BMS_REGEX = /bookmyshow|bms|district/i;
 
 
 
-const hasKeyword = (targets: string[], keywords: string[]) =>
-  keywords.some(keyword => targets.some(target => target.includes(keyword)));
+const escapeRegExp = (string: string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const buildRegex = (keywords: string[]) => new RegExp(keywords.map(escapeRegExp).join('|'), 'i');
+
+const GROCERY_REGEX = buildRegex(GROCERY_KEYWORDS);
+const FOOD_DELIVERY_REGEX = buildRegex(FOOD_DELIVERY_KEYWORDS);
+const FOOD_DELIVERY_EXCLUSIONS_REGEX = buildRegex(FOOD_DELIVERY_EXCLUSIONS);
+const DINING_REGEX = buildRegex(DINING_KEYWORDS);
+const MOVIE_REGEX = buildRegex(MOVIE_KEYWORDS);
+
+const hasKeyword = (targets: string[], regex: RegExp) => targets.some(target => regex.test(target));
 
 
 export interface RecommendationContext {
@@ -659,10 +667,10 @@ export function getRecommendations(
   const platL = merchant.platform?.toLowerCase() || '';
 
   const targets = [nameL, catL, platL];
-  const isGrocery = hasKeyword(targets, GROCERY_KEYWORDS);
-  const isFoodDelivery = hasKeyword(targets, FOOD_DELIVERY_KEYWORDS) && !hasKeyword([nameL], FOOD_DELIVERY_EXCLUSIONS);
-  const isDining = hasKeyword(targets, DINING_KEYWORDS);
-  const isMovie = hasKeyword(targets, MOVIE_KEYWORDS);
+  const isGrocery = hasKeyword(targets, GROCERY_REGEX);
+  const isFoodDelivery = hasKeyword(targets, FOOD_DELIVERY_REGEX) && !hasKeyword([nameL], FOOD_DELIVERY_EXCLUSIONS_REGEX);
+  const isDining = hasKeyword(targets, DINING_REGEX);
+  const isMovie = hasKeyword(targets, MOVIE_REGEX);
   const searchedMoviePlat = MOVIE_PLATFORMS.find(p => nameL.includes(p) || (platL && platL.includes(p)));
   const searchedDiningPlat = DINING_PLATFORMS.find(p => nameL.includes(p) || (platL && platL.includes(p)));
 
@@ -722,6 +730,9 @@ export function getRecommendations(
   }
 
 
+  const queryWordsList = [...nameL.split(/[\s,.-]+/), ...platL.split(/[\s,.-]+/)].filter(Boolean);
+  const queryWordsWithCat = [...queryWordsList, catL].filter(Boolean);
+
   const isNameGeneric = (name: string, cat: string) => {
     if (name === cat) return true;
     const generics = [
@@ -746,18 +757,17 @@ export function getRecommendations(
 
   const determineQueryAggregators = () => {
     const aggregatorsInQuery = new Set<string>();
-    const queryWords = [...nameL.split(/[\s,.-]+/), ...platL.split(/[\s,.-]+/)].filter(Boolean);
     // Look for aggregators even in generic queries, because the user could search "dineout" and the category could be "dining", making it generic.
     for (let i = 0, len = MERCHANT_AGGREGATOR_KEYS.length; i < len; i++) {
       const aggregator = MERCHANT_AGGREGATOR_KEYS[i];
-      if (queryWords.includes(aggregator) || nameL === aggregator || platL === aggregator || (nameL.includes(aggregator) && aggregator.includes(' '))) {
-        // use queryWords to avoid partial matches like 'mac' in 'pharmacy',
+      if (queryWordsList.includes(aggregator) || nameL === aggregator || platL === aggregator || (nameL.includes(aggregator) && aggregator.includes(' '))) {
+        // use queryWordsList to avoid partial matches like 'mac' in 'pharmacy',
         // but still allow spaces if aggregator name has spaces e.g. 'paytm insider'
         let matched = false;
         if (aggregator.includes(' ')) {
           if (nameL.includes(aggregator) || platL.includes(aggregator)) matched = true;
         } else {
-          if (queryWords.includes(aggregator)) matched = true;
+          if (queryWordsList.includes(aggregator)) matched = true;
         }
 
         if (matched) aggregatorsInQuery.add(aggregator);
@@ -803,8 +813,7 @@ export function getRecommendations(
       // or if it's a generic query.
       if (isGenericQuery) return true;
 
-      const queryWords = [...nameL.split(/[\s,.-]+/), catL, platL].filter(w => w);
-      const categoryMatch = targetCategories.some(tc => queryWords.some(qw => tc.includes(qw) || qw.includes(tc)));
+      const categoryMatch = targetCategories.some(tc => queryWordsWithCat.some(qw => tc.includes(qw) || qw.includes(tc)));
       if (categoryMatch) {
         return true;
       }

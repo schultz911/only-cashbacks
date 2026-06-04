@@ -103,8 +103,32 @@ const EXHAUSTIVE_MERCHANT_MAPPINGS = [
   { pattern: /cafe|restaurant|diner|eatery|\bpub\b|\bbar\b|coffee|bistro|lounge|grill|steakhouse|dining|food|meal|feast/i, category: "Dining", isOnline: false, isP2P: false }
 ];
 
+const EXACT_MATCH_MAP: Record<string, MerchantInfo> = {
+  'swiggy': { name: 'Swiggy', category: 'Food Delivery', isOnline: true, isP2P: false, platform: 'Swiggy' },
+  'zomato': { name: 'Zomato', category: 'Food Delivery', isOnline: true, isP2P: false, platform: 'Zomato' },
+  'amazon': { name: 'Amazon', category: 'E-commerce', isOnline: true, isP2P: false, platform: 'Amazon' },
+  'flipkart': { name: 'Flipkart', category: 'E-commerce', isOnline: true, isP2P: false, platform: 'Flipkart' },
+  'zepto': { name: 'Zepto', category: 'Grocery', isOnline: true, isP2P: false, platform: 'Zepto' },
+  'blinkit': { name: 'Blinkit', category: 'Grocery', isOnline: true, isP2P: false },
+  'myntra': { name: 'Myntra', category: 'Apparel', isOnline: true, isP2P: false },
+  'ajio': { name: 'Ajio', category: 'Apparel', isOnline: true, isP2P: false },
+  'nykaa': { name: 'Nykaa', category: 'Beauty', isOnline: true, isP2P: false },
+  'bookmyshow': { name: 'BookMyShow', category: 'Movies', isOnline: true, isP2P: false },
+  'bms': { name: 'BookMyShow', category: 'Movies', isOnline: true, isP2P: false },
+  'uber': { name: 'Uber', category: 'Commute', isOnline: true, isP2P: false },
+  'ola': { name: 'Ola', category: 'Commute', isOnline: true, isP2P: false },
+  'makemytrip': { name: 'MakeMyTrip', category: 'Travel', isOnline: true, isP2P: false },
+  'mmt': { name: 'MakeMyTrip', category: 'Travel', isOnline: true, isP2P: false },
+  'cred': { name: 'CRED', category: 'Finance', isOnline: true, isP2P: false }
+};
+
 function categorizeLocal(merchantName: string): MerchantInfo | null {
   const norm = merchantName.toLowerCase();
+
+  // O(1) Fast path
+  if (EXACT_MATCH_MAP[norm]) {
+    return { ...EXACT_MATCH_MAP[norm], name: merchantName };
+  }
 
   // Pattern matching
   for (const mapping of EXHAUSTIVE_MERCHANT_MAPPINGS) {
@@ -184,15 +208,28 @@ export async function categorizeMerchant(merchantName: string, apiKey?: string):
         try {
           localStorage.setItem(cacheKey, JSON.stringify(cacheEntry));
         } catch (e: any) {
-          // If quota exceeded, do a simple eviction of all old entries
+          // If quota exceeded, do an LRU eviction
           if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
             try {
               const keys = Object.keys(localStorage);
+              const cacheItems: { key: string, ts: number }[] = [];
               for (let i = 0; i < keys.length; i++) {
                 const key = keys[i];
                 if (key.startsWith(CACHE_PREFIX)) {
-                  localStorage.removeItem(key);
+                  try {
+                    const itemStr = localStorage.getItem(key);
+                    if (itemStr) {
+                      const item = JSON.parse(itemStr);
+                      cacheItems.push({ key, ts: item.timestamp || 0 });
+                    }
+                  } catch (parseErr) {}
                 }
+              }
+              // Sort by oldest first and remove oldest 20%
+              cacheItems.sort((a, b) => a.ts - b.ts);
+              const itemsToRemove = Math.max(1, Math.floor(cacheItems.length * 0.2));
+              for (let i = 0; i < itemsToRemove; i++) {
+                localStorage.removeItem(cacheItems[i].key);
               }
               // Try saving again after clearing
               localStorage.setItem(cacheKey, JSON.stringify(cacheEntry));
