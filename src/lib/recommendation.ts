@@ -151,7 +151,7 @@ export function findBestBenefit(card: Card, cardCycle: string, ctx: Recommendati
     if (ctx.isIntl && benefit.type === 'offer' && benefit.category !== 'International') continue;
     let matchScore = -1;
 
-    const bDescL = benefit.description.toLowerCase();
+    const bDescL = benefit.descriptionLower!;
     const isQuarterly = bDescL.includes('quarter') || bDescL.includes('qtr');
     const cycle = isQuarterly ? ctx.currentQuarterCycle : cardCycle;
     const usageKey = `${card.id}-${benefit.category}-${benefit.value}-${cycle}`;
@@ -160,7 +160,7 @@ export function findBestBenefit(card: Card, cardCycle: string, ctx: Recommendati
       continue;
     }
 
-    const descLForOnline = (benefit.category + " " + benefit.value + " " + (benefit.description || '')).toLowerCase();
+    const descLForOnline = benefit.descLForOnline!;
     if (!ctx.isOnline && descLForOnline.includes('online') && !descLForOnline.includes('offline')) {
       continue;
     }
@@ -250,10 +250,10 @@ export function findBestBenefit(card: Card, cardCycle: string, ctx: Recommendati
     else if ((card.id === 'axis-myzone' || card.id === 'kotak-811-infinity') && (ctx.isEazydiner || ctx.isDistrictName || ctx.isDistrictPlat)) {
       if (pLower.includes('dining') || pLower.includes('eazydiner') || pLower.includes('district')) matchScore = 95;
     }
-    else if (ctx.isOnline && benefit.category.toLowerCase().includes('online')) matchScore = 20 + (benefit.percentValue || 0);
-    else if (!ctx.isOnline && benefit.category.toLowerCase().includes('offline')) matchScore = 20 + (benefit.percentValue || 0);
+    else if (ctx.isOnline && benefit.categoryLower!.includes('online')) matchScore = 20 + (benefit.percentValue || 0);
+    else if (!ctx.isOnline && benefit.categoryLower!.includes('offline')) matchScore = 20 + (benefit.percentValue || 0);
     else if (ctx.isScanToPay && pLower.includes('scan')) matchScore = 30 + (benefit.percentValue || 0);
-    else if (benefit.type === 'offer' && (benefit.description.toLowerCase().includes(ctx.nameL) || (ctx.platL && benefit.description.toLowerCase().includes(ctx.platL)))) {
+    else if (benefit.type === 'offer' && (benefit.descriptionLower!.includes(ctx.nameL) || (ctx.platL && benefit.descriptionLower!.includes(ctx.platL)))) {
       matchScore = 80;
     }
     else if (pLower.includes('all') || pLower.includes('all spends') || pLower.includes('other')) {
@@ -447,7 +447,7 @@ export function evaluateCard(card: Card, ctx: RecommendationContext, kiwiNeonEar
 
   const exclusion = card.benefits.find(b => {
     if (b.type !== 'exclusion') return false;
-    const bCatL = b.category.toLowerCase();
+    const bCatL = b.categoryLower!;
     return ctx.catL === bCatL || ctx.nameL.includes(bCatL) || ctx.platL === bCatL;
   });
 

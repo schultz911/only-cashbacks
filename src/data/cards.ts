@@ -257,4 +257,13 @@ export const CARD_DATA: Card[] = [
   }
 ];
 
+// Precompute lowercase categories to avoid redundant allocations in hot loops
+CARD_DATA.forEach(card => {
+  card.benefits.forEach(benefit => {
+    benefit.categoryLower = benefit.category.toLowerCase();
+    benefit.descriptionLower = benefit.description.toLowerCase();
+    benefit.descLForOnline = (benefit.category + " " + benefit.value + " " + (benefit.description || '')).toLowerCase();
+  });
+});
+
 export const CARD_DICT: Record<string, Card> = Object.fromEntries(CARD_DATA.map(c => [c.id, c]));
