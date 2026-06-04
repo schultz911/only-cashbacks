@@ -566,7 +566,7 @@ export default function App() {
         return [info, ...filtered].slice(0, 4);
       });
     } catch (error) {
-      console.error(error);
+      console.error('Failed to get recommendation:', error);
     } finally {
       setLoading(false);
     }
