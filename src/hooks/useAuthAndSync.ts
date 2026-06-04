@@ -3,6 +3,7 @@ import { auth, db, handleFirestoreError, OperationType, googleProvider } from '.
 import { onAuthStateChanged, User, signInWithPopup, signInWithRedirect, signOut } from 'firebase/auth';
 import { doc, getDocFromServer, setDoc, onSnapshot } from 'firebase/firestore';
 import { getInitialState, safeSetItem } from '../lib/storage';
+import { get, set } from 'idb-keyval';
 
 export function useAuthAndSync(latestStateRef: React.MutableRefObject<any>, skipSyncRef: React.MutableRefObject<boolean>) {
   const [user, setUser] = useState<User | null>(null);
@@ -87,7 +88,7 @@ export function useAuthAndSync(latestStateRef: React.MutableRefObject<any>, skip
     }
   };
 
-  const setLocalStateFromData = (data: any, setFunctions: any) => {
+  const setLocalStateFromData = async (data: any, setFunctions: any) => {
     skipSyncRef.current = true;
     if (data.exhaustedCards) setFunctions.setExhaustedCards(data.exhaustedCards);
     if (data.cardBillDates) setFunctions.setCardBillDates(data.cardBillDates);
@@ -101,13 +102,21 @@ export function useAuthAndSync(latestStateRef: React.MutableRefObject<any>, skip
     
     // Offline queue merge strategy
     if (data.cashbackLogs) {
-      const localOfflineQueue = getInitialState<any[]>('oc_offlineLogsQueue', []);
-      const mergedLogs = [...data.cashbackLogs, ...localOfflineQueue];
-      // Deduplicate by date
-      const uniqueLogs = Array.from(new Map(mergedLogs.map(item => [item.date, item])).values());
-      setFunctions.setCashbackLogs(uniqueLogs);
-      if (localOfflineQueue.length > 0) {
-        safeSetItem('oc_offlineLogsQueue', []);
+      const localOfflineQueue = (await get<any[]>('oc_offlineLogsQueue')) || [];
+      if (localOfflineQueue.length === 0) {
+        setFunctions.setCashbackLogs(data.cashbackLogs);
+      } else {
+        const uniqueMap = new Map();
+        for (let i = 0, len = data.cashbackLogs.length; i < len; i++) {
+          const item = data.cashbackLogs[i];
+          uniqueMap.set(item.date, item);
+        }
+        for (let i = 0, len = localOfflineQueue.length; i < len; i++) {
+          const item = localOfflineQueue[i];
+          uniqueMap.set(item.date, item);
+        }
+        setFunctions.setCashbackLogs(Array.from(uniqueMap.values()));
+        await set('oc_offlineLogsQueue', []);
       }
     }
     
@@ -166,7 +175,7 @@ export function useAuthAndSync(latestStateRef: React.MutableRefObject<any>, skip
             const docRef = doc(db, 'users', user.uid);
             const docSnap = await getDocFromServer(docRef);
             if (docSnap.exists() && !isDirtyRef.current) {
-              setLocalStateFromData(docSnap.data(), setFunctions);
+              await setLocalStateFromData(docSnap.data(), setFunctions);
             }
           } catch (e) {
             console.error("Failed to persistently refresh data on visibility change", e);
@@ -212,11 +221,11 @@ export function useAuthAndSync(latestStateRef: React.MutableRefObject<any>, skip
     } catch (error: any) {
       if (error.message === "Offline" || error.code === 'unavailable') {
          // Queue offline data locally
-         const localOfflineQueue = getInitialState<any[]>('oc_offlineLogsQueue', []);
+         const localOfflineQueue = (await get<any[]>('oc_offlineLogsQueue')) || [];
          // If there are new cashback logs, we queue them
          if (dataToSave.cashbackLogs && dataToSave.cashbackLogs.length > 0) {
             const newLog = dataToSave.cashbackLogs[dataToSave.cashbackLogs.length - 1]; // Naive strategy, assuming last is new
-            safeSetItem('oc_offlineLogsQueue', [...localOfflineQueue, newLog]);
+            await set('oc_offlineLogsQueue', [...localOfflineQueue, newLog]);
          }
          setSyncError('Offline: Changes queued locally.');
       } else {

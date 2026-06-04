@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export interface CardBenefit {
+interface CardBenefit {
   type: 'cashback' | 'points' | 'offer' | 'lounge' | 'exclusion' | 'forex' | 'upi';
   category: string;
   value: string;
@@ -79,7 +79,7 @@ export interface CashbackLog {
   category: string;
 }
 
-export interface UserData {
+interface UserData {
   exhaustedCards: Record<string, boolean | string>;
   cardBillDates: Record<string, number>;
   paidBills: Record<string, string>;

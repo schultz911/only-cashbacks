@@ -62,13 +62,27 @@ export default defineConfig(({ mode }) => {
               }
             },
             {
-              urlPattern: ({ request }) => request.destination === 'worker' || request.destination === 'font',
+              urlPattern: ({ request, url }) => request.destination === 'worker' || request.destination === 'font' || url.origin.includes('fonts.googleapis.com') || url.origin.includes('fonts.gstatic.com'),
               handler: 'CacheFirst',
               options: {
                 cacheName: 'static-assets-cache',
                 expiration: {
                   maxEntries: 100,
                   maxAgeSeconds: 30 * 24 * 60 * 60 // 30 days
+                },
+                cacheableResponse: {
+                  statuses: [0, 200]
+                }
+              }
+            },
+            {
+              urlPattern: ({ url }) => url.href.startsWith('https://open.er-api.com/v6/latest'),
+              handler: 'StaleWhileRevalidate',
+              options: {
+                cacheName: 'api-cache',
+                expiration: {
+                  maxEntries: 5,
+                  maxAgeSeconds: 24 * 60 * 60 // 1 day
                 },
                 cacheableResponse: {
                   statuses: [0, 200]
