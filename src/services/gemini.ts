@@ -47,7 +47,7 @@ const EXHAUSTIVE_MERCHANT_MAPPINGS = [
 
   // Pharmacies, Diagnostics & Health
   { pattern: /apollo|pharmeasy|\b1mg\b|medplus|netmeds|flipkart health|truemeds|medibuddy|healthians|dr ?lal|pathlabs|practo|healthkart/i, category: "Health", isOnline: true, isP2P: false },
- 
+
   // Travel, Hotels & Transport
   { pattern: /cleartrip|makemytrip|redbus|abhibus|mmt|yatra|goibibo|ixigo|agoda|booking\.com|booking|easemytrip|airbnb|travel|\btour\b|trip|holiday|vacation/i, category: "Travel", isOnline: true, isP2P: false },
   { pattern: /irctc|indian railway|\brail\b|\brailway\b|\btrain\b|railway ticket|vande bharat|tejas|gatimaan|shatabdi|rajdhani|duronto|suyodhan|tejas express|tejas rajdhani|tejas shatabdi|tejas duronto/i, category: "Rail", isOnline: true, isP2P: false },
@@ -94,10 +94,10 @@ const EXHAUSTIVE_MERCHANT_MAPPINGS = [
 
   // Jewellery
   { pattern: /jewel|jewelry|jewellery|\bgold\b|\bsilver\b|\bplatinum\b|diamond|\bmia\b|tanishq|malabar|kalyan|joyalukkas|pc jeweller|caratlane/i, category: "Jewellery", isOnline: false, isP2P: false },
- 
+
   // Fuel & Gas
   { pattern: /hpcl|hindustan petroleum|indianoil|indian oil|iocl|indane|bharat ?gas|bharat petroleum|bpcl|\bshell\b|nayara|jiobp|petrol|fuel|gas station|diesel|lpg|cng/i, category: "Fuel", isOnline: false, isP2P: false },
- 
+
   // Dining
   { pattern: /domino|pizza.?hut|papa ?johns|mcdonald|kfc|burger.?king|subway|starbucks|faasos|behrouz|oven.?story|box8|freshmenu|eat.?sure|magicpin|haldiram|bikanervala|barbeque.?nation|cafe.?coffee.?day|\bccd\b|chaayos|chai.?point|wow.?momo|wow.?china|taco.?bell|dunkin|krispy.?kreme|mad.?over.?donuts|baskin.?robbin|natural.?ice.?cream|giani|cream.?stone|ibaco|polar.?bear|burger.?singh|wat.?a.?burger|jumbo.?king|goli.?vada.?pav|tibbs|rolls.?mania|kathi.?junction|khan.?chacha|sagar.?ratna|saravana.?bhavan|adyar.?ananda.?bhavan|a2b|mavalli.?tiffin|\bmtr\b|paradise.?biryani|biryani.?by.?kilo|bbk|charcoal.?eats|mojo.?pizza|la.?pino|chicago.?pizza|smokin.?joe|pizza.?corner|us.?pizza|papa.?john|slay.?coffee|barista|costa.?coffee|chai.?sutta|mba.?chai|tea.?post|chocolate.?room|cookie.?man|belgian.?waffle|monginis|mio.?amore|karachi.?bakery|theobroma|glen.?s.?bakehouse|nik.?baker|flurys|keventers|drunken.?monkey|lassi.?n.?shake|frozen.?bottle|mainland.?china|asia.?seven|mamagoto|punjab.?grill|moti.?mahal|copper.?chimney|rajdhani|absolute.?barbecue|pirates.?of.?grill|sigree|oh!.?calcutta|little.?italy|cream.?centre|kailash.?parbat|bikaner.?sweets|nathu|aggarwal.?sweets|om.?sweets|kanti.?sweets|anand.?sweets|hatti.?kaapi|indian.?coffee.?house|social|farzi.?cafe|smoke.?house.?deli|chili.?s|tgi.?friday|\bnando\b|cinnabon|auntie.?anne|pa.?pa.?ya|yauatcha|pind.?balluchi|sankalp|sangeetha|vasudev.?adiga|nandini|empire|meghana.?food|mani.?s.?dum.?biryani|leon.?s.?burger|truffles|toscano/i, category: "Dining", isOnline: true, isP2P: false },
   { pattern: /cafe|restaurant|diner|eatery|\bpub\b|\bbar\b|coffee|bistro|lounge|grill|steakhouse|dining|food|meal|feast/i, category: "Dining", isOnline: false, isP2P: false }
@@ -110,6 +110,7 @@ const EXACT_MATCH_MAP: Record<string, MerchantInfo> = {
   'flipkart': { name: 'Flipkart', category: 'E-commerce', isOnline: true, isP2P: false, platform: 'Flipkart' },
   'zepto': { name: 'Zepto', category: 'Grocery', isOnline: true, isP2P: false, platform: 'Zepto' },
   'blinkit': { name: 'Blinkit', category: 'Grocery', isOnline: true, isP2P: false },
+  'instamart': { name: 'Instamart', category: 'Grocery', isOnline: true, isP2P: false, platform: 'Swiggy' },
   'myntra': { name: 'Myntra', category: 'Apparel', isOnline: true, isP2P: false },
   'ajio': { name: 'Ajio', category: 'Apparel', isOnline: true, isP2P: false },
   'nykaa': { name: 'Nykaa', category: 'Beauty', isOnline: true, isP2P: false },
@@ -187,7 +188,7 @@ export async function categorizeMerchant(merchantName: string, apiKey?: string):
         localStorage.removeItem(cacheKey);
       }
     }
-  } catch (e) {}
+  } catch (e) { }
 
   try {
     const response = await fetch("/api/categorize", {
@@ -222,7 +223,7 @@ export async function categorizeMerchant(merchantName: string, apiKey?: string):
                       const item = JSON.parse(itemStr);
                       cacheItems.push({ key, ts: item.timestamp || 0 });
                     }
-                  } catch (parseErr) {}
+                  } catch (parseErr) { }
                 }
               }
               // Sort by oldest first and remove oldest 20%
@@ -233,7 +234,7 @@ export async function categorizeMerchant(merchantName: string, apiKey?: string):
               }
               // Try saving again after clearing
               localStorage.setItem(cacheKey, JSON.stringify(cacheEntry));
-            } catch (clearErr) {}
+            } catch (clearErr) { }
           }
         }
         return data as MerchantInfo;
