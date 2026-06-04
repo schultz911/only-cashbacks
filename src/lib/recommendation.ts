@@ -199,9 +199,9 @@ export function findBestBenefit(card: Card, cardCycle: string, ctx: Recommendati
         }
       }
       // 3. HDFC Imperia Swiggy
-      else if (card.id === 'hdfc-imperia' && (benefit.category === 'Food' || benefit.category === 'Grocery' || benefit.category === 'Dining') && benefit.value === 'Swiggy') {
+      else if (card.id === 'hdfc-imperia' && ['Food', 'Grocery', 'Dining'].includes(benefit.category) && benefit.value === 'Swiggy') {
         isCustomMatched = true;
-        if (!ctx.isFoodDelivery || !ctx.isGrocery || !ctx.isDining || !ctx.shouldShowOffer('swiggy')) {
+        if (!(ctx.isFoodDelivery || ctx.isGrocery || ctx.isDining) || !ctx.shouldShowOffer('swiggy')) {
           skip = true;
         } else {
           skip = false;
