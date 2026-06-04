@@ -7,6 +7,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
   return {
+    base: mode === 'production' ? 'https://cdn.jsdelivr.net/gh/schultz911/only-cashbacks@main/dist/' : '/',
     plugins: [
       react(), 
       tailwindcss(),
