@@ -70,6 +70,8 @@ async function startServer() {
     if (now > limitData.resetTime) {
       limitData.count = 1;
       limitData.resetTime = now + RATE_LIMIT_WINDOW_MS;
+      rateLimitCache.delete(ip);
+      rateLimitCache.set(ip, limitData);
       return next();
     }
     limitData.count += 1;
@@ -84,6 +86,8 @@ async function startServer() {
     for (const [ip, data] of rateLimitCache.entries()) {
       if (now > data.resetTime) {
         rateLimitCache.delete(ip);
+      } else {
+        break;
       }
     }
   }, RATE_LIMIT_WINDOW_MS).unref();

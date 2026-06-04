@@ -7,7 +7,15 @@ import { VitePWA } from 'vite-plugin-pwa';
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
   return {
-    base: mode === 'production' ? 'https://cdn.jsdelivr.net/gh/schultz911/only-cashbacks@main/dist/' : '/',
+    base: '/',
+    experimental: {
+      renderBuiltUrl(filename: string) {
+        if (mode === 'production' && !filename.endsWith('.js') && !filename.endsWith('.css')) {
+          return 'https://cdn.jsdelivr.net/gh/schultz911/only-cashbacks@main/dist/' + filename;
+        }
+        return '/' + filename;
+      }
+    },
     plugins: [
       react(), 
       tailwindcss(),
