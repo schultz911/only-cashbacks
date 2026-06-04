@@ -89,6 +89,7 @@ export default function App() {
     foreignAmount, setForeignAmount,
     baseCurrency, setBaseCurrency,
     exchangeRates,
+    currencyError,
     isIntl, setIsIntl,
     isOnline, setIsOnline,
     isScanToPay, setIsScanToPay,
@@ -625,6 +626,7 @@ export default function App() {
               setForeignAmount={setForeignAmount}
               baseCurrency={baseCurrency}
               setBaseCurrency={setBaseCurrency}
+              currencyError={currencyError}
               isIntl={isIntl}
               setIsIntl={setIsIntl}
               isOnline={isOnline}

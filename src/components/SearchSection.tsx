@@ -14,6 +14,7 @@ interface SearchSectionProps {
   setForeignAmount: (amount: string) => void;
   baseCurrency: string;
   setBaseCurrency: (currency: string) => void;
+  currencyError?: string | null;
   isIntl: boolean;
   setIsIntl: (isIntl: boolean) => void;
   isOnline: boolean;
@@ -41,6 +42,7 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
   setForeignAmount,
   baseCurrency,
   setBaseCurrency,
+  currencyError,
   isIntl,
   setIsIntl,
   isOnline,
@@ -99,11 +101,11 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
           />
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
           {query && (
-            <button 
-              type="button" 
+            <button
+              type="button"
               aria-label="Clear search"
               title="Clear search"
-              onClick={() => { setQuery(''); setShowSuggestions(false); }} 
+              onClick={() => { setQuery(''); setShowSuggestions(false); }}
               className="absolute right-4 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 bg-gray-100 dark:bg-gray-700 rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
             >
               <X className="w-4 h-4" />
@@ -129,7 +131,7 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
                       setShowSuggestions(false);
                     }}
                     className={cn(
-                      "w-full px-5 py-3 text-left flex items-center gap-3 transition-colors text-gray-700 dark:text-gray-200 font-medium border-b border-gray-50 dark:border-gray-700/50 last:border-0", 
+                      "w-full px-5 py-3 text-left flex items-center gap-3 transition-colors text-gray-700 dark:text-gray-200 font-medium border-b border-gray-50 dark:border-gray-700/50 last:border-0",
                       focusedSuggestionIndex === idx ? "bg-gray-100 dark:bg-white/10" : "hover:bg-gray-50 dark:hover:bg-white/10"
                     )}
                   >
@@ -165,7 +167,7 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
               isIntl ? setForeignAmount(val) : setAmount(val);
             }}
             className={cn(
-              "w-full bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-white border border-gray-200 rounded-2xl py-4 pr-24 shadow-sm focus:ring-2 ring-blue-500 transition-all outline-none font-bold text-lg", 
+              "w-full bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-white border border-gray-200 rounded-2xl py-4 pr-24 shadow-sm focus:ring-2 ring-blue-500 transition-all outline-none font-bold text-lg",
               isIntl ? "pl-[120px]" : "pl-10"
             )}
           />
@@ -177,6 +179,12 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Check'}
           </motion.button>
         </div>
+
+        {isIntl && currencyError && (
+          <div className="text-red-500 text-sm mt-1 ml-2">
+            {currencyError}
+          </div>
+        )}
 
         <div className="flex flex-nowrap md:portrait:flex-wrap items-center justify-between xl:justify-start gap-2 md:gap-3 px-3 md:px-4 py-3 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm w-full overflow-x-auto scrollbar-hide">
           <div className="flex items-center gap-2 md:gap-3 shrink-0">

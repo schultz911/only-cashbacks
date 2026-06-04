@@ -12,11 +12,12 @@ export function useSearchAndCurrency() {
   const [foreignAmount, setForeignAmount] = useState<string>('');
   const [baseCurrency, setBaseCurrency] = useState('USD');
   const [exchangeRates, setExchangeRates] = useState<Record<string, number>>({});
+  const [currencyError, setCurrencyError] = useState<string | null>(null);
 
   const [isIntl, setIsIntl] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
   const [isScanToPay, setIsScanToPay] = useState(false);
-  
+
   const [openRouterApiKey, setOpenRouterApiKey] = useState(() => {
     try {
       const stored = localStorage.getItem('oc_openRouterApiKey');
@@ -47,9 +48,13 @@ export function useSearchAndCurrency() {
         if (data && data.rates) {
           setExchangeRates(data.rates);
           safeSetItem('oc_exchangeRates', data.rates);
+          setCurrencyError(null);
         }
       })
-      .catch(err => console.error("Could not fetch exchange rates:", err));
+      .catch(err => {
+        console.error("Could not fetch exchange rates:", err);
+        setCurrencyError("Failed to fetch exchange rates. Using cached or default rates.");
+      });
   }, []);
 
   return {
@@ -62,6 +67,7 @@ export function useSearchAndCurrency() {
     foreignAmount, setForeignAmount,
     baseCurrency, setBaseCurrency,
     exchangeRates,
+    currencyError,
     isIntl, setIsIntl,
     isOnline, setIsOnline,
     isScanToPay, setIsScanToPay,
