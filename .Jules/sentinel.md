@@ -12,3 +12,8 @@ Enforce pre-commit hooks or CI/CD checks (like secret scanning tools) that autom
 **Vulnerability:** Example environment files containing hardcoded credentials (like Firebase API keys or Recaptcha site keys) rather than placeholders.
 **Learning:** Even if a key is considered 'public' in some contexts (like frontend config files), hardcoding it in a template or example file (like `.env.example`) is bad practice and can lead to unintentional leakage or reuse of environments. Example files should purely demonstrate the shape of the configuration, not the content.
 **Prevention:** Always use obvious placeholders (e.g., `YOUR_API_KEY_HERE`) when creating or maintaining example environment files.
+
+## 2025-02-24 - Unauthenticated Write Access to Firestore Client Errors
+**Vulnerability:** The Firestore rules allowed anyone to write documents to the `clientErrors` collection because `allow create: if true;` was used. This is a vector for Denial of Service (DoS) and spam attacks, as unauthenticated users could flood the database with bogus records, incurring storage and operation costs.
+**Learning:** Even for non-sensitive data like client error logs, write access should always be authenticated or strictly rate-limited. Giving open write access `allow create: if true;` exposes the database to abuse.
+**Prevention:** Always require authentication (`if request.auth != null;`) for database writes unless the collection is explicitly designed for public submission, in which case rate-limiting, strict schema validation, and potentially CAPTCHA integration are necessary.
