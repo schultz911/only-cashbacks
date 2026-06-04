@@ -20,9 +20,9 @@ interface CardItemProps {
 }
 
 export const CardItem: React.FC<CardItemProps> = ({ card, className, isRecommendation, benefitText, onClick, layoutId, isExhausted }) => {
-  const hasLounge = card.benefits.some(b => b.type === 'lounge');
-  const isZeroForex = card.benefits.some(b => b.type === 'forex' || b.description.toLowerCase().includes('zero forex'));
-  const isForexPositive = card.benefits.some(b => b.description.toLowerCase().includes('forex-positive') && !isZeroForex);
+  const hasLounge = card.hasLounge;
+  const isZeroForex = card.isZeroForex;
+  const isForexPositive = card.isForexPositive;
 
   // Network text/styles (if we were using full SVGs we'd inline them, text works well too)
   const renderNetwork = () => {

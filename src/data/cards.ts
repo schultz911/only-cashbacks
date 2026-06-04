@@ -259,6 +259,10 @@ export const CARD_DATA: Card[] = [
 
 // Precompute lowercase categories to avoid redundant allocations in hot loops
 CARD_DATA.forEach(card => {
+  card.hasLounge = card.benefits.some(b => b.type === 'lounge');
+  card.isZeroForex = card.benefits.some(b => b.type === 'forex' || b.description.toLowerCase().includes('zero forex'));
+  card.isForexPositive = card.benefits.some(b => b.description.toLowerCase().includes('forex-positive') && !card.isZeroForex);
+
   card.benefits.forEach(benefit => {
     benefit.categoryLower = benefit.category.toLowerCase();
     benefit.descriptionLower = benefit.description.toLowerCase();

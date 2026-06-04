@@ -14,6 +14,13 @@ export const VoucherSection: React.FC<VoucherSectionProps> = React.memo(({
   voucherPortals,
   className
 }) => {
+  const options = React.useMemo(() => {
+    return Object.keys(voucherPortals).map(portal => ({ 
+      label: portal.toLowerCase() === 'tata neu' ? 'Tata Neu' : portal.charAt(0).toUpperCase() + portal.slice(1), 
+      value: portal 
+    }));
+  }, [voucherPortals]);
+
   return (
     <section className={className}>
       <div className="space-y-1">
@@ -26,10 +33,7 @@ export const VoucherSection: React.FC<VoucherSectionProps> = React.memo(({
           <CustomSelect
             value={selectedVoucherPortal}
             onChange={setSelectedVoucherPortal}
-            options={Object.keys(voucherPortals).map(portal => ({ 
-              label: portal.toLowerCase() === 'tata neu' ? 'Tata Neu' : portal.charAt(0).toUpperCase() + portal.slice(1), 
-              value: portal 
-            }))}
+            options={options}
             placeholder="Select a portal..."
             className="w-full px-4 py-3 font-medium text-gray-800 dark:text-gray-200"
             dropdownClassName="w-full left-0 right-0 top-full"

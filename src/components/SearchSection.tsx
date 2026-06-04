@@ -34,6 +34,8 @@ interface SearchSectionProps {
   isOffline: boolean;
 }
 
+const BASE_CURRENCY_OPTIONS = ['USD', 'EUR', 'GBP', 'AED', 'SGD', 'THB', 'AUD', 'CAD', 'OMR'].map(c => ({ label: c, value: c }));
+
 export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
   query,
   setQuery,
@@ -152,7 +154,7 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
               <CustomSelect
                 value={baseCurrency}
                 onChange={setBaseCurrency}
-                options={['USD', 'EUR', 'GBP', 'AED', 'SGD', 'THB', 'AUD', 'CAD', 'OMR'].map(c => ({ label: c, value: c }))}
+                options={BASE_CURRENCY_OPTIONS}
                 className="bg-transparent text-gray-500 dark:text-gray-400 font-bold z-10 w-[84px]"
                 dropdownClassName="w-28 top-full left-0 mt-4"
               />

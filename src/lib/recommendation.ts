@@ -384,8 +384,9 @@ function applyUniversalOffers(
   return { cashbackAmount, benefitText };
 }
 
-const ALLOWED_UPI_CARDS = ['kiwi-neon', 'amazon-pay-upi', 'cred-pay-upi', 'kotak-811-infinity'];
-const ALLOWED_INTL_CARDS = ['kotak-811-infinity', 'sbi-cashback', 'niyo-dcb'];
+const ALLOWED_UPI_CARDS_SET = new Set(['kiwi-neon', 'amazon-pay-upi', 'cred-pay-upi', 'kotak-811-infinity']);
+const ALLOWED_INTL_CARDS_SET = new Set(['kotak-811-infinity', 'sbi-cashback', 'niyo-dcb']);
+const ALLOWED_P2P_CARDS_SET = new Set(['amazon-pay-upi', 'cred-pay-upi', 'kotak-811-infinity']);
 const round2 = (num: number) => Math.round((num + Number.EPSILON) * 100) / 100;
 
 function evaluateCard(card: Card, ctx: RecommendationContext, kiwiNeonEarnRate: number) {
@@ -396,7 +397,7 @@ function evaluateCard(card: Card, ctx: RecommendationContext, kiwiNeonEarnRate: 
   let cardToUse = card;
 
   if (ctx.merchant.isP2P) {
-    if (!['amazon-pay-upi', 'cred-pay-upi', 'kotak-811-infinity'].includes(card.id)) {
+    if (!ALLOWED_P2P_CARDS_SET.has(card.id)) {
       isExcluded = true;
       benefitText = card.id === 'kiwi-neon'
         ? "RuPay Credit Cards cannot be used for personal P2P transfers"
@@ -406,7 +407,7 @@ function evaluateCard(card: Card, ctx: RecommendationContext, kiwiNeonEarnRate: 
       cardToUse = { ...cardToUse, name: '811 Scan & Pay' };
     }
   } else if (ctx.isScanToPay) {
-    if (!ALLOWED_UPI_CARDS.includes(card.id)) {
+    if (!ALLOWED_UPI_CARDS_SET.has(card.id)) {
       isExcluded = true;
       benefitText = "Not a Scan & Pay option";
     }
@@ -416,7 +417,7 @@ function evaluateCard(card: Card, ctx: RecommendationContext, kiwiNeonEarnRate: 
   }
 
   if (ctx.isIntl) {
-    if (!ALLOWED_INTL_CARDS.includes(card.id)) {
+    if (!ALLOWED_INTL_CARDS_SET.has(card.id)) {
       isExcluded = true;
       benefitText = "Not optimized for International spend";
     }
@@ -733,6 +734,7 @@ export function getRecommendations(
 
 
   const queryWordsList = [...nameL.split(WORD_SPLIT_REGEX), ...platL.split(WORD_SPLIT_REGEX)].filter(Boolean);
+  const queryWordsSet = new Set(queryWordsList);
   const queryWordsWithCat = [...queryWordsList, catL].filter(Boolean);
 
   const isNameGeneric = (name: string, cat: string) => {
@@ -762,14 +764,14 @@ export function getRecommendations(
     // Look for aggregators even in generic queries, because the user could search "dineout" and the category could be "dining", making it generic.
     for (let i = 0, len = MERCHANT_AGGREGATOR_KEYS.length; i < len; i++) {
       const aggregator = MERCHANT_AGGREGATOR_KEYS[i];
-      if (queryWordsList.includes(aggregator) || nameL === aggregator || platL === aggregator || (nameL.includes(aggregator) && aggregator.includes(' '))) {
-        // use queryWordsList to avoid partial matches like 'mac' in 'pharmacy',
+      if (queryWordsSet.has(aggregator) || nameL === aggregator || platL === aggregator || (nameL.includes(aggregator) && aggregator.includes(' '))) {
+        // use queryWordsSet to avoid partial matches like 'mac' in 'pharmacy',
         // but still allow spaces if aggregator name has spaces e.g. 'paytm insider'
         let matched = false;
         if (aggregator.includes(' ')) {
           if (nameL.includes(aggregator) || platL.includes(aggregator)) matched = true;
         } else {
-          if (queryWordsList.includes(aggregator)) matched = true;
+          if (queryWordsSet.has(aggregator)) matched = true;
         }
 
         if (matched) aggregatorsInQuery.add(aggregator);

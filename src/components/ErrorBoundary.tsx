@@ -1,6 +1,6 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertCircle, RefreshCw } from 'lucide-react';
-import { db } from '../firebase';
+import { db, auth } from '../firebase';
 import { collection, addDoc } from 'firebase/firestore';
 
 interface Props {
@@ -27,18 +27,21 @@ export class ErrorBoundary extends Component<Props, State> {
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Uncaught error:', error, errorInfo);
     
-    // Log to Firebase for Crashlytics-style monitoring
-    try {
-      addDoc(collection(db, 'clientErrors'), {
-        error: error.message,
-        stack: error.stack,
-        componentStack: errorInfo.componentStack,
-        timestamp: Date.now(),
-        url: window.location.href,
-        userAgent: navigator.userAgent
-      }).catch(console.error); // Fire and forget
-    } catch (e) {
-      console.error("Failed to log error to Firestore:", e);
+    // Log to Firebase for Crashlytics-style monitoring (only if authenticated to satisfy firestore security rules)
+    if (auth.currentUser) {
+      try {
+        addDoc(collection(db, 'clientErrors'), {
+          userId: auth.currentUser.uid,
+          error: error.message,
+          stack: error.stack,
+          componentStack: errorInfo.componentStack,
+          timestamp: Date.now(),
+          url: window.location.href,
+          userAgent: navigator.userAgent
+        }).catch(console.error); // Fire and forget
+      } catch (e) {
+        console.error("Failed to log error to Firestore:", e);
+      }
     }
   }
 

@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { getInitialState, safeSetItem } from '../lib/storage';
 import { CARD_DATA } from '../data/cards';
-import { getCycleForCard, getQuarterCycle } from '../lib/recommendation';
+import { getCycleForCard } from '../lib/recommendation';
 import { CashbackLog } from '../types';
 
 export function useWalletState(skipSyncRef: React.MutableRefObject<boolean>, setIsDirty: (dirty: boolean) => void) {

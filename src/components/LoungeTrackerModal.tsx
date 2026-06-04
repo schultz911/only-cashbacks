@@ -14,6 +14,11 @@ const PASSES_REPLACE_MAP: Record<string, string> = {
   '/qr': ' / Quarter'
 };
 
+const LOUNGE_TAB_OPTIONS = [
+  { label: 'Domestic Lounges', value: 'Domestic' },
+  { label: 'International Lounges', value: 'International' }
+];
+
 const PASSES_REPLACE_REGEX = /\/(qtr|milestone|qr)/;
 
 export const parseLoungeBenefit = (b: { value: string, description: string }) => {
@@ -145,10 +150,7 @@ export function LoungeTrackerModal({
                 <CustomSelect
                   value={loungeTab}
                   onChange={setLoungeTab}
-                  options={[
-                    { label: 'Domestic Lounges', value: 'Domestic' },
-                    { label: 'International Lounges', value: 'International' }
-                  ]}
+                  options={LOUNGE_TAB_OPTIONS}
                   className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl py-3 px-4 font-bold outline-none"
                   dropdownClassName="w-full top-full left-0 mt-2 z-50 shadow-xl"
                 />

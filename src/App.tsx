@@ -34,6 +34,25 @@ import { useAuthSyncContext } from './contexts/AuthSyncContext';
 import { useWalletContext } from './contexts/WalletContext';
 import { useSearchContext } from './contexts/SearchContext';
 
+const useDebouncedValue = <T,>(value: T, delay: number): T => {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedValue(value), delay);
+    return () => clearTimeout(handler);
+  }, [value, delay]);
+  return debouncedValue;
+};
+
+const VOUCHER_PORTALS: Record<string, string> = {
+  'Maximize': 'Kotak 811 Infinity Metal',
+  'Amazon': 'SBI Cashback',
+  'Blinkit': 'SBI Cashback',
+  'Cred': 'SBI Cashback',
+  'OneCard': 'IDIB OneCard',
+  'Kiwi': 'YES Kiwi Neon',
+  'Tata Neu': 'HDFC Tata Neu Infinity'
+};
+
 export default function App() {
   const {
     needRefresh: [needRefresh, setNeedRefresh],
@@ -114,10 +133,18 @@ export default function App() {
   const [selectedCardForDetails, setSelectedCardForDetails] = useState<{ card: Card, source: string } | null>(null);
 
   const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' | 'info' } | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
+    toastTimerRef.current = setTimeout(() => setToast(null), 3000);
   };
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
 
   const [isApiModalOpen, setIsApiModalOpen] = useState(false);
   const [tempApiKey, setTempApiKey] = useState('');
@@ -208,14 +235,7 @@ export default function App() {
     setFocusedSuggestionIndex(-1);
   }, [query, showSuggestions, fuse]);
 
-  const useDebouncedValue = <T,>(value: T, delay: number): T => {
-    const [debouncedValue, setDebouncedValue] = useState<T>(value);
-    useEffect(() => {
-      const handler = setTimeout(() => setDebouncedValue(value), delay);
-      return () => clearTimeout(handler);
-    }, [value, delay]);
-    return debouncedValue;
-  };
+
 
   const debouncedAmount = useDebouncedValue(amount, 300);
   const debouncedForeignAmount = useDebouncedValue(foreignAmount, 300);
@@ -254,26 +274,20 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!user || isAuthLoading || !isDataLoaded || skipSyncRef.current || !isDirty || isSyncing || isSyncPaused) return;
+    if (!user || isAuthLoading || !isDataLoaded || skipSyncRef.current || !isDirty || isSyncing || isSyncPaused || isOffline) return;
     const timer = setTimeout(() => {
       saveData();
     }, 1000);
     return () => clearTimeout(timer);
-  }, [isDirty, user, isAuthLoading, isDataLoaded, isSyncPaused, isSyncing, exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, cardBillDates, paidBills, openRouterApiKey, kiwiNeonEarnRate, walletCards, cashbackLogs, theme]);
-
-  useEffect(() => {
-    if (!isOffline && isDirty && user && !isSyncing && !isSyncPaused) {
-      saveData();
-    }
-  }, [isOffline, isDirty, user, isSyncing, isSyncPaused]);
-
-  useEffect(() => markDirty(), [exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, cardBillDates, paidBills, walletCards, cashbackLogs, theme, openRouterApiKey, kiwiNeonEarnRate]);
+  }, [isOffline, isDirty, user, isAuthLoading, isDataLoaded, isSyncPaused, isSyncing, exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, cardBillDates, paidBills, openRouterApiKey, kiwiNeonEarnRate, walletCards, cashbackLogs, theme]);
 
   const activeWalletCards = useMemo(() => {
     return walletCards.length > 0
       ? CARD_DATA.filter(c => walletCards.includes(c.id) && !c.isDummy)
       : CARD_DATA.filter(c => !c.isDummy);
   }, [walletCards]);
+
+  const loungeCardCount = useMemo(() => CARD_DATA.filter(c => !c.isDummy && c.benefits.some(b => b.type === 'lounge')).length, []);
 
   useEffect(() => {
     if (!isDataLoaded || !walletCards || walletCards.length === 0) return;
@@ -447,19 +461,11 @@ export default function App() {
       setTimeout(() => { skipSyncRef.current = false; }, 500);
     } catch (error: any) {
       console.error('Error deleting data:', error);
-      alert('Failed to delete data. Please check your permissions.');
+      showToast('Failed to delete data. Please check your permissions.', 'error');
     }
   };
 
-  const VOUCHER_PORTALS: Record<string, string> = {
-    'Maximize': 'Kotak 811 Infinity Metal',
-    'Amazon': 'SBI Cashback',
-    'Blinkit': 'SBI Cashback',
-    'Cred': 'SBI Cashback',
-    'OneCard': 'IDIB OneCard',
-    'Kiwi': 'YES Kiwi Neon',
-    'Tata Neu': 'HDFC Tata Neu Infinity'
-  };
+
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -965,7 +971,7 @@ export default function App() {
                     </div>
                   </div>
                   <p className="text-xs text-gray-300 leading-relaxed font-medium pl-1">
-                    You have {CARD_DATA.filter(c => !c.isDummy && c.benefits.some(b => b.type === 'lounge')).length} cards with tracking for lounge access.
+                    You have {loungeCardCount} cards with tracking for lounge access.
                   </p>
                 </div>
                 <button onClick={() => setIsLoungeOpen(true)} className="relative z-10 bg-white hover:bg-gray-100 text-gray-900 text-sm font-bold px-6 py-3 rounded-2xl mt-4 sm:mt-0 transition-all w-fit shrink-0 shadow-lg shadow-white/5 hover:scale-105 active:scale-95 flex items-center gap-2 group/btn">
@@ -1291,8 +1297,8 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      <AnimatePresence>
-        <Suspense fallback={null}>
+      <Suspense fallback={null}>
+        <AnimatePresence>
           <LoungeTrackerModal
             isOpen={isLoungeOpen}
             onClose={() => setIsLoungeOpen(false)}
@@ -1304,8 +1310,8 @@ export default function App() {
             setLoungeMilestonesVerified={setLoungeMilestonesVerified}
             kiwiNeonEarnRate={kiwiNeonEarnRate}
           />
-        </Suspense>
-      </AnimatePresence>
+        </AnimatePresence>
+      </Suspense>
 
       <AnimatePresence>
         {showOffersOverlay && recommendation?.availableOffers && (
