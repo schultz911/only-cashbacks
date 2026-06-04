@@ -27,7 +27,11 @@
       "react",
       "react-dom",
       "express",
+      "vite/client",
       "vite-plugin-pwa/client"
     ]
-  }
+  },
+  "exclude": [
+    "functions"
+  ]
 }

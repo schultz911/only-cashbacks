@@ -11,7 +11,7 @@ export const auth = getAuth(app);
 export const functions = getFunctions(app, 'asia-south1');
 
 export const appCheck = initializeAppCheck(app, {
-  provider: new ReCaptchaEnterpriseProvider('6LdvmgotAAAAAL2cVPtKL1HIwAds1d7eB5MgxVPu'),
+  provider: new ReCaptchaEnterpriseProvider(import.meta.env.VITE_RECAPTCHA_SITE_KEY || ''),
   isTokenAutoRefreshEnabled: true
 });
 
