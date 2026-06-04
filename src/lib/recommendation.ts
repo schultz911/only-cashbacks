@@ -183,7 +183,7 @@ export function findBestBenefit(card: Card, cardCycle: string, ctx: Recommendati
       // 1. Axis Swiggy 120 discount
       if ((card.id === 'axis-myzone' && benefit.category === 'Food' && benefit.value === 'Swiggy') && ctx.amount > 499) {
         isCustomMatched = true;
-        if (!ctx.isFoodDelivery || ctx.isDining || !ctx.shouldShowOffer('swiggy')) {
+        if (!ctx.isFoodDelivery || ctx.isGrocery || ctx.isDining || !ctx.shouldShowOffer('swiggy')) {
           skip = true;
         } else {
           skip = false;
@@ -198,10 +198,10 @@ export function findBestBenefit(card: Card, cardCycle: string, ctx: Recommendati
           skip = false;
         }
       }
-      // 3. HDFC Imperia food
-      else if (card.id === 'hdfc-imperia' && benefit.category === 'Food' && benefit.value === 'Swiggy') {
+      // 3. HDFC Imperia Swiggy
+      else if (card.id === 'hdfc-imperia' && (benefit.category === 'Food' || benefit.category === 'Grocery' || benefit.category === 'Dining') && benefit.value === 'Swiggy') {
         isCustomMatched = true;
-        if (!ctx.isFoodDelivery || ctx.isDining || !ctx.shouldShowOffer('swiggy')) {
+        if (!ctx.isFoodDelivery || !ctx.isGrocery || !ctx.isDining || !ctx.shouldShowOffer('swiggy')) {
           skip = true;
         } else {
           skip = false;
