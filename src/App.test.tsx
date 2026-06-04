@@ -1,6 +1,9 @@
 import { render } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import App from './App';
+import { SearchProvider } from './contexts/SearchContext';
+import { AuthSyncProvider } from './contexts/AuthSyncContext';
+import { WalletProvider } from './contexts/WalletContext';
 
 // Mock the virtual modules injected by Vite PWA plugin
 vi.mock('virtual:pwa-register/react', () => ({
@@ -59,7 +62,15 @@ describe('App Smoke Test', () => {
   });
 
   it('renders without crashing', () => {
-    const { container } = render(<App />);
+    const { container } = render(
+      <AuthSyncProvider>
+        <WalletProvider>
+          <SearchProvider>
+            <App />
+          </SearchProvider>
+        </WalletProvider>
+      </AuthSyncProvider>
+    );
     expect(container).toBeTruthy();
   });
 });
