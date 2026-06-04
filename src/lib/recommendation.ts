@@ -937,6 +937,14 @@ export function getRecommendations(
     .filter(o => Math.abs(o.netValue - finalBestResult.netValue) < 0.01)
     .map(o => ({ card: o.card, benefit: o.benefitText }));
 
+  const excludedCardIds = new Set();
+  for (let i = 0; i < calculationResults.length; i++) {
+    const r = calculationResults[i];
+    if (r.isExcluded) {
+      excludedCardIds.add(r.card.id);
+    }
+  }
+
   return {
     bestCard: finalBestResult.card,
     tiedCards: tiedCards.length > 1 ? tiedCards : undefined,
@@ -946,6 +954,6 @@ export function getRecommendations(
     cashbackEarned: finalBestResult.cashbackEarned,
     feesPaid: finalBestResult.feesPaid,
     alternatives: validOptions.slice(tiedCards.length, tiedCards.length + 3).map(s => ({ card: s.card, benefit: s.benefitText, netValue: round2(s.netValue) })),
-    availableOffers: availableOffers.filter(o => !o.cardId || !calculationResults.find(r => r.card.id === o.cardId)?.isExcluded)
+    availableOffers: availableOffers.filter(o => !o.cardId || !excludedCardIds.has(o.cardId))
   };
 }
