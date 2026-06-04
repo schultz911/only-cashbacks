@@ -175,15 +175,9 @@ export function useAuthAndSync(latestStateRef: React.MutableRefObject<any>, skip
       };
       
       document.addEventListener("visibilitychange", handleVisibilityChange);
-      const interval = setInterval(() => {
-         if (document.visibilityState === 'visible' && user && !isDirtyRef.current) {
-            handleVisibilityChange();
-         }
-      }, 30000);
 
       return () => {
          document.removeEventListener("visibilitychange", handleVisibilityChange);
-         clearInterval(interval);
       }
     }, [user]);
   };

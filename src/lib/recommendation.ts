@@ -102,7 +102,7 @@ const hasKeyword = (targets: string[], regex: RegExp) => targets.some(target => 
 // Optimization: Pre-compile regex for splitting words
 const WORD_SPLIT_REGEX = /[\s,.-]+/;
 
-export interface RecommendationContext {
+interface RecommendationContext {
   merchant: MerchantInfo;
   amount: number;
   isOnline: boolean;
@@ -152,7 +152,7 @@ export interface RecommendationContext {
   shouldShowOffer: (plat: string) => boolean;
 }
 
-export function findBestBenefit(card: Card, cardCycle: string, ctx: RecommendationContext) {
+function findBestBenefit(card: Card, cardCycle: string, ctx: RecommendationContext) {
   let matchedBenefitValue = -1;
   let usedBenefit = null;
 
@@ -279,7 +279,7 @@ export function findBestBenefit(card: Card, cardCycle: string, ctx: Recommendati
   return usedBenefit;
 }
 
-export function calculateBenefitCashback(card: Card, usedBenefit: any, ctx: RecommendationContext): { cashbackAmount: number, benefitText: string } {
+function calculateBenefitCashback(card: Card, usedBenefit: any, ctx: RecommendationContext): { cashbackAmount: number, benefitText: string } {
   let cashbackAmount = 0;
   let benefitText = '';
 
@@ -322,7 +322,7 @@ export function calculateBenefitCashback(card: Card, usedBenefit: any, ctx: Reco
   return { cashbackAmount, benefitText };
 }
 
-export function applyUniversalOffers(
+function applyUniversalOffers(
   card: Card,
   isExcluded: boolean,
   cashbackAmount: number,
@@ -388,7 +388,7 @@ const ALLOWED_UPI_CARDS = ['kiwi-neon', 'amazon-pay-upi', 'cred-pay-upi', 'kotak
 const ALLOWED_INTL_CARDS = ['kotak-811-infinity', 'sbi-cashback', 'niyo-dcb'];
 const round2 = (num: number) => Math.round((num + Number.EPSILON) * 100) / 100;
 
-export function evaluateCard(card: Card, ctx: RecommendationContext, kiwiNeonEarnRate: number) {
+function evaluateCard(card: Card, ctx: RecommendationContext, kiwiNeonEarnRate: number) {
   let cashbackAmount = 0;
   let benefitText = 'Base Rewards';
   let isExcluded = false;

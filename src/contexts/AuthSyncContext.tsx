@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useRef } from 'react';
 import { useAuthAndSync } from '../hooks/useAuthAndSync';
 
-export const AuthSyncContext = createContext<ReturnType<typeof useAuthAndSync> & { skipSyncRef: React.MutableRefObject<boolean>, latestStateRef: React.MutableRefObject<any> } | null>(null);
+const AuthSyncContext = createContext<ReturnType<typeof useAuthAndSync> & { skipSyncRef: React.MutableRefObject<boolean>, latestStateRef: React.MutableRefObject<any> } | null>(null);
 
 export const AuthSyncProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const skipSyncRef = useRef(false);

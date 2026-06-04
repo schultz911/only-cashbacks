@@ -2,7 +2,7 @@ import React, { createContext, useContext } from 'react';
 import { useWalletState } from '../hooks/useWalletState';
 import { useAuthSyncContext } from './AuthSyncContext';
 
-export const WalletContext = createContext<ReturnType<typeof useWalletState> | null>(null);
+const WalletContext = createContext<ReturnType<typeof useWalletState> | null>(null);
 
 export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { skipSyncRef, setIsDirty } = useAuthSyncContext();

@@ -1,7 +1,7 @@
 import React, { createContext, useContext } from 'react';
 import { useSearchAndCurrency } from '../hooks/useSearchAndCurrency';
 
-export const SearchContext = createContext<ReturnType<typeof useSearchAndCurrency> | null>(null);
+const SearchContext = createContext<ReturnType<typeof useSearchAndCurrency> | null>(null);
 
 export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const searchState = useSearchAndCurrency();
