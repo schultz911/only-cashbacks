@@ -11,3 +11,6 @@
 ## 2025-02-28 - LocalStorage Cache Eviction Loop Bug and Inefficiency
 **Learning:** When evicting specific items from `localStorage` within a loop, using `localStorage.length` and `localStorage.key(i)` while calling `localStorage.removeItem(key)` dynamically mutates the collection. This leads to skipped items (leaving half of the old data intact) and is inefficient because it shifts internal pointers on every deletion.
 **Action:** Gather keys statically first using `Object.keys(localStorage)` and iterate over that array to safely and predictably remove items. Vitest benchmarking confirmed this approach is fully correct (doesn't skip) and executes 1.18x faster than the buggy original implementation.
+## 2025-03-09 - O(1) Cache Sweep using Map Insertion Order
+**Learning:** JavaScript `Map` objects strictly maintain their insertion order. When using a `Map` for rate limiting or caching with expiration, you can keep the map perfectly ordered by expiration time if you `delete` and `set` (re-insert) the entry whenever its expiration is updated.
+**Action:** The cleanup loop (`setInterval`) can then simply iterate from the beginning and `break` as soon as it encounters the first unexpired entry, changing the cleanup complexity from O(N) to an amortized O(1).

@@ -63,6 +63,9 @@ async function startServer() {
       // Reset window
       limitData.count = 1;
       limitData.resetTime = now + RATE_LIMIT_WINDOW_MS;
+      // To maintain strict ordering by resetTime, we must re-insert
+      rateLimitCache.delete(ip);
+      rateLimitCache.set(ip, limitData);
       return next();
     }
 
@@ -82,6 +85,10 @@ async function startServer() {
     for (const [ip, data] of rateLimitCache.entries()) {
       if (now > data.resetTime) {
         rateLimitCache.delete(ip);
+      } else {
+        // Map maintains insertion order. Since we re-insert on reset,
+        // it is strictly ordered by expiration. We can stop early.
+        break;
       }
     }
   }, RATE_LIMIT_WINDOW_MS).unref();
