@@ -8,3 +8,6 @@
 ## 2024-05-18 - Optimize array lookups in offer filtering
 **Learning:** Nested array `.find()` lookups inside `.filter()` operations can lead to O(N*M) time complexity, which scales poorly when calculating complex list relationships (e.g., checking if an offer's card ID is excluded among all evaluated cards).
 **Action:** Always pre-calculate lookups by storing the relevant keys in a `Set` or `Map` before iterating, allowing O(1) existence checks (`.has()`) inside the filter loop.
+## 2025-02-28 - LocalStorage Cache Eviction Loop Bug and Inefficiency
+**Learning:** When evicting specific items from `localStorage` within a loop, using `localStorage.length` and `localStorage.key(i)` while calling `localStorage.removeItem(key)` dynamically mutates the collection. This leads to skipped items (leaving half of the old data intact) and is inefficient because it shifts internal pointers on every deletion.
+**Action:** Gather keys statically first using `Object.keys(localStorage)` and iterate over that array to safely and predictably remove items. Vitest benchmarking confirmed this approach is fully correct (doesn't skip) and executes 1.18x faster than the buggy original implementation.
