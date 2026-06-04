@@ -187,9 +187,10 @@ export async function categorizeMerchant(merchantName: string, apiKey?: string):
           // If quota exceeded, do a simple eviction of all old entries
           if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
             try {
-              for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                if (key && key.startsWith(CACHE_PREFIX)) {
+              const keys = Object.keys(localStorage);
+              for (let i = 0; i < keys.length; i++) {
+                const key = keys[i];
+                if (key.startsWith(CACHE_PREFIX)) {
                   localStorage.removeItem(key);
                 }
               }
