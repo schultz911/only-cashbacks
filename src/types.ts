@@ -15,6 +15,9 @@ export interface CardBenefit {
   usageLimit?: number;
   fallbackRate?: number;
   isHidden?: boolean;
+  categoryLower?: string;
+  descriptionLower?: string;
+  descLForOnline?: string;
 }
 
 export interface Card {
