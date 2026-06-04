@@ -60,8 +60,8 @@ async function startServer() {
     const now = Date.now();
     if (!rateLimitCache.has(ip)) {
       if (rateLimitCache.size >= 1e4) {
-        console.warn("Rate limit cache size exceeded (possible DoS attack). Rejecting new IP.");
-        return res.status(429).json({ error: "Server under heavy load, please try again later." });
+        const firstKey = rateLimitCache.keys().next().value;
+        if (firstKey) rateLimitCache.delete(firstKey);
       }
       rateLimitCache.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
       return next();
@@ -104,7 +104,7 @@ async function startServer() {
       if (apiKey && (typeof apiKey !== "string" || !/^sk-or-[a-zA-Z0-9_-]+$/.test(apiKey))) {
         return res.status(400).json({ error: "Invalid API key format. Key must start with 'sk-or-' and consist of only alphanumeric characters, dashes, and underscores." });
       }
-      const sanitizedMerchantName = merchantName.trim();
+      const sanitizedMerchantName = merchantName.replace(/[<>{}()]/g, "").trim();
       console.log(`Merchant to categorize: "${sanitizedMerchantName}"`);
       const userOpenRouterKey = apiKey;
       const envOpenRouterKey = process.env.OPENROUTER_API_KEY;
@@ -174,7 +174,15 @@ Output strictly a JSON object matching this TypeScript interface:
     app.use(vite.middlewares);
   } else {
     const distPath = import_path.default.join(process.cwd(), "dist");
-    app.use(import_express.default.static(distPath));
+    app.use(import_express.default.static(distPath, {
+      maxAge: "1y",
+      immutable: true,
+      setHeaders: (res, path2) => {
+        if (path2.endsWith(".html") || path2.endsWith("sw.js") || path2.endsWith(".webmanifest") || path2.includes("workbox-")) {
+          res.setHeader("Cache-Control", "no-cache");
+        }
+      }
+    }));
     app.get("*", (req, res) => {
       res.sendFile(import_path.default.join(distPath, "index.html"));
     });

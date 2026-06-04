@@ -45,9 +45,24 @@ export default defineConfig(({ mode }) => {
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+          globIgnores: ['**/vendor-recharts*.js'],
           runtimeCaching: [
             {
-              urlPattern: ({ request }) => request.destination === 'style' || request.destination === 'script' || request.destination === 'worker' || request.destination === 'font',
+              urlPattern: ({ url }) => url.pathname.includes('vendor-recharts'),
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'lazy-scripts-cache',
+                expiration: {
+                  maxEntries: 10,
+                  maxAgeSeconds: 30 * 24 * 60 * 60 // 30 days
+                },
+                cacheableResponse: {
+                  statuses: [0, 200]
+                }
+              }
+            },
+            {
+              urlPattern: ({ request }) => request.destination === 'worker' || request.destination === 'font',
               handler: 'CacheFirst',
               options: {
                 cacheName: 'static-assets-cache',

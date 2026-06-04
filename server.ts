@@ -197,7 +197,7 @@ Output strictly a JSON object matching this TypeScript interface:
       maxAge: '1y',
       immutable: true,
       setHeaders: (res, path) => {
-        if (path.endsWith('.html')) {
+        if (path.endsWith('.html') || path.endsWith('sw.js') || path.endsWith('.webmanifest') || path.includes('workbox-')) {
           res.setHeader('Cache-Control', 'no-cache');
         }
       }

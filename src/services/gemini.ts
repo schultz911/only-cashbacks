@@ -220,8 +220,9 @@ export async function categorizeMerchant(merchantName: string, apiKey?: string):
                   try {
                     const itemStr = localStorage.getItem(key);
                     if (itemStr) {
-                      const item = JSON.parse(itemStr);
-                      cacheItems.push({ key, ts: item.timestamp || 0 });
+                      const match = itemStr.match(/"timestamp":\s*(\d+)/);
+                      const ts = match ? parseInt(match[1], 10) : 0;
+                      cacheItems.push({ key, ts });
                     }
                   } catch (parseErr) { }
                 }

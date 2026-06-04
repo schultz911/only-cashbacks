@@ -99,6 +99,8 @@ const MOVIE_REGEX = buildRegex(MOVIE_KEYWORDS);
 
 const hasKeyword = (targets: string[], regex: RegExp) => targets.some(target => regex.test(target));
 
+// Optimization: Pre-compile regex for splitting words
+const WORD_SPLIT_REGEX = /[\s,.-]+/;
 
 export interface RecommendationContext {
   merchant: MerchantInfo;
@@ -730,7 +732,7 @@ export function getRecommendations(
   }
 
 
-  const queryWordsList = [...nameL.split(/[\s,.-]+/), ...platL.split(/[\s,.-]+/)].filter(Boolean);
+  const queryWordsList = [...nameL.split(WORD_SPLIT_REGEX), ...platL.split(WORD_SPLIT_REGEX)].filter(Boolean);
   const queryWordsWithCat = [...queryWordsList, catL].filter(Boolean);
 
   const isNameGeneric = (name: string, cat: string) => {
