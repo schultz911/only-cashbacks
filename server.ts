@@ -116,10 +116,7 @@ async function startServer() {
       console.log(`Merchant to categorize: "${sanitizedMerchantName}"`);
 
       // Determine which API to use
-      const userOpenRouterKey = apiKey;
-      const envOpenRouterKey = process.env.OPENROUTER_API_KEY;
-
-      const effectiveOpenRouterKey = userOpenRouterKey || envOpenRouterKey;
+      const effectiveOpenRouterKey = apiKey;
 
       const systemPrompt = `You are a professional merchant analyst for a critical data collection organization. Analyze this transaction destination and categorize it. 
 Return the most relevant category for the query (Food Delivery, Grocery, E-commerce, Fuel, Travel, Fashion, Utilities, Dining, Gaming, Movies, Software, Services, Hobbies, Activities, Entertainment, etc.).
