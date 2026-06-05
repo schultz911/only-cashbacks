@@ -177,11 +177,12 @@ export function DashboardModal({ isOpen, onClose, logs, setLogs }: Props) {
 
                       {/* High-quality Responsive Legend with HTML Flow (solves SVG overlaps) */}
                       <div className="w-full sm:w-1/2 flex flex-col gap-2 z-10">
-                        {chartData.map((item, index) => {
+                        {(() => {
                           const totalVal = chartData.reduce((s, c) => s + c.value, 0);
-                          const pct = totalVal > 0 ? (item.value / totalVal) * 100 : 0;
-                          return (
-                            <div key={item.name} className="flex flex-col gap-1 w-full text-left">
+                          return chartData.map((item, index) => {
+                            const pct = totalVal > 0 ? (item.value / totalVal) * 100 : 0;
+                            return (
+                              <div key={item.name} className="flex flex-col gap-1 w-full text-left">
                               <div className="flex items-center justify-between text-[11px] font-bold">
                                 <div className="flex items-center gap-1.5 text-gray-700 dark:text-gray-300 min-w-0 pr-1">
                                   <span 
@@ -204,9 +205,10 @@ export function DashboardModal({ isOpen, onClose, logs, setLogs }: Props) {
                                   style={{ backgroundColor: COLORS[index % COLORS.length] }}
                                 />
                               </div>
-                            </div>
-                          );
-                        })}
+                              </div>
+                            );
+                          });
+                        })()}
                       </div>
                     </div>
                   </div>

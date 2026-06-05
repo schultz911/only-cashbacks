@@ -18,3 +18,7 @@
 ## 2026-06-05 - [Optimize array filtering and mapping using reduce]
 **Learning:** For performance-critical array transformations involving both filtering and element extraction, a single-pass `.reduce()` is significantly faster than chained `.filter().map()` operations, as it avoids redundant array traversals and nested lookups.
 **Action:** Replaced chained `.filter().some()` and `.map().find()` operations in LoungeTrackerModal with a single `.reduce()`.
+
+## 2024-05-18 - [Hoist Redundant Calculations in JSX Map]
+**Learning:** Calling `Array.prototype.reduce` to calculate a static total inside an `Array.prototype.map` loop causes an O(N^2) complexity where O(N) should be sufficient. When this occurs inside a complex JSX element hierarchy, calculating it out of place can disrupt component structural flow.
+**Action:** Used an Immediately Invoked Function Expression (IIFE) `(() => { const totalVal = ...; return items.map(...) })()` to hoist the aggregate calculation directly within the JSX flow, allowing it to execute once and be referenced inside the inner loop, bringing complexity down to O(N).
