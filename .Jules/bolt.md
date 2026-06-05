@@ -22,3 +22,7 @@
 ## 2024-05-18 - [Hoist Redundant Calculations in JSX Map]
 **Learning:** Calling `Array.prototype.reduce` to calculate a static total inside an `Array.prototype.map` loop causes an O(N^2) complexity where O(N) should be sufficient. When this occurs inside a complex JSX element hierarchy, calculating it out of place can disrupt component structural flow.
 **Action:** Used an Immediately Invoked Function Expression (IIFE) `(() => { const totalVal = ...; return items.map(...) })()` to hoist the aggregate calculation directly within the JSX flow, allowing it to execute once and be referenced inside the inner loop, bringing complexity down to O(N).
+
+## 2026-06-05 - [Extract static calculation in BillReminders]
+**Learning:** To prevent unnecessary re-evaluations in React hooks (like useMemo), extract derived arrays or state calculations based entirely on static data (e.g., CARD_DATA.filter().map()) into module-level constants outside the component definition rather than computing them conditionally inside the hook.
+**Action:** Extracted DEFAULT_EFFECTIVE_CARDS outside of the BillReminders component to avoid recalculation on empty wallets.
