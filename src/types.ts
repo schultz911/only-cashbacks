@@ -82,16 +82,3 @@ export interface CashbackLog {
   category: string;
 }
 
-interface UserData {
-  exhaustedCards: Record<string, boolean | string>;
-  cardBillDates: Record<string, number>;
-  paidBills: Record<string, string>;
-  loungePassesUsed: Record<string, number>;
-  loungeMilestonesVerified: Record<string, boolean>;
-  offerUsage: Record<string, number>;
-  openRouterApiKey: string;
-  kiwiNeonEarnRate: number;
-  walletCards: string[];
-  cashbackLogs: CashbackLog[];
-  theme: 'light' | 'dark' | 'oled' | null;
-}
