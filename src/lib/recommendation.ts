@@ -674,8 +674,6 @@ export function getRecommendations(
   const isFoodDelivery = hasKeyword(targets, FOOD_DELIVERY_REGEX) && !hasKeyword([nameL], FOOD_DELIVERY_EXCLUSIONS_REGEX);
   const isDining = hasKeyword(targets, DINING_REGEX);
   const isMovie = hasKeyword(targets, MOVIE_REGEX);
-  const searchedMoviePlat = MOVIE_PLATFORMS.find(p => nameL.includes(p) || (platL && platL.includes(p)));
-  const searchedDiningPlat = DINING_PLATFORMS.find(p => nameL.includes(p) || (platL && platL.includes(p)));
 
   // Google Play special logic
   if (nameL.includes('google') || platL.includes('google')) {
