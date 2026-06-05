@@ -9,17 +9,18 @@ export function usePushNotifications(
   getCycleForCard: (id: string, dates: Record<string, number>) => string
 ) {
   useEffect(() => {
-    if (!('Notification' in window)) return;
+    if (typeof window === 'undefined' || !('Notification' in window)) return;
     
     // Request permission if not already granted/denied
-    if (Notification.permission === 'default') {
-      Notification.requestPermission();
+    if (window.Notification.permission === 'default') {
+      window.Notification.requestPermission();
     }
   }, []);
 
   useEffect(() => {
+    if (typeof window === 'undefined' || !('Notification' in window)) return;
     if (!isDataLoaded || !walletCards || walletCards.length === 0) return;
-    if (Notification.permission !== 'granted') return;
+    if (window.Notification.permission !== 'granted') return;
 
     // Use a small timeout to avoid showing immediately on load
     const timer = setTimeout(() => {
@@ -47,7 +48,7 @@ export function usePushNotifications(
          try {
             const notifKey = `oc_notif_bill_${today.getFullYear()}_${today.getMonth()}_${today.getDate()}`;
             if (!localStorage.getItem(notifKey)) {
-               new Notification('Unpaid Credit Card Bills', {
+               new window.Notification('Unpaid Credit Card Bills', {
                   body: `You have unpaid bills past their billing dates for: ${unpaidCards.join(', ')}`,
                   icon: '/pwa-192x192.png',
                });
@@ -74,7 +75,7 @@ export function usePushNotifications(
          try {
             const notifKey = `oc_notif_reset_${today.getFullYear()}_${today.getMonth()}_${today.getDate()}`;
             if (!localStorage.getItem(notifKey)) {
-               new Notification('Offers Reset Today', {
+               new window.Notification('Offers Reset Today', {
                   body: `Monthly limits and offers have been reset for: ${resetCards.join(', ')}`,
                   icon: '/pwa-192x192.png',
                });
