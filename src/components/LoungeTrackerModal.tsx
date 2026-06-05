@@ -72,30 +72,33 @@ export function LoungeTrackerModal({
   kiwiNeonEarnRate
 }: LoungeTrackerModalProps) {
   const renderedCards = React.useMemo(() => {
-    return CARD_DATA.filter(c => !c.isDummy)
-      .filter(c => c.benefits.some(b => b.type === 'lounge' && b.category === loungeTab))
-      .map((card: any) => {
-        const b = card.benefits.find((x: any) => x.type === 'lounge' && x.category === loungeTab)!;
-        const parsed = parseLoungeBenefit(b);
+    return CARD_DATA.reduce((acc, card: any) => {
+      if (card.isDummy) return acc;
+      const b = card.benefits.find((x: any) => x.type === 'lounge' && x.category === loungeTab);
+      if (!b) return acc;
 
-        let finalPasses = parsed.passesCount;
-        let finalVerified = loungeMilestonesVerified[`${card.id}-${loungeTab}`] ?? parsed.isFree;
+      const parsed = parseLoungeBenefit(b);
 
-        if (card.id === 'kiwi-neon') {
-          let passes = 0;
-          if (kiwiNeonEarnRate >= 3) passes += 1;
-          if (kiwiNeonEarnRate >= 4) passes += 1;
-          if (kiwiNeonEarnRate >= 5) passes += 1;
-          finalPasses = passes;
-          finalVerified = passes > 0;
-          parsed.passesCount = finalPasses;
-        }
+      let finalPasses = parsed.passesCount;
+      let finalVerified = loungeMilestonesVerified[`${card.id}-${loungeTab}`] ?? parsed.isFree;
 
-        const used = loungePassesUsed[`${card.id}-${loungeTab}`] || 0;
-        const passesRemaining = Math.max(0, finalPasses - used);
-        const isExhausted = finalPasses > 0 && passesRemaining === 0;
-        return { card, b, parsed, isExhausted, isVerified: finalVerified };
-      })
+      if (card.id === 'kiwi-neon') {
+        let passes = 0;
+        if (kiwiNeonEarnRate >= 3) passes += 1;
+        if (kiwiNeonEarnRate >= 4) passes += 1;
+        if (kiwiNeonEarnRate >= 5) passes += 1;
+        finalPasses = passes;
+        finalVerified = passes > 0;
+        parsed.passesCount = finalPasses;
+      }
+
+      const used = loungePassesUsed[`${card.id}-${loungeTab}`] || 0;
+      const passesRemaining = Math.max(0, finalPasses - used);
+      const isExhausted = finalPasses > 0 && passesRemaining === 0;
+
+      acc.push({ card, b, parsed, isExhausted, isVerified: finalVerified });
+      return acc;
+    }, [] as any[])
       .sort((a, b) => {
         if (a.isExhausted && !b.isExhausted) return 1;
         if (!a.isExhausted && b.isExhausted) return -1;

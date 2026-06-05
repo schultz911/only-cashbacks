@@ -14,3 +14,7 @@
 ## 2025-03-09 - O(1) Cache Sweep using Map Insertion Order
 **Learning:** JavaScript `Map` objects strictly maintain their insertion order. When using a `Map` for rate limiting or caching with expiration, you can keep the map perfectly ordered by expiration time if you `delete` and `set` (re-insert) the entry whenever its expiration is updated.
 **Action:** The cleanup loop (`setInterval`) can then simply iterate from the beginning and `break` as soon as it encounters the first unexpired entry, changing the cleanup complexity from O(N) to an amortized O(1).
+
+## 2026-06-05 - [Optimize array filtering and mapping using reduce]
+**Learning:** For performance-critical array transformations involving both filtering and element extraction, a single-pass `.reduce()` is significantly faster than chained `.filter().map()` operations, as it avoids redundant array traversals and nested lookups.
+**Action:** Replaced chained `.filter().some()` and `.map().find()` operations in LoungeTrackerModal with a single `.reduce()`.
