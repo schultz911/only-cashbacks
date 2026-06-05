@@ -106,9 +106,7 @@ async function startServer() {
       }
       const sanitizedMerchantName = merchantName.replace(/[<>{}()]/g, "").trim();
       console.log(`Merchant to categorize: "${sanitizedMerchantName}"`);
-      const userOpenRouterKey = apiKey;
-      const envOpenRouterKey = process.env.OPENROUTER_API_KEY;
-      const effectiveOpenRouterKey = userOpenRouterKey || envOpenRouterKey;
+      const effectiveOpenRouterKey = apiKey;
       const systemPrompt = `You are a professional merchant analyst for a critical data collection organization. Analyze this transaction destination and categorize it. 
 Return the most relevant category for the query (Food Delivery, Grocery, E-commerce, Fuel, Travel, Fashion, Utilities, Dining, Gaming, Movies, Software, Services, Hobbies, Activities, Entertainment, etc.).
 Scrape google maps data to categorize merchants, particularly local stores and restaurants. Be very precise - if a merchant is a cinema, the category should be movies, not entertainment.

@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react';
+import { render, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import App from './App';
 import { SearchProvider } from './contexts/SearchContext';
@@ -54,23 +54,41 @@ Object.defineProperty(window, 'localStorage', {
 describe('App Smoke Test', () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    vi.stubGlobal('fetch', vi.fn(() => 
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({
+          rates: {
+            USD: 0.012,
+            EUR: 0.011,
+            GBP: 0.0094,
+            AED: 0.044
+          }
+        })
+      })
+    ));
   });
 
   afterEach(() => {
     vi.clearAllTimers();
     vi.useRealTimers();
+    vi.unstubAllGlobals();
   });
 
-  it('renders without crashing', () => {
-    const { container } = render(
-      <AuthSyncProvider>
-        <WalletProvider>
-          <SearchProvider>
-            <App />
-          </SearchProvider>
-        </WalletProvider>
-      </AuthSyncProvider>
-    );
-    expect(container).toBeTruthy();
+  it('renders without crashing', async () => {
+    let renderResult: any;
+    await act(async () => {
+      renderResult = render(
+        <AuthSyncProvider>
+          <WalletProvider>
+            <SearchProvider>
+              <App />
+            </SearchProvider>
+          </WalletProvider>
+        </AuthSyncProvider>
+      );
+      vi.runAllTimers();
+    });
+    expect(renderResult.container).toBeTruthy();
   });
 });
