@@ -1,9 +1,30 @@
 node_modules/
+dist/
 build/
 coverage/
-.DS_Store
+
+# Logs
 *.log
+npm-debug.log*
+
+# Environment
 .env*
 !.env.example
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Caches & Temporary Files
+.eslintcache
+*.tsbuildinfo
+.vite/
+.cache/
+
+# Firebase
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+
+# AI Agent temporary dirs
 .agents/
-dist/
