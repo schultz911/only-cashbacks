@@ -787,6 +787,22 @@ export function getRecommendations(
 
     const targetCategories = MERCHANT_AGGREGATORS[lowerTarget];
 
+    if (lowerTarget === 'bookmyshow' || lowerTarget === 'district') {
+      const isBmsQuery = isBmsName || queryAggregators.has('bookmyshow') || queryAggregators.has('bms');
+      const isDistrictQuery = isDistrictName || queryAggregators.has('district') || (platL && platL.includes('district'));
+
+      if (lowerTarget === 'bookmyshow') {
+        if (isDistrictQuery) return false;
+        if (isBmsQuery) return true;
+        if (isMovie) return true;
+      }
+      if (lowerTarget === 'district') {
+        if (isBmsQuery) return false;
+        if (isDistrictQuery) return true;
+        if (isMovie) return true;
+      }
+    }
+
     if (matchedSpecificPlatforms.has(lowerTarget)) return true;
 
     if (targetCategories) {
