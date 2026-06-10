@@ -4,6 +4,7 @@
  */
 
 import { MerchantInfo } from "../types";
+import { get, set, entries, del } from 'idb-keyval';
 
 const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 const CACHE_PREFIX = 'oc_merchant_';
@@ -11,6 +12,35 @@ const CACHE_PREFIX = 'oc_merchant_';
 interface CachedMerchant {
   data: MerchantInfo;
   timestamp: number;
+}
+
+let isEvictionScheduled = false;
+
+function scheduleEviction() {
+  if (isEvictionScheduled || typeof window === 'undefined') return;
+  isEvictionScheduled = true;
+  const runEviction = async () => {
+    try {
+      const allEntries = await entries();
+      const now = Date.now();
+      for (const [key, val] of allEntries) {
+        if (typeof key === 'string' && key.startsWith(CACHE_PREFIX)) {
+          const cached = val as CachedMerchant;
+          if (now - cached.timestamp >= CACHE_TTL_MS) {
+            await del(key);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to evict stale cache", e);
+    }
+  };
+
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(runEviction);
+  } else {
+    setTimeout(runEviction, 5000);
+  }
 }
 
 const EXHAUSTIVE_MERCHANT_MAPPINGS = [
@@ -170,6 +200,8 @@ function categorizeLocal(merchantName: string): MerchantInfo | null {
 export async function categorizeMerchant(merchantName: string, apiKey?: string): Promise<MerchantInfo> {
   if (!merchantName) throw new Error("Merchant name is required");
 
+  scheduleEviction();
+
   // UX/Performance Polish: Check local exact/pattern matches FIRST to avoid 1-2s API latency for known merchants!
   const localMatch = categorizeLocal(merchantName);
   if (localMatch) {
@@ -178,74 +210,38 @@ export async function categorizeMerchant(merchantName: string, apiKey?: string):
 
   const cacheKey = `${CACHE_PREFIX}${merchantName.toLowerCase()}`;
   try {
-    const cachedStr = localStorage.getItem(cacheKey);
-    if (cachedStr) {
-      const cached = JSON.parse(cachedStr) as CachedMerchant;
+    const cached = await get<CachedMerchant>(cacheKey);
+    if (cached) {
       // Check TTL
       if (Date.now() - cached.timestamp < CACHE_TTL_MS) {
         return cached.data;
-      } else {
-        localStorage.removeItem(cacheKey);
       }
     }
   } catch (e) { }
 
   try {
-    const response = await fetch("/api/categorize", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ merchantName, apiKey })
-    });
+    const { httpsCallable } = await import('firebase/functions');
+    const { functions } = await import('./../firebase');
+    const categorize = httpsCallable(functions, 'categorize');
+    
+    const response = await categorize({ merchantName, apiKey });
+    const data = response.data as any;
 
-    if (response.ok) {
-      const data = await response.json();
-      if (data && data.category) {
-        const cacheEntry: CachedMerchant = {
-          data: data as MerchantInfo,
-          timestamp: Date.now()
-        };
-        try {
-          localStorage.setItem(cacheKey, JSON.stringify(cacheEntry));
-        } catch (e: any) {
-          // If quota exceeded, do an LRU eviction
-          if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
-            try {
-              const keys = Object.keys(localStorage);
-              const cacheItems: { key: string, ts: number }[] = [];
-              for (let i = 0; i < keys.length; i++) {
-                const key = keys[i];
-                if (key.startsWith(CACHE_PREFIX)) {
-                  try {
-                    const itemStr = localStorage.getItem(key);
-                    if (itemStr) {
-                      const match = itemStr.match(/"timestamp":\s*(\d+)/);
-                      const ts = match ? parseInt(match[1], 10) : 0;
-                      cacheItems.push({ key, ts });
-                    }
-                  } catch (parseErr) { }
-                }
-              }
-              // Sort by oldest first and remove oldest 20%
-              cacheItems.sort((a, b) => a.ts - b.ts);
-              const itemsToRemove = Math.max(1, Math.floor(cacheItems.length * 0.2));
-              for (let i = 0; i < itemsToRemove; i++) {
-                localStorage.removeItem(cacheItems[i].key);
-              }
-              // Try saving again after clearing
-              localStorage.setItem(cacheKey, JSON.stringify(cacheEntry));
-            } catch (clearErr) { }
-          }
-        }
-        return data as MerchantInfo;
+    if (data && data.category) {
+      const cacheEntry: CachedMerchant = {
+        data: data as MerchantInfo,
+        timestamp: Date.now()
+      };
+      try {
+        await set(cacheKey, cacheEntry);
+      } catch (e: any) {
+        console.warn("Failed to save to IndexedDB", e);
       }
-    } else {
-      const errText = await response.text();
-      console.warn("Backend API Error:", errText);
+      return data as MerchantInfo;
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error("Backend API Fetch Error:", error);
+    console.warn("Backend API Error Message:", error.message || error);
   }
 
   // Final fallback if both local and API fail

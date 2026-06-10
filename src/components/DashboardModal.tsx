@@ -150,6 +150,7 @@ export function DashboardModal({ isOpen, onClose, logs, setLogs }: Props) {
                               outerRadius={67}
                               paddingAngle={4}
                               dataKey="value"
+                              isAnimationActive={false}
                             >
                               {chartData.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />

@@ -1,7 +1,8 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertCircle, RefreshCw } from 'lucide-react';
-import { db, auth } from '../firebase';
+import { db, auth, analytics } from '../firebase';
 import { collection, addDoc } from 'firebase/firestore';
+import { logEvent } from 'firebase/analytics';
 
 interface Props {
   children?: ReactNode;
@@ -27,6 +28,13 @@ export class ErrorBoundary extends Component<Props, State> {
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Uncaught error:', error, errorInfo);
     
+    if (analytics) {
+      logEvent(analytics, 'exception', {
+        description: error.message,
+        fatal: true
+      });
+    }
+
     // Log to Firebase for Crashlytics-style monitoring (only if authenticated to satisfy firestore security rules)
     if (auth.currentUser) {
       try {

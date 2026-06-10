@@ -224,8 +224,9 @@ export function useAuthAndSync(latestStateRef: React.MutableRefObject<any>, skip
          const localOfflineQueue = (await get<any[]>('oc_offlineLogsQueue')) || [];
          // If there are new cashback logs, we queue them
          if (dataToSave.cashbackLogs && dataToSave.cashbackLogs.length > 0) {
-            const newLog = dataToSave.cashbackLogs[dataToSave.cashbackLogs.length - 1]; // Naive strategy, assuming last is new
-            await set('oc_offlineLogsQueue', [...localOfflineQueue, newLog]);
+            // Robust strategy: append all current logs to the offline queue. 
+            // The merge logic in setLocalStateFromData handles deduplication via the uniqueMap.
+            await set('oc_offlineLogsQueue', [...localOfflineQueue, ...dataToSave.cashbackLogs]);
          }
          setSyncError('Offline: Changes queued locally.');
       } else {

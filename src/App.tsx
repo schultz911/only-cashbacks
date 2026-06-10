@@ -181,33 +181,18 @@ export default function App() {
     setTestStatus('testing');
     setTestErrorMessage('');
     try {
-      const response = await fetch("/api/categorize", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ merchantName: "Test Connection Check", apiKey: tempApiKey })
-      });
+      const { httpsCallable } = await import('firebase/functions');
+      const { functions } = await import('./firebase');
+      const categorize = httpsCallable(functions, 'categorize');
+      
+      const response = await categorize({ merchantName: "Test Connection Check", apiKey: tempApiKey });
+      const data = response.data as any;
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data && data.category) {
-          setTestStatus('success');
-        } else {
-          setTestStatus('error');
-          setTestErrorMessage('Received invalid response structure.');
-        }
+      if (data && data.category) {
+        setTestStatus('success');
       } else {
-        const errText = await response.text();
-        let parsedErr = "Validation failed.";
-        try {
-          const errObj = JSON.parse(errText);
-          if (errObj.error) parsedErr = errObj.error;
-        } catch {
-          if (errText) parsedErr = errText;
-        }
         setTestStatus('error');
-        setTestErrorMessage(parsedErr);
+        setTestErrorMessage('Received invalid response structure.');
       }
     } catch (error: any) {
       setTestStatus('error');
@@ -316,23 +301,25 @@ export default function App() {
 
   useEffect(() => {
     if (!isDataLoaded) return;
-    const today = new Date();
-    const todayDate = today.getDate();
-    const todayKey = `${today.getFullYear()}-${today.getMonth() + 1}-${todayDate}`;
-    let lastResetDates: Record<string, string> = {};
-    try {
-      const stored = localStorage.getItem('oc_lastOfferResetDates');
-      if (stored) lastResetDates = JSON.parse(stored);
-    } catch (error) {
-      console.warn('Failed to parse oc_lastOfferResetDates from localStorage:', error);
-    }
 
-    let offerUsageDirty = false;
-    let exhaustedDirty = false;
-    const newOfferUsage = { ...offerUsage };
-    const newExhaustedCards = { ...exhaustedCards };
+    const timeoutId = setTimeout(() => {
+      const today = new Date();
+      const todayDate = today.getDate();
+      const todayKey = `${today.getFullYear()}-${today.getMonth() + 1}-${todayDate}`;
+      let lastResetDates: Record<string, string> = {};
+      try {
+        const stored = localStorage.getItem('oc_lastOfferResetDates');
+        if (stored) lastResetDates = JSON.parse(stored);
+      } catch (error) {
+        console.warn('Failed to parse oc_lastOfferResetDates from localStorage:', error);
+      }
 
-    const cardsToResetOffers = new Set<string>();
+      let offerUsageDirty = false;
+      let exhaustedDirty = false;
+      const newOfferUsage = { ...offerUsage };
+      const newExhaustedCards = { ...exhaustedCards };
+
+      const cardsToResetOffers = new Set<string>();
     const cardCycles: Record<string, string> = {};
 
     for (const card of CARD_DATA) {
@@ -431,9 +418,12 @@ export default function App() {
       }
     }
 
-    if (offerUsageDirty) setOfferUsage(newOfferUsage);
-    if (exhaustedDirty) setExhaustedCards(newExhaustedCards);
-    localStorage.setItem('oc_lastOfferResetDates', JSON.stringify(lastResetDates));
+      if (offerUsageDirty) setOfferUsage(newOfferUsage);
+      if (exhaustedDirty) setExhaustedCards(newExhaustedCards);
+      localStorage.setItem('oc_lastOfferResetDates', JSON.stringify(lastResetDates));
+    }, 100);
+
+    return () => clearTimeout(timeoutId);
   }, [isDataLoaded, cardBillDates]);
 
   const handleDeleteData = async () => {
@@ -531,9 +521,18 @@ export default function App() {
 
   const [isLogged, setIsLogged] = useState(false);
 
+  const searchAbortControllerRef = useRef<AbortController | null>(null);
+
   const handleSearch = async (e?: React.FormEvent, directQuery?: string, prefilledAmount?: string) => {
     if (e) e.preventDefault();
-    if (loading) return;
+    
+    if (searchAbortControllerRef.current) {
+      searchAbortControllerRef.current.abort();
+    }
+    const abortController = new AbortController();
+    searchAbortControllerRef.current = abortController;
+    const signal = abortController.signal;
+
     setIsLogged(false);
     const activeQuery = directQuery !== undefined ? directQuery : query;
     let activeAmountRaw = prefilledAmount !== undefined ? prefilledAmount : (isIntl ? foreignAmount : amount);
@@ -559,17 +558,25 @@ export default function App() {
     setLoading(true);
     try {
       const info = await categorizeMerchant(activeQuery, openRouterApiKey || undefined);
+      if (signal.aborted) return;
+      
       setLastSearchInfo(info);
       const rec = getRecommendations(info, effectiveAmount, isOnline, isIntl, !isOnline && isScanToPay, normalizedExhaustedCards, offerUsage, kiwiNeonEarnRate, walletCards.length > 0 ? walletCards : null, cardBillDates);
+      if (signal.aborted) return;
+
       setRecommendation(rec);
       setHistory(prev => {
         const filtered = prev.filter(p => p.name.toLowerCase() !== info.name.toLowerCase());
         return [info, ...filtered].slice(0, 4);
       });
     } catch (error) {
-      console.error('Failed to get recommendation:', error);
+      if (!signal.aborted) {
+        console.error('Failed to get recommendation:', error);
+      }
     } finally {
-      setLoading(false);
+      if (!signal.aborted) {
+        setLoading(false);
+      }
     }
   };
 
