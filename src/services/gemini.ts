@@ -5,6 +5,8 @@
 
 import { MerchantInfo } from "../types";
 import { get, set, entries, del } from 'idb-keyval';
+import { httpsCallable } from 'firebase/functions';
+import { functions } from '../firebase';
 
 const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 const CACHE_PREFIX = 'oc_merchant_';
@@ -220,8 +222,6 @@ export async function categorizeMerchant(merchantName: string, apiKey?: string):
   } catch (e) { }
 
   try {
-    const { httpsCallable } = await import('firebase/functions');
-    const { functions } = await import('./../firebase');
     const categorize = httpsCallable(functions, 'categorize');
     
     const response = await categorize({ merchantName, apiKey });

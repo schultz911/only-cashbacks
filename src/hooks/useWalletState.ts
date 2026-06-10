@@ -32,19 +32,23 @@ export function useWalletState(skipSyncRef: React.MutableRefObject<boolean>, set
   };
 
   useEffect(() => {
-    safeSetItem('oc_exhaustedCards', exhaustedCards);
-    safeSetItem('oc_cardBillDates', cardBillDates);
-    safeSetItem('oc_paidBills', paidBills);
-    safeSetItem('oc_loungePassesUsed', loungePassesUsed);
-    safeSetItem('oc_loungeMilestonesVerified', loungeMilestonesVerified);
-    safeSetItem('oc_offerUsage', offerUsage);
-    safeSetItem('oc_kiwiNeonEarnRate', kiwiNeonEarnRate);
-    safeSetItem('oc_walletCards', walletCards);
-    safeSetItem('oc_cashbackLogs', cashbackLogs);
+    const timer = setTimeout(() => {
+      safeSetItem('oc_exhaustedCards', exhaustedCards);
+      safeSetItem('oc_cardBillDates', cardBillDates);
+      safeSetItem('oc_paidBills', paidBills);
+      safeSetItem('oc_loungePassesUsed', loungePassesUsed);
+      safeSetItem('oc_loungeMilestonesVerified', loungeMilestonesVerified);
+      safeSetItem('oc_offerUsage', offerUsage);
+      safeSetItem('oc_kiwiNeonEarnRate', kiwiNeonEarnRate);
+      safeSetItem('oc_walletCards', walletCards);
+      safeSetItem('oc_cashbackLogs', cashbackLogs);
 
-    if (!skipSyncRef.current) {
-      setIsDirty(true);
-    }
+      if (!skipSyncRef.current) {
+        setIsDirty(true);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
   }, [exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, cardBillDates, paidBills, kiwiNeonEarnRate, walletCards, cashbackLogs]);
 
   return {

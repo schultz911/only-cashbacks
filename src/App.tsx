@@ -53,6 +53,9 @@ const VOUCHER_PORTALS: Record<string, string> = {
   'Tata Neu': 'HDFC Tata Neu Infinity'
 };
 
+// Stale exchange rates from 2024 used as a last-resort fallback when the exchange API fails and cache is empty.
+const FALLBACK_EXCHANGE_RATES: Record<string, number> = { 'USD': 0.012, 'EUR': 0.011, 'GBP': 0.0094, 'AED': 0.044 };
+
 export default function App() {
   const {
     needRefresh: [needRefresh, setNeedRefresh],
@@ -479,9 +482,8 @@ export default function App() {
       if (isIntl) {
         if (exchangeRates[baseCurrency]) {
           effectiveAmount = parsedForeign / exchangeRates[baseCurrency];
-        } else {
-          const mockRates: Record<string, number> = { 'USD': 0.012, 'EUR': 0.011, 'GBP': 0.0094, 'AED': 0.044 };
-          if (mockRates[baseCurrency]) effectiveAmount = parsedForeign / mockRates[baseCurrency];
+        } else if (FALLBACK_EXCHANGE_RATES[baseCurrency]) {
+          effectiveAmount = parsedForeign / FALLBACK_EXCHANGE_RATES[baseCurrency];
         }
       } else {
         effectiveAmount = parsedAmount;
@@ -547,9 +549,8 @@ export default function App() {
     let effectiveAmount = parsedAmount;
     if (isIntl && exchangeRates[baseCurrency]) {
       effectiveAmount = parsedForeign / exchangeRates[baseCurrency];
-    } else if (isIntl) {
-      const mockRates: Record<string, number> = { 'USD': 0.012, 'EUR': 0.011, 'GBP': 0.0094, 'AED': 0.044 };
-      if (mockRates[baseCurrency]) effectiveAmount = parsedForeign / mockRates[baseCurrency];
+    } else if (isIntl && FALLBACK_EXCHANGE_RATES[baseCurrency]) {
+      effectiveAmount = parsedForeign / FALLBACK_EXCHANGE_RATES[baseCurrency];
     }
 
     if (directQuery !== undefined) setQuery(directQuery);

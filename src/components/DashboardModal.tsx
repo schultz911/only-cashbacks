@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, TrendingUp, Undo2, RotateCcw, AlertTriangle } from 'lucide-react';
 import { CashbackLog } from '../types';
@@ -27,16 +27,16 @@ export function DashboardModal({ isOpen, onClose, logs, setLogs }: Props) {
   const totalThisMonth = thisMonthLogs.reduce((acc, log) => acc + log.amount, 0);
 
   // Group logs by category or card for Pie Chart
-  const chartData = logs.reduce((acc, log) => {
-    const key = viewMode === 'category' ? log.category : log.cardName;
-    const existing = acc.find(item => item.name === key);
-    if (existing) {
-      existing.value += log.amount;
-    } else {
-      acc.push({ name: key, value: log.amount });
+  const chartData = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const log of logs) {
+      const key = viewMode === 'category' ? log.category : log.cardName;
+      map.set(key, (map.get(key) || 0) + log.amount);
     }
-    return acc;
-  }, [] as { name: string; value: number }[]).sort((a, b) => b.value - a.value).slice(0, 5);
+    return Array.from(map, ([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5);
+  }, [logs, viewMode]);
 
   const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
 

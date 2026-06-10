@@ -15,6 +15,8 @@ interface State {
 }
 
 export class ErrorBoundary extends Component<Props, State> {
+  private errorCount = 0;
+
   public state: State = {
     hasError: false,
     error: null,
@@ -36,7 +38,8 @@ export class ErrorBoundary extends Component<Props, State> {
     }
 
     // Log to Firebase for Crashlytics-style monitoring (only if authenticated to satisfy firestore security rules)
-    if (auth.currentUser) {
+    if (auth.currentUser && this.errorCount < 5) {
+      this.errorCount++;
       try {
         addDoc(collection(db, 'clientErrors'), {
           userId: auth.currentUser.uid,

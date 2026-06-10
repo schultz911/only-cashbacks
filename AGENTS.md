@@ -8,6 +8,15 @@
 
 
 ## Discovered Optimizations
+- (Phase 6) `.env.example` and `.env` contain dead environment variables: `OPENROUTER_MODEL`, `APP_URL`, `URL`, `GEMINI_API_KEY`.
+- (Phase 6) Root directory contains an orphan `metadata.json` declaring unused geolocation capabilities.
+- (Phase 6) `package.json` contains unused devDependency `workbox-build`.
+- (Phase 6) `App.tsx` contains duplicate inline definitions of `mockRates` with stale 2024 exchange rates.
+- (Phase 6) `useWalletState.ts` performs 9 synchronous `localStorage.setItem` calls on every state change, blocking the main thread.
+- (Phase 6) `DashboardModal.tsx` recomputes `chartData` on every render using an O(N²) find-inside-reduce pattern.
+- (Phase 6) `gemini.ts` uses dynamic imports of `httpsCallable` and `functions` on every search call, adding microtask overhead.
+- (Phase 6) `ErrorBoundary.tsx` lacks a limit on error logging to the Firestore `clientErrors` collection, exposing the app to billing spikes.
+- (Phase 6) `vite.config.ts` includes `woff2` in `globPatterns` but no local font files exist in the project.
 - (Phase 5) `useAuthAndSync.ts` uses a naive offline queue strategy that drops logs if multiple transactions occur offline.
 - (Phase 5) `functions/src/index.ts` strictly requires a BYOK OpenRouter key, causing friction during onboarding.
 - (Phase 5) `DashboardModal.tsx` Recharts `PieChart` leaves idle animation frames active, causing memory bloat on mobile.
@@ -20,6 +29,15 @@
 - Dead code in firebase.ts identified.
 
 ## Previously Suggested
+- (Phase 6) Removal of dead environment variables (`OPENROUTER_MODEL`, `APP_URL`, `URL`) from `.env.example` and `.env`.
+- (Phase 6) Deletion of orphan root file `metadata.json`.
+- (Phase 6) Uninstalling unused `workbox-build` devDependency.
+- (Phase 6) Extraction of duplicate `mockRates` maps into a module-scoped `FALLBACK_EXCHANGE_RATES` constant in `App.tsx`.
+- (Phase 6) Debouncing `localStorage` writes in `useWalletState.ts` with a 500ms trailing debounce.
+- (Phase 6) Memoizing `chartData` and optimizing the aggregation logic to O(N) using a `Map` in `DashboardModal.tsx`.
+- (Phase 6) Statically importing `httpsCallable` and `functions` at the top of `gemini.ts`.
+- (Phase 6) Capping Firestore client error logging at 5 errors per session in `ErrorBoundary.tsx`.
+- (Phase 6) Removing `woff2` from PWA `globPatterns` in `vite.config.ts`.
 - (Phase 5) Robust offline queue logic replacing naive single-log queue in `useAuthAndSync.ts`.
 - (Phase 5) Server-side fallback API key in `functions/src/index.ts` to gracefully handle missing BYOK setup.
 - (Phase 5) Adding `isAnimationActive={false}` to `DashboardModal.tsx` to halt idle Recharts animations.
@@ -33,6 +51,15 @@
 - Cleanup of unused getFunctions in src/firebase.ts.
 
 ## Approved and Implemented
+- (Phase 6) Removed dead environment variables from `.env.example` and `.env`.
+- (Phase 6) Deleted the orphan root file `metadata.json`.
+- (Phase 6) Uninstalled unused `workbox-build` devDependency.
+- (Phase 6) Extracted duplicate `mockRates` maps into a module-scoped `FALLBACK_EXCHANGE_RATES` constant in `App.tsx`.
+- (Phase 6) Debounced `localStorage` writes in `useWalletState.ts` with a 500ms trailing debounce.
+- (Phase 6) Memoized `chartData` and optimized the aggregation logic to O(N) using a `Map` in `DashboardModal.tsx`.
+- (Phase 6) Statically imported `httpsCallable` and `functions` at the top of `gemini.ts`.
+- (Phase 6) Capped Firestore client error logging at 5 errors per session in `ErrorBoundary.tsx`.
+- (Phase 6) Removed `woff2` from PWA `globPatterns` in `vite.config.ts`.
 - (Phase 5) Implemented robust offline array queuing in `useAuthAndSync.ts` preventing offline data loss.
 - (Phase 5) Added `isAnimationActive={false}` to `DashboardModal.tsx` to eliminate mobile memory bloat.
 - (Phase 4) Added `X-Permitted-Cross-Domain-Policies: none` to `server.ts` to harden cross-domain security posture.
@@ -44,6 +71,7 @@
 - Phase 1: Migrated gemini.ts to use Firebase Functions (httpsCallable(functions, 'categorize')) instead of local Express fetch API. (User pivoted from deletion).
 
 ## Denied or Not Implemented
+- (Phase 6) None.
 - (Phase 5) Graceful server-side fallback API key rejected to strictly enforce BYOK policy.
 - (Phase 4) None.
 - Phase 1: Deletion of functions/ directory rejected.
