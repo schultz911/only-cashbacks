@@ -6,8 +6,8 @@
 - Firebase Protections: Under no circumstances suggest the removal, alteration, or optimization of code blocks, configuration files, or variables explicitly marked or structured for use by Firebase Functions.
 - No "Any" Stripping: Do not recommend or force the removal or refactoring of TypeScript any types simply for strict compliance unless it directly resolves a critical, reproducible memory or runtime leak.
 
-
 ## Discovered Optimizations
+
 - (Phase 7) `src/components/ErrorBoundary.tsx:1` React import is declared but never read.
 - (Phase 7) `src/components/DashboardModal.tsx:34` Calling `map.get` immediately followed by `map.set` inside a loop can be optimized by storing the get result.
 - (Phase 7) `src/hooks/usePushNotifications.ts:50` Checking `localStorage.getItem` for each notification key inside a loop or timer can cause main thread blocking.
@@ -46,6 +46,7 @@
 - Dead code in firebase.ts identified.
 
 ## Previously Suggested
+
 - (Phase 7) Removal of unused React import from `src/components/ErrorBoundary.tsx`.
 - (Phase 7) Avoiding double map lookup in `src/components/DashboardModal.tsx`.
 - (Phase 7) Optimizing `localStorage` reads in `src/hooks/usePushNotifications.ts`.
@@ -85,6 +86,7 @@
 - Cleanup of unused getFunctions in src/firebase.ts.
 
 ## Approved and Implemented
+
 - (Phase 7) None.
 - (Phase 6) Removed dead environment variables from `.env.example` and `.env`.
 - (Phase 6) Deleted the orphan root file `metadata.json`.
@@ -106,6 +108,7 @@
 - Phase 1: Migrated gemini.ts to use Firebase Functions (httpsCallable(functions, 'categorize')) instead of local Express fetch API. (User pivoted from deletion).
 
 ## Denied or Not Implemented
+
 - (Phase 7) Removal of unused React import from `src/components/ErrorBoundary.tsx` (Rejected: low merit, aesthetic-only).
 - (Phase 7) Avoiding double map lookup in `src/components/DashboardModal.tsx` (Rejected: micro-optimization, negligible benefit).
 - (Phase 7) Optimizing `localStorage` reads in `src/hooks/usePushNotifications.ts` (Rejected: false positive, already outside loop).
@@ -129,28 +132,29 @@
 - Phase 1: Deletion of functions/ directory rejected.
 - Phase 1: Cleanup of src/firebase.ts rejected.
 
-
-
 ## Discovered Optimizations (Phase 2)
+
 - localStorage quota loops freeze the main thread for UI.
 - Concurrent searches block input and lock up the UI.
 
 ## Previously Suggested (Phase 2)
+
 - Migration to IndexedDB for merchant caching.
 - AbortController network cancellation.
 
 ## Approved and Implemented (Phase 2)
+
 - Migrated gemini.ts caching to idb-keyval to eliminate UI stutter.
 - Added AbortController to handleSearch in App.tsx to free up pending UX states and bandwidth.
 
-
-
 ## Discovered Optimizations (Phase 3)
+
 - Unauthenticated crash telemetry was missing, violating visibility goals but securing the database.
 
 ## Previously Suggested (Phase 3)
+
 - Analytics Integration in Error Boundary.
 
 ## Approved and Implemented (Phase 3)
-- Imported Firebase Analytics and added logEvent('exception') inside ErrorBoundary to securely monitor all client crashes.
 
+- Imported Firebase Analytics and added logEvent('exception') inside ErrorBoundary to securely monitor all client crashes.
