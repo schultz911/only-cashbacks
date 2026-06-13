@@ -8,6 +8,23 @@
 
 
 ## Discovered Optimizations
+- (Phase 7) `src/components/ErrorBoundary.tsx:1` React import is declared but never read.
+- (Phase 7) `src/components/DashboardModal.tsx:34` Calling `map.get` immediately followed by `map.set` inside a loop can be optimized by storing the get result.
+- (Phase 7) `src/hooks/usePushNotifications.ts:50` Checking `localStorage.getItem` for each notification key inside a loop or timer can cause main thread blocking.
+- (Phase 7) `src/services/gemini.ts:168` Iterating over EXHAUSTIVE_MERCHANT_MAPPINGS and executing regex `.test()` sequentially is O(N).
+- (Phase 7) `src/lib/recommendation.ts:695` Using `.some()` and `.includes()` repeatedly for membership checks on arrays is O(N).
+- (Phase 7) `src/components/LoungeTrackerModal.tsx:77` Calling `card.benefits.find` inside a `reduce` loop during every render is O(N*M).
+- (Phase 7) `src/App.tsx:274` Calling `filter` multiple times on `CARD_DATA` inside a `useMemo` can be combined into a single pass.
+- (Phase 7) `src/App.tsx:81` Variable 'isDirtyRef' is destructured from context but never used in App.tsx.
+- (Phase 7) `src/components/DashboardModal.tsx:155` Parameter 'entry' is defined in the map function but only 'index' is used.
+- (Phase 7) `src/App.tsx:540` Variable 'activeAmountRaw' is calculated but never used.
+- (Phase 7) `src/lib/recommendation.ts:12` Constant 'DINING_PLATFORMS' is declared but never used in the recommendation logic.
+- (Phase 7) `src/components/BillReminders.tsx:1` React is imported but not used.
+- (Phase 7) `src/App.tsx:61` The state setter 'setNeedRefresh' is destructured but never used.
+- (Phase 7) `src/components/BillDateSelector.tsx:1` React is imported but not used, causing a linter/TypeScript warning.
+- (Phase 7) `server.ts:20` Express 'req' parameter is declared but never read.
+- (Phase 7) `src/lib/recommendation.ts:834` Using nested `.some()` loops with `.includes()` for category matching is O(N^2) or worse.
+- (Phase 7) `src/lib/recommendation.ts:864` Mapping over cardsToEvaluate calls evaluateCard for each card sequentially, performing duplicate computations.
 - (Phase 6) `.env.example` and `.env` contain dead environment variables: `OPENROUTER_MODEL`, `APP_URL`, `URL`, `GEMINI_API_KEY`.
 - (Phase 6) Root directory contains an orphan `metadata.json` declaring unused geolocation capabilities.
 - (Phase 6) `package.json` contains unused devDependency `workbox-build`.
@@ -29,6 +46,23 @@
 - Dead code in firebase.ts identified.
 
 ## Previously Suggested
+- (Phase 7) Removal of unused React import from `src/components/ErrorBoundary.tsx`.
+- (Phase 7) Avoiding double map lookup in `src/components/DashboardModal.tsx`.
+- (Phase 7) Optimizing `localStorage` reads in `src/hooks/usePushNotifications.ts`.
+- (Phase 7) Combining RegExp patterns in `src/services/gemini.ts`.
+- (Phase 7) Converting array checks to Set lookups in `src/lib/recommendation.ts:695`.
+- (Phase 7) Optimizing `benefits.find` inside reduce in `src/components/LoungeTrackerModal.tsx`.
+- (Phase 7) Combining filters in `src/App.tsx:274`.
+- (Phase 7) Removing unused destructuring of `isDirtyRef` in `src/App.tsx`.
+- (Phase 7) Removing unused parameter `entry` in `src/components/DashboardModal.tsx`.
+- (Phase 7) Removing unused variable `activeAmountRaw` in `src/App.tsx`.
+- (Phase 7) Removing unused constant `DINING_PLATFORMS` in `src/lib/recommendation.ts`.
+- (Phase 7) Removing unused React import in `src/components/BillReminders.tsx`.
+- (Phase 7) Removing unused destructuring of `setNeedRefresh` in `src/App.tsx`.
+- (Phase 7) Removing unused React import in `src/components/BillDateSelector.tsx`.
+- (Phase 7) Prefixing/removing unused parameter `req` in `server.ts`.
+- (Phase 7) Precomputing intersections using Sets in `src/lib/recommendation.ts:834`.
+- (Phase 7) Hoisting evaluateCard computations in `src/lib/recommendation.ts:864`.
 - (Phase 6) Removal of dead environment variables (`OPENROUTER_MODEL`, `APP_URL`, `URL`) from `.env.example` and `.env`.
 - (Phase 6) Deletion of orphan root file `metadata.json`.
 - (Phase 6) Uninstalling unused `workbox-build` devDependency.
@@ -51,6 +85,7 @@
 - Cleanup of unused getFunctions in src/firebase.ts.
 
 ## Approved and Implemented
+- (Phase 7) None.
 - (Phase 6) Removed dead environment variables from `.env.example` and `.env`.
 - (Phase 6) Deleted the orphan root file `metadata.json`.
 - (Phase 6) Uninstalled unused `workbox-build` devDependency.
@@ -71,6 +106,23 @@
 - Phase 1: Migrated gemini.ts to use Firebase Functions (httpsCallable(functions, 'categorize')) instead of local Express fetch API. (User pivoted from deletion).
 
 ## Denied or Not Implemented
+- (Phase 7) Removal of unused React import from `src/components/ErrorBoundary.tsx` (Rejected: low merit, aesthetic-only).
+- (Phase 7) Avoiding double map lookup in `src/components/DashboardModal.tsx` (Rejected: micro-optimization, negligible benefit).
+- (Phase 7) Optimizing `localStorage` reads in `src/hooks/usePushNotifications.ts` (Rejected: false positive, already outside loop).
+- (Phase 7) Combining RegExp patterns in `src/services/gemini.ts` (Rejected: would reduce code readability and maintainability).
+- (Phase 7) Converting array checks to Set lookups in `src/lib/recommendation.ts:695` (Rejected: Set has fails substring checking).
+- (Phase 7) Optimizing `benefits.find` inside reduce in `src/components/LoungeTrackerModal.tsx` (Rejected: already memoized via useMemo, tiny static dataset).
+- (Phase 7) Combining filters in `src/App.tsx:274` (Rejected: false positive, ternary evaluations evaluate only one filter).
+- (Phase 7) Removing unused destructuring of `isDirtyRef` in `src/App.tsx` (Rejected: cleanliness-only).
+- (Phase 7) Removing unused parameter `entry` in `src/components/DashboardModal.tsx` (Rejected: cleanliness-only).
+- (Phase 7) Removing unused variable `activeAmountRaw` in `src/App.tsx` (Rejected: cleanliness-only).
+- (Phase 7) Removing unused constant `DINING_PLATFORMS` in `src/lib/recommendation.ts` (Rejected: cleanliness-only).
+- (Phase 7) Removing unused React import in `src/components/BillReminders.tsx` (Rejected: cleanliness-only).
+- (Phase 7) Removing unused destructuring of `setNeedRefresh` in `src/App.tsx` (Rejected: cleanliness-only).
+- (Phase 7) Removing unused React import in `src/components/BillDateSelector.tsx` (Rejected: cleanliness-only).
+- (Phase 7) Prefixing/removing unused parameter `req` in `server.ts` (Rejected: cleanliness-only).
+- (Phase 7) Precomputing intersections using Sets in `src/lib/recommendation.ts:834` (Rejected: Set intersection breaks substring matching).
+- (Phase 7) Hoisting evaluateCard computations in `src/lib/recommendation.ts:864` (Rejected: false positive, duplicate computations already hoisted to ctx).
 - (Phase 6) None.
 - (Phase 5) Graceful server-side fallback API key rejected to strictly enforce BYOK policy.
 - (Phase 4) None.
