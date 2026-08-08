@@ -8,6 +8,12 @@
 
 ## Discovered Optimizations
 
+- (Phase 8) `src/services/gemini.ts:167` Iterating over EXHAUSTIVE_MERCHANT_MAPPINGS with regex `.test()` sequentially.
+- (Phase 8) `src/lib/recommendation.ts:699` Calling `DEFAULT_EXCLUSIONS.find` dynamically during recommendation calculation.
+- (Phase 8) `server.ts:28` Content Security Policy uses 'unsafe-inline' for script-src and style-src.
+- (Phase 8) `src/App.tsx:455` Catching `error` as `any` in error handler.
+- (Phase 8) `src/App.tsx:200` Catching `error` as `any` in catch block.
+- (Phase 8) `src/lib/recommendation.ts:459` Calling `card.benefits.find` inside `calculateCardRecommendation`.
 - (Phase 7) `src/components/ErrorBoundary.tsx:1` React import is declared but never read.
 - (Phase 7) `src/components/DashboardModal.tsx:34` Calling `map.get` immediately followed by `map.set` inside a loop can be optimized by storing the get result.
 - (Phase 7) `src/hooks/usePushNotifications.ts:50` Checking `localStorage.getItem` for each notification key inside a loop or timer can cause main thread blocking.
@@ -47,6 +53,12 @@
 
 ## Previously Suggested
 
+- (Phase 8) Combining RegExp patterns in `src/services/gemini.ts`.
+- (Phase 8) Replacing `DEFAULT_EXCLUSIONS.find` with a pre-computed Set or Map in `src/lib/recommendation.ts`.
+- (Phase 8) Removing 'unsafe-inline' from script-src and style-src headers in `server.ts`.
+- (Phase 8) Refactoring `error: any` to `error: unknown` in `src/App.tsx:455`.
+- (Phase 8) Refactoring `error: any` to `error: unknown` in `src/App.tsx:200`.
+- (Phase 8) Indexing `card.benefits` to avoid `.find` in `src/lib/recommendation.ts:459`.
 - (Phase 7) Removal of unused React import from `src/components/ErrorBoundary.tsx`.
 - (Phase 7) Avoiding double map lookup in `src/components/DashboardModal.tsx`.
 - (Phase 7) Optimizing `localStorage` reads in `src/hooks/usePushNotifications.ts`.
@@ -87,6 +99,7 @@
 
 ## Approved and Implemented
 
+- (Phase 8) None.
 - (Phase 7) None.
 - (Phase 6) Removed dead environment variables from `.env.example` and `.env`.
 - (Phase 6) Deleted the orphan root file `metadata.json`.
@@ -109,6 +122,12 @@
 
 ## Denied or Not Implemented
 
+- (Phase 8) Combining RegExp patterns in `src/services/gemini.ts` (Rejected: Previously rejected in Phase 7; reduces code readability and maintainability).
+- (Phase 8) Replacing `DEFAULT_EXCLUSIONS.find` with Set in `src/lib/recommendation.ts:699` (Rejected: Already hoisted out of card loop; Set lookups break substring matching).
+- (Phase 8) Removing 'unsafe-inline' from CSP in `server.ts:28` (Rejected: High operational risk of breaking Vite inline scripts and dynamic component styles without measurable performance gain).
+- (Phase 8) Refactoring `error: any` to `error: unknown` in `src/App.tsx:455` (Rejected: Violates 'No Any Stripping' constraint; cleanliness-only).
+- (Phase 8) Refactoring `error: any` to `error: unknown` in `src/App.tsx:200` (Rejected: Violates 'No Any Stripping' constraint; cleanliness-only).
+- (Phase 8) Indexing `card.benefits` in `src/lib/recommendation.ts:459` (Rejected: Micro-optimization on 2-5 element static arrays; indexing adds memory overhead).
 - (Phase 7) Removal of unused React import from `src/components/ErrorBoundary.tsx` (Rejected: low merit, aesthetic-only).
 - (Phase 7) Avoiding double map lookup in `src/components/DashboardModal.tsx` (Rejected: micro-optimization, negligible benefit).
 - (Phase 7) Optimizing `localStorage` reads in `src/hooks/usePushNotifications.ts` (Rejected: false positive, already outside loop).
