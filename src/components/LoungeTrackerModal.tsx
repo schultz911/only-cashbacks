@@ -11,7 +11,9 @@ const BENEFIT_CACHE = new Map<string, { spend: number, isFree: boolean, passesSt
 const PASSES_REPLACE_MAP: Record<string, string> = {
   '/qtr': ' / Quarter',
   '/milestone': ' / Milestone',
-  '/qr': ' / Quarter'
+  '/qr': ' / Quarter',
+  '/half-year': ' / Half-Year',
+  '/yr': ' / Year'
 };
 
 const LOUNGE_TAB_OPTIONS = [
@@ -19,7 +21,7 @@ const LOUNGE_TAB_OPTIONS = [
   { label: 'International Lounges', value: 'International' }
 ];
 
-const PASSES_REPLACE_REGEX = /\/(qtr|milestone|qr)/;
+const PASSES_REPLACE_REGEX = /\/(qtr|milestone|qr|half-year|yr)/;
 
 export const parseLoungeBenefit = (b: { value: string, description: string }) => {
   const cacheKey = `${b.value}|${b.description}`;

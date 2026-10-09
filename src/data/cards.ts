@@ -17,9 +17,9 @@ export const CARD_DATA: Card[] = [
     forexMarkup: 3.5,
     baseRewardRate: 0,
     benefits: [
-      { type: 'cashback', category: 'Swiggy', value: '10%', percentValue: 10, description: 'Cashback on food delivery, dining, and online grocery spends on Swiggy.', minSpend: 249, maxSpend: 15000, fallbackRate: 0 },
-      { type: 'cashback', category: 'Online', value: '5%', percentValue: 5, description: 'Cashback on online shopping. Plus 5% off on Nykaa and up to 20% off on Cleartrip (Code: CTSWHDFC).', minSpend: 100, maxSpend: 30000 },
-      { type: 'cashback', category: 'All Spends', value: '1%', percentValue: 1, description: 'Cashback on all eligible domestic transactions.', maxSpend: 100000, isHidden: true },
+      { type: 'cashback', category: 'Swiggy', value: '10%', percentValue: 10, description: 'Direct statement credit cashback on food delivery, dining, and online grocery spends on Swiggy.', minSpend: 249, maxSpend: 15000, fallbackRate: 0 },
+      { type: 'cashback', category: 'Online', value: '5%', percentValue: 5, description: 'Direct statement credit cashback on online shopping. Plus 5% off on Nykaa and up to 20% off on Cleartrip (Code: CTSWHDFC).', minSpend: 100, maxSpend: 30000 },
+      { type: 'cashback', category: 'All Spends', value: '1%', percentValue: 1, description: 'Direct statement credit cashback on all eligible domestic transactions.', maxSpend: 100000, isHidden: true },
       { type: 'exclusion', category: 'Gift Card', value: '0%', description: 'Gift Cards' },
       { type: 'exclusion', category: 'Gaming', value: '0%', description: 'Online Gaming' },
       { type: 'exclusion', category: 'Government', value: '0%', description: 'Government Transactions' },
@@ -37,14 +37,15 @@ export const CARD_DATA: Card[] = [
     name: 'Live+',
     bank: 'HSBC',
     network: 'Visa',
-    tier: 'Signature',
+    tier: 'Infinite',
     gradient: 'from-[#dc2626] to-[#1e40af]',
     type: 'Credit',
     forexMarkup: 3.5,
     baseRewardRate: 1.5,
     benefits: [
-      { type: 'cashback', category: 'Dining', value: '10%', percentValue: 10, description: '10% Cashback on food delivery, dining, and groceries, online and offline.', maxSpend: 10000, fallbackRate: 0 },
-      { type: 'lounge', category: 'Domestic', value: '1/qtr', description: 'Complimentary domestic lounge access.' },
+      { type: 'cashback', category: 'Dining', value: '10%', percentValue: 10, description: '10% Cashback up to ₹1,200/mo on food delivery, dining, and groceries, online and offline.', maxSpend: 12000, fallbackRate: 0 },
+      { type: 'lounge', category: 'Domestic', value: '1/half-year', description: '2 complimentary domestic lounge visits per year (max 1 visit per 6 calendar months).' },
+      { type: 'lounge', category: 'International', value: '1/yr', description: 'Complimentary international lounge visit.' },
       { type: 'exclusion', category: 'Fuel', value: '0%', description: 'Fuel' },
       { type: 'exclusion', category: 'Wallet', value: '0%', description: 'Wallet Loads' },
       { type: 'exclusion', category: 'Rent', value: '0%', description: 'Rent' },
@@ -53,6 +54,8 @@ export const CARD_DATA: Card[] = [
       { type: 'exclusion', category: 'Insurance', value: '0%', description: 'Insurance' },
       { type: 'exclusion', category: 'Jewellery', value: '0%', description: 'Jewellery' },
       { type: 'exclusion', category: 'Toll', value: '0%', description: 'Tolls' },
+      { type: 'exclusion', category: 'Hospital', value: '0%', description: 'Hospitals & Healthcare' },
+      { type: 'exclusion', category: 'Transit', value: '0%', description: 'Local Passenger Transit' },
     ]
   },
   {
@@ -67,19 +70,20 @@ export const CARD_DATA: Card[] = [
     baseRewardRate: 1.5,
     benefits: [
       { type: 'cashback', category: 'Tata Neu App', value: '10%', percentValue: 10, description: 'NeuCoins on online spends within the Tata Neu app on partner brands, pharma, shopping, and travel. (NeuPass Legend Tier)', minSpend: 67 },
-      { type: 'cashback', category: 'Groceries', value: '10%', percentValue: 10, capPerTxn: 1500, description: 'NeuCoins on online grocery spends within the Tata Neu app on BigBasket.', maxSpend: 40000, minSpend: 67, isHidden: true },
-      { type: 'cashback', category: 'Utilities', value: '5%', percentValue: 5, description: 'NeuCoins on online utility bill payments on the Tata Neu app.', maxSpend: 40000, minSpend: 67 },
-      { type: 'cashback', category: 'Telecom', value: '5%', percentValue: 5, description: 'NeuCoins on online telecom and internet payments on the Tata Neu app.', maxSpend: 40000, minSpend: 67, isHidden: true },
+      { type: 'cashback', category: 'Groceries', value: '10%', percentValue: 10, capPerTxn: 1500, description: 'NeuCoins on online grocery spends within the Tata Neu app on BigBasket (capped at 2,000 NeuCoins/month).', maxSpend: 40000, minSpend: 67, isHidden: true },
+      { type: 'cashback', category: 'Utilities', value: '5%', percentValue: 5, description: 'NeuCoins on online utility bill payments on the Tata Neu app (capped at 2,000 NeuCoins/month).', maxSpend: 40000, minSpend: 67 },
+      { type: 'cashback', category: 'Telecom', value: '5%', percentValue: 5, description: 'NeuCoins on online telecom and internet payments on the Tata Neu app (capped at 2,000 NeuCoins/month).', maxSpend: 40000, minSpend: 67, isHidden: true },
       { type: 'cashback', category: 'Offline', value: '5%', percentValue: 5, description: 'NeuCoins on offline spends at Tata partner brands like Croma, Westside, Zudio, IHCL, Bigbasket.', minSpend: 67 },
-      { type: 'lounge', category: 'Domestic', value: '2/qtr', description: 'Generate voucher on the SmartBuy portal on quarterly spends of 50k.' },
+      { type: 'upi', category: 'Scan & Pay', value: '0.5-1.5%', percentValue: 1.5, description: 'NeuCoins on UPI spends via RuPay (0.5% standard UPI, 1.5% on Tata Neu UPI ID; capped at 500 NeuCoins/month).', isHidden: true },
+      { type: 'lounge', category: 'Domestic', value: '2/qtr', description: 'Generate voucher on the SmartBuy portal on quarterly spends of 50k (claimable within 120 days).' },
       { type: 'lounge', category: 'International', value: '1/qtr', description: 'Complimentary with Priority Pass.' },
       { type: 'exclusion', category: 'Fuel', value: '0%', description: 'Fuel' },
       { type: 'exclusion', category: 'Wallet', value: '0%', description: 'Wallet Loads' },
       { type: 'exclusion', category: 'ATM', value: '0%', description: 'ATM Withdrawals' },
       { type: 'exclusion', category: 'Rent', value: '0%', description: 'Rent' },
       { type: 'exclusion', category: 'Government', value: '0%', description: 'Government Transactions' },
-      { type: 'exclusion', category: 'Gaming', value: '0%', description: 'Online Gaming' },
-      { type: 'exclusion', category: 'Education', value: '0%', description: 'Education' }
+      { type: 'exclusion', category: 'Gaming', value: '0%', description: 'Online Skill Gaming' },
+      { type: 'exclusion', category: 'Education', value: '0%', description: 'Education via third-party apps' }
     ]
   },
   {
@@ -93,8 +97,9 @@ export const CARD_DATA: Card[] = [
     forexMarkup: 3.5,
     baseRewardRate: 0,
     benefits: [
-      { type: 'cashback', category: 'Online', value: '5%', percentValue: 5, description: 'Cashback on online spends, including digital gift cards. Forex-positive.', maxSpend: 40000, fallbackRate: 0 },
-      { type: 'cashback', category: 'Offline', value: '1%', percentValue: 1, description: 'Cashback on offline transactions.', maxSpend: 200000 },
+      { type: 'cashback', category: 'Online', value: '5%', percentValue: 5, description: 'Cashback on online spends (capped at ₹2,000/mo). Forex-positive.', maxSpend: 40000, fallbackRate: 0 },
+      { type: 'cashback', category: 'Offline', value: '1%', percentValue: 1, description: 'Cashback on offline transactions (capped at ₹2,000/mo).', maxSpend: 200000 },
+      { type: 'exclusion', category: 'Gift Card', value: '0%', description: 'Gift Cards & Digital Vouchers' },
       { type: 'exclusion', category: 'Rent', value: '0%', description: 'Rent' },
       { type: 'exclusion', category: 'Fuel', value: '0%', description: 'Fuel' },
       { type: 'exclusion', category: 'Wallet', value: '0%', description: 'Wallet Loads & Amazon Pay Balance' },
@@ -140,8 +145,8 @@ export const CARD_DATA: Card[] = [
     forexMarkup: 3.5,
     baseRewardRate: 0,
     benefits: [
-      { type: 'upi', category: 'Scan & Pay', value: '2-5%', percentValue: 2, description: 'Cashback on UPI Scan & Pay spends. Rate increases to 5% with milestones.' },
-      { type: 'cashback', category: 'Online', value: '0.5%', percentValue: 0.5, description: 'Cashback on online UPI payments via Kiwi App. Counts towards milestones.' },
+      { type: 'upi', category: 'Scan & Pay', value: '2-5%', percentValue: 2, minSpend: 100, description: 'Cashback on UPI Scan & Pay spends in multiples of ₹100. Rate increases to 5% with milestones.' },
+      { type: 'cashback', category: 'Online', value: '0.5%', percentValue: 0.5, minSpend: 100, description: 'Cashback on online UPI payments via Kiwi App in multiples of ₹100. Counts towards milestones.' },
       { type: 'exclusion', category: 'Telecom', value: '0%', description: 'Telecom' },
       { type: 'exclusion', category: 'Utilities', value: '0%', description: 'Utilities' },
       { type: 'exclusion', category: 'Jewellery', value: '0%', description: 'Jewellery' },
@@ -160,10 +165,12 @@ export const CARD_DATA: Card[] = [
     gradient: 'from-[#374151] to-[#111827]',
     type: 'Credit',
     forexMarkup: 1.0,
-    baseRewardRate: 0,
+    baseRewardRate: 0.2,
     benefits: [
+      { type: 'cashback', category: 'Top Categories', value: '1%', percentValue: 1.0, description: '5X reward points (1% valueback) on your top 2 spending categories each month.' },
       { type: 'cashback', category: 'Fuel', value: '5%', percentValue: 5, capPerTxn: 50, description: 'Reward points up to ₹50 and surcharge reversal on fuel transactions.' },
-      { type: 'cashback', category: 'Around Me', value: '5%', percentValue: 5, capPerTxn: 50, description: 'Reward points up to ₹50 on hyper-local offers.' }
+      { type: 'cashback', category: 'Around Me', value: '5%', percentValue: 5, capPerTxn: 50, description: 'Reward points up to ₹50 on hyper-local offers.' },
+      { type: 'offer', category: 'Dining', value: 'Airport Dining', percentValue: 20, capPerTxn: 500, description: '20% valueback up to ₹500 on airport terminal dining via Around You.' }
     ]
   },
   {
@@ -194,7 +201,7 @@ export const CARD_DATA: Card[] = [
     baseRewardRate: 0,
     benefits: [
       { type: 'offer', category: 'Food', value: 'Swiggy', percentValue: 24, minSpend: 500, capPerTxn: 120, usageLimit: 2, description: 'Flat ₹120 off on online orders over ₹500 twice a month (Code: AXIS120).' },
-      { type: 'offer', category: 'Movies', value: 'District', percentValue: 50, capPerTxn: 200, usageLimit: 1, description: 'Buy 1 Get 1 on movie tickets online up to ₹200 once a month (Code: AXIS200).' },
+      { type: 'offer', category: 'Movies', value: 'District', percentValue: 50, capPerTxn: 200, usageLimit: 1, description: 'Buy 1 Get 1 on movie tickets online up to ₹200 once a month on District (Code: AXIS200, requires ₹25k spend in previous 3 months).' },
       { type: 'offer', category: 'Fashion', value: 'Ajio', percentValue: 33, minSpend: 2999, capPerTxn: 1000, description: 'Flat ₹1,000 off on online orders over ₹2,999 (Code: AJIOAXISMZ).', isHidden: true },
       { type: 'offer', category: 'Dining', value: 'EazyDiner', percentValue: 15, minSpend: 2500, capPerTxn: 500, usageLimit: 1, description: '15% off up to ₹500 on min bill of ₹2,500 once a month.' },
       { type: 'exclusion', category: 'Rent', value: '0%', description: 'Rent' },
@@ -205,7 +212,7 @@ export const CARD_DATA: Card[] = [
       { type: 'exclusion', category: 'Jewellery', value: '0%', description: 'Jewellery' },
       { type: 'exclusion', category: 'Education', value: '0%', description: 'Education' },
       { type: 'exclusion', category: 'Government', value: '0%', description: 'Government Transactions' },
-      { type: 'lounge', category: 'Domestic', value: '1/qtr', description: 'Activated on quarterly spends of ₹50k.' }
+      { type: 'lounge', category: 'Domestic', value: '1/qtr', description: 'Activated on spends of ₹50k in the previous 3 months (waived for first 4 months).' }
     ]
   },
   {

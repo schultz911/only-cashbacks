@@ -677,15 +677,12 @@ export function getRecommendations(
 
   // Google Play special logic
   if (nameL.includes('google') || platL.includes('google')) {
-    const isExhausted = exhaustedCards['sbi-cashback'];
     return {
       bestCard: SBI_CASHBACK_CARD,
-      reason: isExhausted
-        ? "Using Amazon Gift Card via SBI Cashback. (Accelerated limit reached, earning base rewards)"
-        : "For Google Play, always buy an Amazon Gift Card with the SBI Cashback card and load using Amazon's Rewards Gold offer of 5% on Google Play recharges.",
-      expectedBenefit: isExhausted ? "5% Amazon Rewards Gold" : "5% Cashback + 5% Amazon Rewards Gold",
-      netValue: round2((isExhausted ? 0 : Math.min(amount, 40000) * 0.05) + (amount * 0.05)),
-      cashbackEarned: round2((isExhausted ? 0 : Math.min(amount, 40000) * 0.05) + (amount * 0.05)),
+      reason: "For Google Play, recharge using Amazon's Rewards Gold offer of 5%. Note: Gift card purchases are now excluded from 5% cashback on SBI Cashback.",
+      expectedBenefit: "5% Amazon Rewards Gold",
+      netValue: round2(amount * 0.05),
+      cashbackEarned: round2(amount * 0.05),
       feesPaid: 0,
       alternatives: []
     };
@@ -928,7 +925,7 @@ export function getRecommendations(
       availableOffers.push({ id: 'k-bms', icon: '🎬', title: 'Kotak 811', description: 'Buy 1 Get 1 Ticket up to ₹300', category: 'BMS', cardId: 'kotak-811-infinity' });
     }
     if ((offerUsage[`axis-myzone-Movies-District-${aCycle}`] || 0) < 1 && shouldShowOffer('district')) {
-      availableOffers.push({ id: 'a-district', icon: '🍿', title: 'Axis MyZone', description: 'Buy 1 Get 1 Ticket up to ₹200', category: 'District', cardId: 'axis-myzone' });
+      availableOffers.push({ id: 'a-district', icon: '🍿', title: 'Axis MyZone', description: 'Buy 1 Get 1 Ticket up to ₹200 (requires ₹25k 3-mo spend)', category: 'District', cardId: 'axis-myzone' });
     }
     if ((offerUsage[`hdfc-imperia-Movies-BMS-${iCycle}`] || 0) < 1 && shouldShowOffer('bookmyshow')) {
       availableOffers.push({ id: 'i-bms', icon: '🎟️', title: 'HDFC Imperia', description: '25% points up to ₹250', category: 'BMS', cardId: 'hdfc-imperia' });
