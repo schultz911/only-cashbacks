@@ -99,6 +99,8 @@
 
 ## Approved and Implemented
 
+- (Phase 9) Preconnected Google Fonts and preloaded stylesheet in `index.html` while removing render-blocking `@import` from `src/index.css` to eliminate the network waterfall and accelerate FCP.
+- (Phase 9) Added static `<link rel="manifest">` in `index.html` to guarantee automated PWA install prompt triggers across modern mobile viewports.
 - (Phase 8) None.
 - (Phase 7) None.
 - (Phase 6) Removed dead environment variables from `.env.example` and `.env`.
