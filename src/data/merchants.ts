@@ -1,5 +1,5 @@
 export const KNOWN_MERCHANTS = [
-  "Amazon", "Amazon Prime", "Flipkart", "Myntra", "Ajio", "Meesho", "Nykaa", "Tata Neu",
+  "Amazon", "Amazon Prime", "Amazon Fresh", "Amazon Pay", "Flipkart", "Myntra", "Ajio", "Meesho", "Nykaa", "Tata Neu",
   "Swiggy", "Zomato", "Zepto", "Blinkit", "BigBasket", "JioMart", "Dunzo",
   "Uber", "Ola", "Rapido", "MakeMyTrip", "ClearTrip", "Yatra", "Goibibo", "Agoda", "Booking.com",
   "BookMyShow", "PVR", "INOX", "Netflix", "Hotstar", "SonyLIV", "Zee5",

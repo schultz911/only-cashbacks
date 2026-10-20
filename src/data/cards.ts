@@ -233,6 +233,33 @@ export const CARD_DATA: Card[] = [
     ]
   },
   {
+    id: 'icici-amazon-pay',
+    name: 'Amazon Pay',
+    bank: 'ICICI',
+    network: 'Visa',
+    tier: 'Platinum',
+    gradient: 'from-[#131921] via-[#232f3e] to-[#ff9900]',
+    type: 'Credit',
+    forexMarkup: 1.99,
+    baseRewardRate: 1.0,
+    annualFee: '₹0 (Lifetime Free)',
+    benefits: [
+      { type: 'cashback', category: 'Amazon', value: '5%', percentValue: 5, description: 'Unlimited 5% cashback on Amazon.in for Prime members (credited directly to Amazon Pay balance).' },
+      { type: 'cashback', category: 'Amazon Pay Partners', value: '2%', percentValue: 2, description: '2% unlimited cashback on 100+ partner merchants, flight & hotel bookings, recharges, and bill payments via Amazon Pay.' },
+      { type: 'cashback', category: 'All Spends', value: '1%', percentValue: 1, description: '1% unlimited cashback on all other eligible retail spends, online and offline.', isHidden: true },
+      { type: 'offer', category: 'Dining', value: 'Culinary Treats', percentValue: 15, description: 'Minimum 15% discount at partner restaurants through ICICI Culinary Treats.' },
+      { type: 'exclusion', category: 'Fuel', value: '0%', description: 'Fuel Spends (1% surcharge waiver on ₹400-₹4,000)' },
+      { type: 'exclusion', category: 'Wallet', value: '0%', description: 'Wallet Loads & Amazon Pay Balance Top-up' },
+      { type: 'exclusion', category: 'Rent', value: '0%', description: 'Rent & Housing Payments' },
+      { type: 'exclusion', category: 'Education', value: '0%', description: 'Education & School Fees' },
+      { type: 'exclusion', category: 'Government', value: '0%', description: 'Government Transactions & Taxes' },
+      { type: 'exclusion', category: 'Jewellery', value: '0%', description: 'Jewellery & Gold Coin Purchases' },
+      { type: 'exclusion', category: 'Finance', value: '0%', description: 'EMI Transactions & Loan Repayments' },
+      { type: 'exclusion', category: 'ATM', value: '0%', description: 'ATM Cash Advances' },
+      { type: 'exclusion', category: 'Utilities', value: '0%', description: 'Utility Bill Payments outside Amazon' }
+    ]
+  },
+  {
     id: 'amazon-pay-upi',
     name: 'Amazon Pay',
     bank: 'Amazon',

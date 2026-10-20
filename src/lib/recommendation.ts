@@ -453,6 +453,17 @@ function evaluateCard(card: Card, ctx: RecommendationContext, kiwiNeonEarnRate: 
         isExcluded = false;
         benefitText = 'Base Rewards';
       }
+      if (card.id === 'icici-amazon-pay') {
+        const isAmazonSpend = ctx.platL.includes('amazon') || ctx.nameL.includes('amazon');
+        if (isAmazonSpend && (ctx.isUtilityCat || isExcludedCat === 'utilities' || isExcludedCat === 'utility' || isExcludedCat === 'bills' || isExcludedCat === 'bill' || isExcludedCat === 'telecom' || isExcludedCat === 'internet' || isExcludedCat === 'insurance')) {
+          isExcluded = false;
+          benefitText = 'Base Rewards';
+        }
+        if (isExcludedCat === 'railway' || isExcludedCat === 'rail') {
+          isExcluded = false;
+          benefitText = 'Base Rewards';
+        }
+      }
     }
   }
 
@@ -464,6 +475,8 @@ function evaluateCard(card: Card, ctx: RecommendationContext, kiwiNeonEarnRate: 
 
   if (exclusion) {
     if (card.id === 'hsbc-live-plus' && ctx.catL === 'gaming') {
+      isExcluded = false;
+    } else if (card.id === 'icici-amazon-pay' && (ctx.platL.includes('amazon') || ctx.nameL.includes('amazon')) && (exclusion.categoryLower === 'utilities' || exclusion.categoryLower === 'utility')) {
       isExcluded = false;
     } else {
       isExcluded = true;
@@ -555,6 +568,30 @@ function evaluateCard(card: Card, ctx: RecommendationContext, kiwiNeonEarnRate: 
       const eligible = Math.min(ctx.amount, 40000);
       cashbackAmount = eligible * 0.05;
       benefitText = '5% Cashback';
+    } else {
+      cashbackAmount = ctx.amount * 0.01;
+      benefitText = '1% Base Rewards';
+    }
+  } else if (card.id === 'icici-amazon-pay') {
+    const isAmazonSpend = ctx.platL.includes('amazon') || ctx.nameL.includes('amazon');
+    const isUtilityOrRecharge = ctx.isUtilityCat || ctx.catL.includes('bill') || ctx.nameL.includes('recharge') || ctx.nameL.includes('bill') || ctx.nameL.includes('fastag') || ctx.nameL.includes('dth');
+
+    if (isAmazonSpend && ctx.isOnline) {
+      if (isUtilityOrRecharge) {
+        cashbackAmount = ctx.amount * 0.02;
+        benefitText = '2% Cashback on Amazon Pay';
+      } else {
+        cashbackAmount = ctx.amount * 0.05;
+        benefitText = '5% Cashback on Amazon';
+      }
+    } else if (ctx.platL.includes('amazon pay') || ctx.nameL.includes('amazon pay')) {
+      cashbackAmount = ctx.amount * 0.02;
+      benefitText = '2% Cashback via Amazon Pay';
+    } else if (ctx.isDining && !ctx.isIntl && ctx.amount >= 500) {
+      const culinaryDiscount = ctx.amount * 0.15;
+      const baseCb = (ctx.amount - culinaryDiscount) * 0.01;
+      cashbackAmount = culinaryDiscount + baseCb;
+      benefitText = '15% Off via Culinary Treats + 1% Cashback';
     } else {
       cashbackAmount = ctx.amount * 0.01;
       benefitText = '1% Base Rewards';
@@ -880,6 +917,9 @@ export function getRecommendations(
   else if (bestResult.card.id === 'hdfc-tata-neu-infinity' && isTataNeuAppMerchant && !platL.includes('tata neu')) {
     reason = `Instead of making a direct purchase, buy from Tata Neu app using Tata Neu Infinity HDFC to get 10% NeuCoins.`;
   }
+  else if (bestResult.card.id === 'icici-amazon-pay' && (platL.includes('amazon') || nameL.includes('amazon'))) {
+    reason = "Amazon Pay ICICI gives you 5% unlimited, uncapped cashback on Amazon purchases, credited directly to your Amazon Pay balance.";
+  }
   else if (isScanToPay && (catL === 'other' || !nameL)) {
     reason = `For general P2P or unknown merchants, use CRED, Amazon, or Kotak 811 Scan & Pay for a better chance at rewards.`;
   }
@@ -941,6 +981,9 @@ export function getRecommendations(
     }
     if ((offerUsage[`axis-myzone-Dining-EazyDiner-${aCycle}`] || 0) < 1 && !isFoodDelivery && !nameL.includes('food') && shouldShowOffer('eazydiner')) {
       availableOffers.push({ id: 'a-eazy', icon: '🥂', title: 'Axis MyZone', description: '15% off up to ₹500', category: 'EazyDiner', cardId: 'axis-myzone' });
+    }
+    if (!isFoodDelivery && !nameL.includes('food')) {
+      availableOffers.push({ id: 'i-culinary', icon: '🍽️', title: 'Amazon Pay ICICI', description: 'Min 15% off via Culinary Treats', category: 'Dining', cardId: 'icici-amazon-pay' });
     }
   }
 

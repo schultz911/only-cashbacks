@@ -1140,6 +1140,22 @@ export default function App() {
                       </div>
                     </div>
                   )}
+                  {selectedCardForDetails.card.id === 'icici-amazon-pay' && (
+                    <div className="relative group ml-auto flex">
+                      <a
+                        href="https://www.amazon.in/cbcc/market"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-xs font-bold bg-white/20 hover:bg-white/30 text-white px-2 py-0.5 rounded transition-colors shadow-sm backdrop-blur-md flex items-center gap-1"
+                      >
+                        <Store className="w-3 h-3" /> Rewards
+                      </a>
+                      <div className="absolute top-full right-0 mt-2 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity bg-gray-900 border border-gray-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg whitespace-nowrap shadow-xl z-50">
+                        View official Amazon Pay ICICI card benefits and partner offers.
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
