@@ -19,6 +19,7 @@ import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import express from 'express';
 import { z } from 'zod';
+import crypto from 'crypto';
 
 import { CARD_DATA, CARD_DICT } from './data/cards.js';
 import { getRecommendations } from './lib/recommendation.js';
@@ -500,7 +501,10 @@ async function main() {
       next();
     });
 
-    app.use(express.json());
+    // NOTE: express.json() MUST NOT be applied globally!
+    // Global express.json() consumes the request stream and breaks SSEServerTransport.handlePostMessage (stream is not readable).
+    const jsonParser = express.json();
+    const urlEncodedParser = express.urlencoded({ extended: true });
 
     const PUBLIC_FIREBASE_CONFIG = {
       apiKey: process.env.VITE_FIREBASE_API_KEY || 'AIzaSyCHALzi5TDkpVQrUqobauyciLZurzjQsX4',
@@ -509,7 +513,145 @@ async function main() {
       appId: process.env.VITE_FIREBASE_APP_ID || '1:343088435457:web:14d0c083a241a00a86cb00',
     };
 
-    // Google Sign-In webpage
+    // ─── OAuth 2.0 / 2.1 State Storage ─────────────────────────────
+    interface OAuthRecord {
+      uid: string;
+      idToken: string;
+      codeChallenge?: string;
+      codeChallengeMethod?: string;
+      expiresAt: number;
+    }
+    const oauthCodes = new Map<string, OAuthRecord>();
+
+    // ─── MCP OAuth Discovery: RFC 9728 (Protected Resource) ────────
+    app.get('/.well-known/oauth-protected-resource', (_req, res) => {
+      const baseUrl = getBaseUrl();
+      res.json({
+        resource: baseUrl,
+        authorization_servers: [baseUrl],
+        scopes_supported: ['openid', 'profile', 'email', 'wallet'],
+        bearer_methods_supported: ['header'],
+      });
+    });
+
+    // ─── MCP OAuth Discovery: RFC 8414 & OpenID Connect ────────────
+    const getOAuthServerMetadata = () => {
+      const baseUrl = getBaseUrl();
+      return {
+        issuer: baseUrl,
+        authorization_endpoint: `${baseUrl}/oauth/authorize`,
+        token_endpoint: `${baseUrl}/oauth/token`,
+        registration_endpoint: `${baseUrl}/oauth/register`,
+        response_types_supported: ['code'],
+        grant_types_supported: ['authorization_code', 'refresh_token'],
+        code_challenge_methods_supported: ['S256', 'plain'],
+        token_endpoint_auth_methods_supported: ['none', 'client_secret_post', 'client_secret_basic'],
+        scopes_supported: ['openid', 'profile', 'email', 'wallet'],
+      };
+    };
+
+    app.get('/.well-known/oauth-authorization-server', (_req, res) => {
+      res.json(getOAuthServerMetadata());
+    });
+
+    app.get('/.well-known/openid-configuration', (_req, res) => {
+      res.json(getOAuthServerMetadata());
+    });
+
+    // Dynamic Client Registration (RFC 7591)
+    app.post(['/oauth/register', '/register'], jsonParser, (req, res) => {
+      res.status(201).json({
+        client_id: 'onlycashbacks-mcp-client',
+        client_secret: 'onlycashbacks-mcp-secret',
+        redirect_uris: req.body?.redirect_uris || [],
+        client_name: req.body?.client_name || 'MCP Client',
+      });
+    });
+
+    // OAuth Authorization Endpoint: renders Google Sign-In page
+    app.get(['/oauth/authorize', '/authorize'], (req, res) => {
+      const code = 'OC-' + Math.floor(1000 + Math.random() * 9000);
+      res.setHeader('Content-Type', 'text/html');
+      res.send(getLoginHtml(code, PUBLIC_FIREBASE_CONFIG));
+    });
+
+    // Approves OAuth authorization code from browser popup
+    app.post('/oauth/approve', jsonParser, async (req, res) => {
+      const { idToken, codeChallenge, codeChallengeMethod } = req.body || {};
+      if (!idToken) {
+        res.status(400).json({ success: false, error: 'Missing idToken' });
+        return;
+      }
+      try {
+        const decoded = await verifyIdToken(idToken);
+        const authCode = 'oc_auth_' + crypto.randomBytes(16).toString('hex');
+        oauthCodes.set(authCode, {
+          uid: decoded.uid,
+          idToken,
+          codeChallenge,
+          codeChallengeMethod,
+          expiresAt: Date.now() + 10 * 60 * 1000,
+        });
+
+        // Preload user data
+        const userData = await getUserData(decoded.uid);
+        if (userData) {
+          userSessionCache.set(decoded.uid, { data: userData, authenticatedAt: Date.now() });
+        }
+
+        res.json({ success: true, code: authCode });
+      } catch (err: any) {
+        res.status(401).json({ success: false, error: err.message || 'Verification failed' });
+      }
+    });
+
+    // OAuth Token Endpoint: exchanges code for Bearer access token
+    app.post(['/oauth/token', '/token'], urlEncodedParser, jsonParser, async (req, res) => {
+      const grantType = req.body?.grant_type || req.query?.grant_type;
+      if (grantType === 'authorization_code') {
+        const code = req.body?.code || req.query?.code;
+        const verifier = req.body?.code_verifier || req.query?.code_verifier;
+
+        const record = oauthCodes.get(String(code));
+        if (!record || Date.now() > record.expiresAt) {
+          res.status(400).json({ error: 'invalid_grant', error_description: 'Authorization code invalid or expired' });
+          return;
+        }
+
+        // PKCE verification if challenge was set
+        if (record.codeChallenge) {
+          if (record.codeChallengeMethod === 'S256') {
+            const hash = crypto.createHash('sha256').update(String(verifier || '')).digest('base64url');
+            if (hash !== record.codeChallenge) {
+              res.status(400).json({ error: 'invalid_grant', error_description: 'PKCE challenge verification failed' });
+              return;
+            }
+          } else if (record.codeChallengeMethod === 'plain' || !record.codeChallengeMethod) {
+            if (verifier !== record.codeChallenge) {
+              res.status(400).json({ error: 'invalid_grant', error_description: 'PKCE challenge verification failed' });
+              return;
+            }
+          }
+        }
+
+        oauthCodes.delete(String(code));
+        currentUid = record.uid;
+
+        res.json({
+          access_token: record.idToken,
+          token_type: 'Bearer',
+          expires_in: 3600,
+          refresh_token: 'oc_refresh_' + record.uid,
+          scope: 'openid profile email wallet',
+          id_token: record.idToken,
+        });
+        return;
+      }
+
+      res.status(400).json({ error: 'unsupported_grant_type' });
+    });
+
+    // Google Sign-In webpage (Manual Pairing Flow)
     app.get('/login', (req, res) => {
       cleanExpiredCodes();
       const code = ((req.query.code as string) || ('OC-' + Math.floor(1000 + Math.random() * 9000))).trim().toUpperCase();
@@ -524,8 +666,8 @@ async function main() {
       res.send(getLoginHtml(code, PUBLIC_FIREBASE_CONFIG));
     });
 
-    // Browser POST completion after Google Sign-In
-    app.post('/api/auth/complete', async (req, res) => {
+    // Browser POST completion after Google Sign-In (Manual Pairing)
+    app.post('/api/auth/complete', jsonParser, async (req, res) => {
       const { code, idToken } = req.body || {};
       if (!code || !idToken) {
         res.status(400).json({ success: false, error: 'Missing code or idToken' });
@@ -553,7 +695,7 @@ async function main() {
           cardCount,
         });
 
-        // Set currentUid for the process
+        // Set currentUid for the connection
         currentUid = decoded.uid;
 
         res.json({
@@ -587,6 +729,8 @@ async function main() {
           health: '/health',
           messages: '/messages',
           login: '/login',
+          oauth_discovery: '/.well-known/oauth-authorization-server',
+          protected_resource: '/.well-known/oauth-protected-resource',
         },
       });
     });
@@ -595,7 +739,27 @@ async function main() {
       res.json({ status: 'ok', server: 'onlycashbacks-mcp', version: '1.0.0' });
     });
 
+    // Helper to extract Bearer token user on request
+    const authenticateFromBearer = async (req: express.Request) => {
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.slice(7);
+        try {
+          const decoded = await verifyIdToken(token);
+          currentUid = decoded.uid;
+          const userData = await getUserData(decoded.uid);
+          if (userData) {
+            userSessionCache.set(decoded.uid, { data: userData, authenticatedAt: Date.now() });
+          }
+        } catch {
+          // Ignore invalid bearer tokens, fallback to unauthenticated/session
+        }
+      }
+    };
+
     app.get('/sse', async (req, res) => {
+      await authenticateFromBearer(req);
+
       const sseTransport = new SSEServerTransport('/messages', res);
       transports.set(sseTransport.sessionId, sseTransport);
       
@@ -606,7 +770,10 @@ async function main() {
       await server.connect(sseTransport);
     });
 
+    // NOTE: This route receives the raw request stream directly, without body-parser
     app.post('/messages', async (req, res) => {
+      await authenticateFromBearer(req);
+
       const sessionId = req.query.sessionId as string;
       const sseTransport = transports.get(sessionId);
       if (!sseTransport) {
@@ -620,6 +787,7 @@ async function main() {
       console.log(`🚀 OnlyCashbacks MCP Server running on port ${PORT}`);
       console.log(`   SSE endpoint: http://0.0.0.0:${PORT}/sse`);
       console.log(`   Health check: http://0.0.0.0:${PORT}/health`);
+      console.log(`   OAuth Discovery: http://0.0.0.0:${PORT}/.well-known/oauth-authorization-server`);
     });
   } else {
     // stdio transport for local usage

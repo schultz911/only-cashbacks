@@ -257,8 +257,20 @@ export function getLoginHtml(code: string, firebaseConfig: Record<string, string
     const firebaseConfig = ${JSON.stringify(firebaseConfig)};
     firebase.initializeApp(firebaseConfig);
 
-    const code = new URLSearchParams(window.location.search).get('code') || '${code}';
+    const urlParams = new URLSearchParams(window.location.search);
+    const redirectUri = urlParams.get('redirect_uri');
+    const state = urlParams.get('state');
+    const codeChallenge = urlParams.get('code_challenge');
+    const codeChallengeMethod = urlParams.get('code_challenge_method');
+
+    const code = urlParams.get('code') || '${code}';
     document.getElementById('display-code').innerText = code;
+
+    // If OAuth redirect flow, hide the manual code badge
+    if (redirectUri) {
+      const codeBadge = document.querySelector('.code-badge');
+      if (codeBadge) codeBadge.style.display = 'none';
+    }
 
     async function handleGoogleSignIn() {
       const btn = document.getElementById('login-btn');
@@ -275,6 +287,32 @@ export function getLoginHtml(code: string, firebaseConfig: Record<string, string
         const user = result.user;
         const idToken = await user.getIdToken();
 
+        // 1. If OAuth redirect flow, exchange with /oauth/approve and redirect back to client
+        if (redirectUri) {
+          statusMsg.innerHTML = '<div class="spinner"></div> Authorizing and returning to assistant...';
+          const res = await fetch('/oauth/approve', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              idToken: idToken,
+              codeChallenge: codeChallenge,
+              codeChallengeMethod: codeChallengeMethod
+            })
+          });
+
+          const data = await res.json();
+          if (!res.ok || !data.success) {
+            throw new Error(data.error || 'Authorization failed');
+          }
+
+          const redirectUrl = new URL(redirectUri);
+          redirectUrl.searchParams.set('code', data.code);
+          if (state) redirectUrl.searchParams.set('state', state);
+          window.location.href = redirectUrl.toString();
+          return;
+        }
+
+        // 2. Otherwise standard code pairing flow
         statusMsg.innerHTML = '<div class="spinner"></div> Linking with your assistant...';
 
         const res = await fetch('/api/auth/complete', {
