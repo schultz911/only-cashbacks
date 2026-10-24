@@ -19,6 +19,8 @@ import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import express from 'express';
+import path from 'path';
+import fs from 'fs';
 import { z } from 'zod';
 import crypto from 'crypto';
 
@@ -753,21 +755,47 @@ self.addEventListener('activate', (event) => {
       res.json(pendingAuthCodes.get(code)!);
     });
 
-    app.get('/', (_req, res) => {
-      res.json({
-        name: 'OnlyCashbacks MCP Server',
-        status: 'running',
-        endpoints: {
-          mcp: '/mcp',
-          sse: '/sse',
-          health: '/health',
-          messages: '/messages',
-          login: '/login',
-          oauth_discovery: '/.well-known/oauth-authorization-server',
-          protected_resource: '/.well-known/oauth-protected-resource',
-        },
+    const distCandidates = [
+      path.resolve(process.cwd(), 'dist'),
+      path.resolve(process.cwd(), '../dist'),
+      path.resolve(__dirname, '../../dist'),
+      path.resolve(__dirname, '../dist'),
+    ];
+    const distPath = distCandidates.find(p => fs.existsSync(path.join(p, 'index.html')));
+
+    if (distPath) {
+      console.log(`[Static] Serving frontend web app from: ${distPath}`);
+      app.use(express.static(distPath, {
+        index: false,
+        maxAge: '1y',
+        immutable: true,
+        setHeaders: (res, filePath) => {
+          if (filePath.endsWith('.html') || filePath.endsWith('sw.js') || filePath.endsWith('.webmanifest') || filePath.includes('workbox-')) {
+            res.setHeader('Cache-Control', 'no-cache');
+          }
+        }
+      }));
+
+      app.get('/', (_req, res) => {
+        res.sendFile(path.join(distPath, 'index.html'));
       });
-    });
+    } else {
+      app.get('/', (_req, res) => {
+        res.json({
+          name: 'OnlyCashbacks MCP Server',
+          status: 'running',
+          endpoints: {
+            mcp: '/mcp',
+            sse: '/sse',
+            health: '/health',
+            messages: '/messages',
+            login: '/login',
+            oauth_discovery: '/.well-known/oauth-authorization-server',
+            protected_resource: '/.well-known/oauth-protected-resource',
+          },
+        });
+      });
+    }
 
     app.get('/health', (_req, res) => {
       res.json({ status: 'ok', server: 'onlycashbacks-mcp', version: '1.0.0' });
@@ -939,6 +967,24 @@ self.addEventListener('activate', (event) => {
 
       await session.transport.handlePostMessage(req, res);
     });
+
+    if (distPath) {
+      app.get('*', (req, res, next) => {
+        if (
+          req.path.startsWith('/mcp') ||
+          req.path.startsWith('/sse') ||
+          req.path.startsWith('/oauth') ||
+          req.path.startsWith('/api') ||
+          req.path.startsWith('/.well-known') ||
+          req.path.startsWith('/health') ||
+          req.path.startsWith('/messages') ||
+          req.path.startsWith('/login')
+        ) {
+          return next();
+        }
+        res.sendFile(path.join(distPath, 'index.html'));
+      });
+    }
 
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 OnlyCashbacks MCP Server running on port ${PORT}`);

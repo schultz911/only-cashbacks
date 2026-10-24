@@ -45,6 +45,7 @@ export default defineConfig(({ mode }) => {
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
           globIgnores: ['**/vendor-recharts*.js'],
+          navigateFallbackDenylist: [/^\/oauth/, /^\/mcp/, /^\/sse/, /^\/health/, /^\/\.well-known/, /^\/api/, /^\/messages/, /^\/login/],
           runtimeCaching: [
             {
               urlPattern: ({ url }) => url.pathname.includes('vendor-recharts'),
