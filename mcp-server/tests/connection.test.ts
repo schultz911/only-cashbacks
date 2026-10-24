@@ -22,6 +22,7 @@ let http: Server;
 let origin: string;
 const clients: Client[] = [];
 beforeEach(async () => {
+  vi.stubEnv('OAUTH_CLIENT_SIGNING_KEY', 'integration-tests-only-persistent-signing-key');
   identity.wallet = { walletCards: ['sbi-cashback'] };
   identity.otherWallet = null;
   http = createRemoteApp().listen(0, '127.0.0.1');
@@ -32,6 +33,7 @@ afterEach(async () => {
   await Promise.all(clients.splice(0).map(client => client.close()));
   http.closeAllConnections();
   await new Promise<void>((resolve, reject) => http.close(err => err ? reject(err) : resolve()));
+  vi.unstubAllEnvs();
 });
 const post = (path: string, body: object) => fetch(origin + path, {
   method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),

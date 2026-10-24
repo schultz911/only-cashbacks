@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import express from 'express';
 import { getLoginHtml } from './loginHtml.js';
+import { createOAuthClientRegistry, validOAuthRedirect } from './oauthClients.js';
 
 export const PUBLIC_ORIGIN = 'https://only-cashbacks.up.railway.app';
 export const MCP_RESOURCE = `${PUBLIC_ORIGIN}/mcp`;
@@ -22,7 +23,7 @@ export function installOAuthRoutes(
   firebaseConfig: Record<string, string>,
   verifyIdentity: (token: string) => Promise<{ uid: string }>,
 ) {
-  const clients = new Map<string, string[]>();
+  const clients = createOAuthClientRegistry();
   const requests = new Map<string, Authorization>();
   const codes = new Map<string, Grant>();
   const accessTokens = new Map<string, Token>();
@@ -56,26 +57,17 @@ export function installOAuthRoutes(
   });
   app.post(['/oauth/register', '/register'], express.json(), (req, res) => {
     const redirects = req.body?.redirect_uris;
-    const validRedirect = (value: unknown) => {
-      if (typeof value !== 'string') return false;
-      try {
-        const url = new URL(value);
-        return !url.hash && !url.username && !url.password &&
-          (url.protocol === 'https:' || (url.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)));
-      } catch { return false; }
-    };
-    if (!Array.isArray(redirects) || !redirects.length || !redirects.every(validRedirect)) {
+    if (!Array.isArray(redirects) || !redirects.length || !redirects.every(validOAuthRedirect)) {
       res.status(400).json({ error: 'invalid_redirect_uri' });
       return;
     }
-    const clientId = random();
-    clients.set(clientId, [...redirects]);
+    const clientId = clients.register(redirects);
     res.status(201).json({ client_id: clientId, redirect_uris: redirects, token_endpoint_auth_method: 'none', grant_types: ['authorization_code', 'refresh_token'], response_types: ['code'] });
   });
   app.get(['/oauth/authorize', '/authorize'], (req, res) => {
     prune();
     const { client_id, redirect_uri, code_challenge, code_challenge_method, response_type, resource, state } = req.query;
-    if (typeof client_id !== 'string' || typeof redirect_uri !== 'string' || !clients.get(client_id)?.includes(redirect_uri) ||
+    if (typeof client_id !== 'string' || typeof redirect_uri !== 'string' || !clients.allows(client_id, redirect_uri) ||
       response_type !== 'code' || code_challenge_method !== 'S256' || typeof code_challenge !== 'string' ||
       !/^[A-Za-z0-9_-]{43}$/.test(code_challenge) || (resource !== undefined && resource !== MCP_RESOURCE) ||
       (state !== undefined && typeof state !== 'string')) {

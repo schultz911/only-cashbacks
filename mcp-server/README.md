@@ -81,7 +81,9 @@ The standalone sign-in page also initializes App Check with reCAPTCHA Enterprise
 
 OAuth access tokens expire after one hour. Refresh tokens rotate within a maximum 24-hour login period. Clients must include the bearer token on every request to an OAuth-authenticated session. Anonymous connections can use manual pairing.
 
-Registrations, tokens, pairing codes and MCP sessions are in memory. Run one replica; a restart requires reconnecting and signing in again. Multiple replicas require a shared authorization and session store.
+Set a persistent, cryptographically random `OAUTH_CLIENT_SIGNING_KEY` (at least 32 bytes) in deployment variables. New client registrations then contain signed callback hashes and remain valid across restarts. Preserve this key across deploys; rotating it invalidates existing signed registrations. For pre-upgrade opaque IDs, configure `OAUTH_REGISTERED_CLIENTS_JSON` as an object mapping each verified existing client ID to its exact registered callback URLs. Without a signing key, new registrations retain the development-only in-memory behavior.
+
+Tokens, pairing codes and MCP sessions are in memory. Run one replica; after a restart users must sign in again, but configured client registrations remain usable. Multiple replicas still require a shared authorization and session store. The registration key does not grant wallet access: Firebase identity verification, exact callback matching, PKCE, single-use codes and token expiry remain required.
 
 After deploying changes, reconnect the plugin, complete Google sign-in, and verify `authenticate` and `list_cards` in the same connection. Local regression tests mock identity and database calls; real sign-in is still required to validate production credentials and domain configuration.
 
