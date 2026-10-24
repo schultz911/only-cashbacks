@@ -24,6 +24,7 @@ import { CARD_DATA, CARD_DICT } from './data/cards.js';
 import { getRecommendations } from './lib/recommendation.js';
 import { verifyIdToken, getUserData } from './firebase.js';
 import type { MerchantInfo, UserData } from './types.js';
+import { getLoginHtml } from './loginHtml.js';
 
 // ─── In-memory session store for authenticated users ───────────────
 // Maps Firebase UID → UserData (cached for the duration of the session)
@@ -40,6 +41,35 @@ function getCachedUserData(uid: string): UserData | null {
   return entry.data;
 }
 
+// ─── Pending authorization codes for Google Sign-In pairing ───────
+interface PendingAuth {
+  createdAt: number;
+  expiresAt: number;
+  status: 'pending' | 'completed';
+  uid?: string;
+  displayName?: string;
+  email?: string;
+  cardCount?: number;
+}
+
+const pendingAuthCodes = new Map<string, PendingAuth>();
+const AUTH_CODE_TTL_MS = 15 * 60 * 1000; // 15 minutes
+
+function cleanExpiredCodes() {
+  const now = Date.now();
+  for (const [code, item] of pendingAuthCodes.entries()) {
+    if (now > item.expiresAt) {
+      pendingAuthCodes.delete(code);
+    }
+  }
+}
+
+function getBaseUrl(): string {
+  if (process.env.PUBLIC_URL) return process.env.PUBLIC_URL;
+  if (process.env.RAILWAY_PUBLIC_DOMAIN) return `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`;
+  return 'https://only-cashbacks.up.railway.app';
+}
+
 // ─── Currently authenticated user for this connection ──────────────
 let currentUid: string | null = null;
 
@@ -53,42 +83,118 @@ const server = new McpServer({
 // ─── Tool: authenticate ────────────────────────────────────────────
 server.tool(
   'authenticate',
-  'Sign in with your OnlyCashbacks account using a Firebase ID token. This personalizes recommendations to YOUR cards. Get your token from the OnlyCashbacks app (Settings → Developer → Copy ID Token).',
+  'Sign in with your OnlyCashbacks account to personalize recommendations to your wallet. Calling with no arguments returns a one-click Google sign-in link. Once you sign in via Google in your browser, your wallet is automatically linked.',
   {
-    idToken: z.string().describe('Firebase ID token from your OnlyCashbacks Google sign-in. Get it from: OnlyCashbacks app → Settings → Developer → Copy ID Token'),
+    code: z.string().optional().describe('Pairing code (e.g. "OC-1234") to verify or check sign-in status after signing in in your browser.'),
+    idToken: z.string().optional().describe('Optional raw Firebase ID token if authenticating programmatically.'),
   },
-  async ({ idToken }) => {
-    try {
-      const decoded = await verifyIdToken(idToken);
-      currentUid = decoded.uid;
+  async ({ code, idToken }) => {
+    // 1. Direct ID token passed
+    if (idToken) {
+      try {
+        const decoded = await verifyIdToken(idToken);
+        currentUid = decoded.uid;
 
-      // Fetch and cache user data from Firestore
-      const userData = await getUserData(decoded.uid);
-      if (userData) {
-        userSessionCache.set(decoded.uid, { data: userData, authenticatedAt: Date.now() });
+        const userData = await getUserData(decoded.uid);
+        if (userData) {
+          userSessionCache.set(decoded.uid, { data: userData, authenticatedAt: Date.now() });
+        }
+
+        const cardCount = userData?.walletCards?.length || 0;
+        const displayName = decoded.name || decoded.email || decoded.uid;
+
+        return {
+          content: [{
+            type: 'text' as const,
+            text: `✅ Signed in as ${displayName}\n\n` +
+              (cardCount > 0
+                ? `Found ${cardCount} cards in your wallet. Recommendations will be personalized to your cards.`
+                : `No cards found in your wallet yet. Add cards in the OnlyCashbacks app, or recommendations will use all available cards.`),
+          }],
+        };
+      } catch (error: any) {
+        return {
+          content: [{
+            type: 'text' as const,
+            text: `❌ Authentication failed: ${error.message || 'Invalid token'}`,
+          }],
+          isError: true,
+        };
+      }
+    }
+
+    // 2. Check code status
+    if (code) {
+      cleanExpiredCodes();
+      const normCode = code.trim().toUpperCase();
+      const pending = pendingAuthCodes.get(normCode);
+
+      if (!pending) {
+        return {
+          content: [{
+            type: 'text' as const,
+            text: `❌ Code "${normCode}" is invalid or expired. Please call \`authenticate\` without arguments to generate a new sign-in link.`,
+          }],
+          isError: true,
+        };
       }
 
-      const cardCount = userData?.walletCards?.length || 0;
-      const displayName = decoded.name || decoded.email || decoded.uid;
+      if (pending.status === 'completed' && pending.uid) {
+        currentUid = pending.uid;
+        const cardCount = pending.cardCount || 0;
+        return {
+          content: [{
+            type: 'text' as const,
+            text: `✅ Successfully authenticated as ${pending.displayName || pending.email}!\n\n` +
+              `Found ${cardCount} cards in your wallet. Your recommendations are now personalized to your cards!`,
+          }],
+        };
+      } else {
+        const baseUrl = getBaseUrl();
+        return {
+          content: [{
+            type: 'text' as const,
+            text: `⏳ Sign-in pending for code **${normCode}**.\n\nPlease open this link to sign in with Google:\n👉 ${baseUrl}/login?code=${normCode}\n\nAfter signing in, call \`authenticate({ code: "${normCode}" })\` again!`,
+          }],
+        };
+      }
+    }
 
+    // 3. Already signed in
+    if (currentUid) {
+      const userData = getCachedUserData(currentUid);
+      const cardCount = userData?.walletCards?.length || 0;
       return {
         content: [{
           type: 'text' as const,
-          text: `✅ Signed in as ${displayName}\n\n` +
-            (cardCount > 0
-              ? `Found ${cardCount} cards in your wallet. Recommendations will be personalized to your cards.`
-              : `No cards found in your wallet yet. Add cards in the OnlyCashbacks app, or recommendations will use all available cards.`),
+          text: `✅ Already signed in (${cardCount} cards in your wallet). Recommendations are tailored to your cards.`,
         }],
-      };
-    } catch (error: any) {
-      return {
-        content: [{
-          type: 'text' as const,
-          text: `❌ Authentication failed: ${error.message || 'Invalid token'}\n\nMake sure you copy the ID token from the OnlyCashbacks app (Settings → Developer → Copy ID Token).`,
-        }],
-        isError: true,
       };
     }
+
+    // 4. Generate new pairing code and return Google sign-in link
+    cleanExpiredCodes();
+    const newCode = 'OC-' + Math.floor(1000 + Math.random() * 9000);
+    pendingAuthCodes.set(newCode, {
+      createdAt: Date.now(),
+      expiresAt: Date.now() + AUTH_CODE_TTL_MS,
+      status: 'pending',
+    });
+
+    const baseUrl = getBaseUrl();
+    const loginUrl = `${baseUrl}/login?code=${newCode}`;
+
+    return {
+      content: [{
+        type: 'text' as const,
+        text: `### 🔐 Sign in with Google to Connect OnlyCashbacks\n\n` +
+          `To tailor card recommendations to your wallet, please sign in with your OnlyCashbacks Google account:\n\n` +
+          `👉 **[Click Here to Sign in with Google](${loginUrl})**\n\n` +
+          `1. Click the link above to open the sign-in page in your browser.\n` +
+          `2. Click **"Sign in with Google"** (your pairing code is **\`${newCode}\`**).\n` +
+          `3. Return here and run \`authenticate({ code: "${newCode}" })\` or ask me to check your login!`,
+      }],
+    };
   }
 );
 
@@ -394,6 +500,84 @@ async function main() {
       next();
     });
 
+    app.use(express.json());
+
+    const PUBLIC_FIREBASE_CONFIG = {
+      apiKey: process.env.VITE_FIREBASE_API_KEY || 'AIzaSyCHALzi5TDkpVQrUqobauyciLZurzjQsX4',
+      authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN || 'gen-lang-client-0447512961.firebaseapp.com',
+      projectId: process.env.VITE_FIREBASE_PROJECT_ID || 'gen-lang-client-0447512961',
+      appId: process.env.VITE_FIREBASE_APP_ID || '1:343088435457:web:14d0c083a241a00a86cb00',
+    };
+
+    // Google Sign-In webpage
+    app.get('/login', (req, res) => {
+      cleanExpiredCodes();
+      const code = ((req.query.code as string) || ('OC-' + Math.floor(1000 + Math.random() * 9000))).trim().toUpperCase();
+      if (!pendingAuthCodes.has(code)) {
+        pendingAuthCodes.set(code, {
+          createdAt: Date.now(),
+          expiresAt: Date.now() + AUTH_CODE_TTL_MS,
+          status: 'pending',
+        });
+      }
+      res.setHeader('Content-Type', 'text/html');
+      res.send(getLoginHtml(code, PUBLIC_FIREBASE_CONFIG));
+    });
+
+    // Browser POST completion after Google Sign-In
+    app.post('/api/auth/complete', async (req, res) => {
+      const { code, idToken } = req.body || {};
+      if (!code || !idToken) {
+        res.status(400).json({ success: false, error: 'Missing code or idToken' });
+        return;
+      }
+
+      const normCode = String(code).trim().toUpperCase();
+      try {
+        const decoded = await verifyIdToken(idToken);
+        const userData = await getUserData(decoded.uid);
+        if (userData) {
+          userSessionCache.set(decoded.uid, { data: userData, authenticatedAt: Date.now() });
+        }
+
+        const cardCount = userData?.walletCards?.length || 0;
+        const displayName = decoded.name || decoded.email || 'OnlyCashbacks User';
+
+        pendingAuthCodes.set(normCode, {
+          createdAt: Date.now(),
+          expiresAt: Date.now() + AUTH_CODE_TTL_MS,
+          status: 'completed',
+          uid: decoded.uid,
+          displayName,
+          email: decoded.email,
+          cardCount,
+        });
+
+        // Set currentUid for the process
+        currentUid = decoded.uid;
+
+        res.json({
+          success: true,
+          displayName,
+          email: decoded.email,
+          cardCount,
+        });
+      } catch (err: any) {
+        res.status(401).json({ success: false, error: err.message || 'Token verification failed' });
+      }
+    });
+
+    // Status check for pairing code
+    app.get('/api/auth/status', (req, res) => {
+      cleanExpiredCodes();
+      const code = (req.query.code as string)?.trim().toUpperCase();
+      if (!code || !pendingAuthCodes.has(code)) {
+        res.status(404).json({ status: 'not_found' });
+        return;
+      }
+      res.json(pendingAuthCodes.get(code)!);
+    });
+
     app.get('/', (_req, res) => {
       res.json({
         name: 'OnlyCashbacks MCP Server',
@@ -402,6 +586,7 @@ async function main() {
           sse: '/sse',
           health: '/health',
           messages: '/messages',
+          login: '/login',
         },
       });
     });
