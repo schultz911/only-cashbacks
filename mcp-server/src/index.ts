@@ -67,8 +67,6 @@ function cleanExpiredCodes() {
 }
 
 function getBaseUrl(): string {
-  if (process.env.PUBLIC_URL) return process.env.PUBLIC_URL;
-  if (process.env.RAILWAY_PUBLIC_DOMAIN) return `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`;
   return 'https://only-cashbacks.up.railway.app';
 }
 
