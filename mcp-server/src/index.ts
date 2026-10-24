@@ -372,7 +372,7 @@ function formatCardDetails(card: typeof CARD_DATA[0]) {
 
 // ─── Start the server ──────────────────────────────────────────────
 async function main() {
-  const transport = process.env.MCP_TRANSPORT || 'stdio';
+  const transport = process.env.MCP_TRANSPORT || (process.env.PORT ? 'sse' : 'stdio');
 
   if (transport === 'sse') {
     // SSE transport for remote hosting (Railway, etc.)
@@ -392,6 +392,18 @@ async function main() {
         return;
       }
       next();
+    });
+
+    app.get('/', (_req, res) => {
+      res.json({
+        name: 'OnlyCashbacks MCP Server',
+        status: 'running',
+        endpoints: {
+          sse: '/sse',
+          health: '/health',
+          messages: '/messages',
+        },
+      });
     });
 
     app.get('/health', (_req, res) => {
@@ -419,10 +431,10 @@ async function main() {
       await sseTransport.handlePostMessage(req, res);
     });
 
-    app.listen(PORT, () => {
+    app.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 OnlyCashbacks MCP Server running on port ${PORT}`);
-      console.log(`   SSE endpoint: http://localhost:${PORT}/sse`);
-      console.log(`   Health check: http://localhost:${PORT}/health`);
+      console.log(`   SSE endpoint: http://0.0.0.0:${PORT}/sse`);
+      console.log(`   Health check: http://0.0.0.0:${PORT}/health`);
     });
   } else {
     // stdio transport for local usage
