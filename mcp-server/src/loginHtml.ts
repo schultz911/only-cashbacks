@@ -288,6 +288,77 @@ export function getLoginHtml(code: string, firebaseConfig: Record<string, string
       if (codeBadge) codeBadge.style.display = 'none';
     }
 
+    async function finishAuthWithUser(user) {
+      const statusMsg = document.getElementById('status-msg');
+      const idToken = await user.getIdToken();
+
+      // 1. If OAuth redirect flow, exchange with /oauth/approve and redirect back to client
+      if (redirectUri) {
+        statusMsg.innerHTML = '<div class="spinner"></div> Authorizing and returning to assistant...';
+        const res = await fetch('/oauth/approve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            idToken: idToken,
+            codeChallenge: codeChallenge,
+            codeChallengeMethod: codeChallengeMethod
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Authorization failed');
+        }
+
+        const redirectUrl = new URL(redirectUri);
+        redirectUrl.searchParams.set('code', data.code);
+        if (state) redirectUrl.searchParams.set('state', state);
+        window.location.href = redirectUrl.toString();
+        return;
+      }
+
+      // 2. Otherwise standard code pairing flow
+      statusMsg.innerHTML = '<div class="spinner"></div> Linking with your assistant...';
+
+      const res = await fetch('/api/auth/complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: code, idToken: idToken })
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to link account');
+      }
+
+      // Show success view
+      document.getElementById('auth-view').style.display = 'none';
+      document.getElementById('success-view').style.display = 'block';
+
+      document.getElementById('user-name').innerText = user.displayName || 'OnlyCashbacks User';
+      document.getElementById('user-email').innerText = user.email || '';
+      document.getElementById('card-count').innerText = '💳 ' + (data.cardCount || 0) + ' cards synced';
+      
+      if (user.photoURL) {
+        document.getElementById('avatar-container').innerHTML = '<img src="' + user.photoURL + '" alt="Avatar" referrerpolicy="no-referrer">';
+      } else {
+        document.getElementById('avatar-container').innerText = (user.displayName || 'U')[0].toUpperCase();
+      }
+    }
+
+    // Check for redirect sign-in result on page load
+    firebase.auth().getRedirectResult().then(async (result) => {
+      if (result && result.user) {
+        const btn = document.getElementById('login-btn');
+        const statusMsg = document.getElementById('status-msg');
+        btn.disabled = true;
+        statusMsg.className = 'status-msg loading';
+        await finishAuthWithUser(result.user);
+      }
+    }).catch((err) => {
+      console.warn('Redirect result check:', err);
+    });
+
     async function handleGoogleSignIn() {
       const btn = document.getElementById('login-btn');
       const statusMsg = document.getElementById('status-msg');
@@ -296,70 +367,27 @@ export function getLoginHtml(code: string, firebaseConfig: Record<string, string
       statusMsg.className = 'status-msg loading';
       statusMsg.innerHTML = '<div class="spinner"></div> Signing in with Google...';
 
+      const provider = new firebase.auth.GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+
       try {
-        const provider = new firebase.auth.GoogleAuthProvider();
-        provider.setCustomParameters({ prompt: 'select_account' });
         const result = await firebase.auth().signInWithPopup(provider);
-        const user = result.user;
-        const idToken = await user.getIdToken();
-
-        // 1. If OAuth redirect flow, exchange with /oauth/approve and redirect back to client
-        if (redirectUri) {
-          statusMsg.innerHTML = '<div class="spinner"></div> Authorizing and returning to assistant...';
-          const res = await fetch('/oauth/approve', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              idToken: idToken,
-              codeChallenge: codeChallenge,
-              codeChallengeMethod: codeChallengeMethod
-            })
-          });
-
-          const data = await res.json();
-          if (!res.ok || !data.success) {
-            throw new Error(data.error || 'Authorization failed');
-          }
-
-          const redirectUrl = new URL(redirectUri);
-          redirectUrl.searchParams.set('code', data.code);
-          if (state) redirectUrl.searchParams.set('state', state);
-          window.location.href = redirectUrl.toString();
-          return;
-        }
-
-        // 2. Otherwise standard code pairing flow
-        statusMsg.innerHTML = '<div class="spinner"></div> Linking with your assistant...';
-
-        const res = await fetch('/api/auth/complete', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code: code, idToken: idToken })
-        });
-
-        const data = await res.json();
-        if (!res.ok || !data.success) {
-          throw new Error(data.error || 'Failed to link account');
-        }
-
-        // Show success view
-        document.getElementById('auth-view').style.display = 'none';
-        document.getElementById('success-view').style.display = 'block';
-
-        document.getElementById('user-name').innerText = user.displayName || 'OnlyCashbacks User';
-        document.getElementById('user-email').innerText = user.email || '';
-        document.getElementById('card-count').innerText = '💳 ' + (data.cardCount || 0) + ' cards synced';
-        
-        if (user.photoURL) {
-          document.getElementById('avatar-container').innerHTML = '<img src="' + user.photoURL + '" alt="Avatar" referrerpolicy="no-referrer">';
-        } else {
-          document.getElementById('avatar-container').innerText = (user.displayName || 'U')[0].toUpperCase();
-        }
-
+        await finishAuthWithUser(result.user);
       } catch (err) {
-        btn.disabled = false;
-        statusMsg.className = 'status-msg error';
-        statusMsg.innerText = '❌ ' + (err.message || 'Sign in failed. Please try again.');
+        console.warn('Popup sign in failed, attempting redirect fallback:', err);
+        // Fallback to signInWithRedirect if popup is blocked or cross-origin iframe fails
+        try {
+          statusMsg.innerHTML = '<div class="spinner"></div> Redirecting to Google Sign-In...';
+          await firebase.auth().signInWithRedirect(provider);
+        } catch (redirectErr) {
+          btn.disabled = false;
+          statusMsg.className = 'status-msg error';
+          let msg = redirectErr.message || err.message || 'Sign in failed.';
+          if (msg.includes('internal-error') || msg.includes('unauthorized-domain')) {
+            msg += ' Ensure only-cashbacks.up.railway.app is added to Authorized Domains in Firebase Console.';
+          }
+          statusMsg.innerText = '❌ ' + msg;
+        }
       }
     }
   </script>

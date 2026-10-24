@@ -15,18 +15,43 @@ const FIREBASE_DATABASE_ID = process.env.FIREBASE_DATABASE_ID || 'ai-studio-only
 
 let initialized = false;
 
+function parseServiceAccount(raw: string): any {
+  const trimmed = raw.trim();
+  let parsed: any;
+  if (trimmed.startsWith('{')) {
+    parsed = JSON.parse(trimmed);
+  } else {
+    try {
+      const decoded = Buffer.from(trimmed, 'base64').toString('utf8');
+      parsed = JSON.parse(decoded);
+    } catch {
+      parsed = JSON.parse(trimmed);
+    }
+  }
+
+  if (parsed.private_key && typeof parsed.private_key === 'string' && parsed.private_key.includes('\\n')) {
+    parsed.private_key = parsed.private_key.replace(/\\n/g, '\n');
+  }
+
+  return parsed;
+}
+
 function ensureInitialized() {
   if (initialized) return;
   
-  // Try to initialize from service account JSON env var first,
-  // then fall back to GOOGLE_APPLICATION_CREDENTIALS file path
   if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
-    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-    });
+    try {
+      const serviceAccount = parseServiceAccount(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+      });
+    } catch (err: any) {
+      console.error('[Firebase] Failed to parse FIREBASE_SERVICE_ACCOUNT_JSON:', err.message);
+      admin.initializeApp({
+        credential: admin.credential.applicationDefault(),
+      });
+    }
   } else {
-    // Uses GOOGLE_APPLICATION_CREDENTIALS env var automatically
     admin.initializeApp({
       credential: admin.credential.applicationDefault(),
     });
