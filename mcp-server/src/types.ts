@@ -88,7 +88,7 @@ export interface CashbackLog {
 /** Shape of user data stored in Firestore */
 export interface UserData {
   walletCards?: string[];
-  exhaustedCards?: Record<string, boolean>;
+  exhaustedCards?: Record<string, boolean | string>;
   offerUsage?: Record<string, number>;
   cardBillDates?: Record<string, number>;
   kiwiNeonEarnRate?: number;

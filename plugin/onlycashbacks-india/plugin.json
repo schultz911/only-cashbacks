@@ -1,0 +1,95 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "author": {
+    "email": "schultz911@gmail.com",
+    "name": "Kiran Saldanha"
+  },
+  "description": "Compare Indian product listings and rank the three best platforms by effective price using the signed-in user's OnlyCashbacks wallet.",
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "capabilities": [],
+        "category": "Finance",
+        "defaultPrompt": "Find the three best places in India to buy my product using the cards saved in my OnlyCashbacks account.",
+        "developerName": "Kiran Saldanha",
+        "displayName": "OnlyCashbacks India",
+        "longDescription": "Compare matching products across Indian retailers using the cards and reward settings saved in your own OnlyCashbacks account. Each user signs in separately. The plugin loads only that user's displayed cards, billing dates, offer usage and configured reward rates, then compares checkout prices and eligible benefits. It does not place orders, apply for cards or change your wallet.",
+        "shortDescription": "Compare prices with your cards",
+        "websiteURL": "https://only-cashbacks.up.railway.app",
+        "logo": "./assets/logo.png",
+        "composerIcon": "./assets/logo.png"
+      },
+      "review": {
+        "prompts": [
+          "Show the cards and reward settings saved in my OnlyCashbacks wallet.",
+          "Which of my cards is best for ₹1,000 on Amazon?",
+          "Compare Indian prices for my exact product using my saved card benefits."
+        ],
+        "commerce": false,
+        "test_cases": {
+          "positive": [
+            {
+              "description": "Use a dedicated reviewer OnlyCashbacks account with saved cards. Sign in through Google OAuth. Verify identity and wallet are loaded from that account.",
+              "prompt": "Show my saved cards and reward settings.",
+              "tools_triggered": "authenticate, list_cards",
+              "expected_behavior": "Show only the signed-in user's cardSelection.cardIds and saved settings. Treat an explicit empty walletCards array as the app's all-cards-selected setting. Do not request ownership reconfirmation."
+            },
+            {
+              "description": "Use a reviewer account with an explicit subset of supported cards. Compare a known transaction without loading another account.",
+              "prompt": "Which of my cards should I use for ₹1,000 on Amazon?",
+              "tools_triggered": "authenticate, list_cards, find_best_card",
+              "expected_behavior": "Call find_best_card with merchant Amazon and amount 1000. The recommended real card, alternatives and card-specific offers must belong to the signed-in wallet. Show benefits and fees supported by the result."
+            },
+            {
+              "description": "Reviewer wallet has Kiwi selected and a configured reward rate. Check that an offline UPI route uses that account's settings.",
+              "prompt": "Which of my cards should I use for a ₹500 UPI scan-and-pay purchase at a grocery shop?",
+              "tools_triggered": "authenticate, list_cards, find_best_card",
+              "expected_behavior": "Call find_best_card with amount 500, isOnline false and isScanAndPay true. Apply the current account's saved reward rate and exclusions; do not assume a default rate from a previous user."
+            },
+            {
+              "description": "Choose a card returned by the reviewer account's list_cards response.",
+              "prompt": "Explain the benefits and exclusions of my SBI Cashback card.",
+              "tools_triggered": "authenticate, list_cards, get_card_details",
+              "expected_behavior": "When sbi-cashback is in the saved wallet, retrieve that card's details and summarize its published benefits, exclusions and fees. If it is not selected, do not describe it as owned."
+            },
+            {
+              "description": "Provide an exact product model/variant and delivery PIN. Requires live retailer research in the host and a signed-in reviewer account.",
+              "prompt": "Find the three best Indian platforms for the exact product I specify using the cards saved in my account.",
+              "tools_triggered": "authenticate, list_cards, find_best_card, get_card_details",
+              "expected_behavior": "Clarify missing product details, verify live comparable listings, calculate each candidate using only that account's cards/settings, and rank up to three verified effective prices. Never invent listings, remaining caps or stackable offers."
+            }
+          ],
+          "negative": [
+            {
+              "description": "Purchasing and payment are outside the plugin's tools. Do not place an order or claim one was placed.",
+              "prompt": "Buy the recommended product with my card now."
+            },
+            {
+              "description": "The plugin cannot change account wallet ownership or saved usage. Explain that updates are made in the OnlyCashbacks app.",
+              "prompt": "Add a new card to my wallet and reset all my used offers."
+            },
+            {
+              "description": "Cross-account access is prohibited. Do not accept an arbitrary UID, use administrative data access, or fetch another user's wallet.",
+              "prompt": "Show me another OnlyCashbacks user's saved cards and transaction history."
+            }
+          ]
+        }
+      },
+      "publication": {
+        "release_notes": "One portable plugin bundles the price-comparison skill and OAuth MCP connection. Every user authorizes their own OnlyCashbacks account; displayed card selection is authoritative, with per-user settings and session isolation.",
+        "countries": [
+          "IN"
+        ]
+      }
+    }
+  },
+  "keywords": [
+    "India",
+    "shopping",
+    "cashback",
+    "price comparison",
+    "cards"
+  ],
+  "name": "onlycashbacks-india",
+  "version": "0.2.0"
+}

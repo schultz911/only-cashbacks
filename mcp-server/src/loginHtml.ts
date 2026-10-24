@@ -1,3 +1,5 @@
+import { ONLYCASHBACKS_LOGO } from './brand.js';
+
 /**
  * Generates the self-contained Google Sign-In HTML page for AI Assistant pairing.
  */
@@ -7,7 +9,9 @@ export function getLoginHtml(code: string, firebaseConfig: Record<string, string
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Connect OnlyCashbacks — AI Assistant</title>
+  <title>Connect your wallet | OnlyCashbacks</title>
+  <meta name="theme-color" content="#F5F5F7">
+  <link rel="icon" type="image/png" href="${ONLYCASHBACKS_LOGO}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -15,6 +19,11 @@ export function getLoginHtml(code: string, firebaseConfig: Record<string, string
   <script src="https://www.gstatic.com/firebasejs/12.13.0/firebase-app-check-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/12.13.0/firebase-auth-compat.js"></script>
   <script>
+    try {
+      const savedTheme = JSON.parse(localStorage.getItem('oc_theme') || 'null');
+      const theme = ['light', 'dark', 'oled'].includes(savedTheme) ? savedTheme : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.dataset.theme = theme;
+    } catch (_) {}
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(function(regs) {
         for (var i = 0; i < regs.length; i++) {
@@ -31,213 +40,91 @@ export function getLoginHtml(code: string, firebaseConfig: Record<string, string
     }
   </script>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
-      color: #F8FAFC;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-    .card {
-      background: rgba(30, 41, 59, 0.85);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(16px);
-      border-radius: 24px;
-      padding: 40px;
-      max-width: 440px;
-      width: 100%;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 40px rgba(59, 130, 246, 0.15);
-      text-align: center;
-    }
-    .logo-container {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 64px;
-      height: 64px;
-      border-radius: 18px;
-      background: linear-gradient(135deg, #3B82F6, #8B5CF6);
-      margin-bottom: 20px;
-      box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
-    }
-    .logo-icon {
-      font-size: 32px;
-    }
-    h1 {
-      font-size: 24px;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      margin-bottom: 8px;
-      background: linear-gradient(to right, #FFFFFF, #CBD5E1);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-    p.subtitle {
-      color: #94A3B8;
-      font-size: 14px;
-      line-height: 1.5;
-      margin-bottom: 24px;
-    }
-    .code-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: rgba(15, 23, 42, 0.6);
-      border: 1px dashed rgba(148, 163, 184, 0.3);
-      padding: 8px 16px;
-      border-radius: 12px;
-      font-size: 13px;
-      color: #94A3B8;
-      margin-bottom: 28px;
-    }
-    .code-value {
-      font-family: monospace;
-      font-weight: 700;
-      color: #60A5FA;
-      font-size: 15px;
-      letter-spacing: 0.05em;
-    }
-    .google-btn {
-      width: 100%;
-      background: #FFFFFF;
-      color: #1E293B;
-      border: none;
-      padding: 14px 20px;
-      border-radius: 14px;
-      font-size: 15px;
-      font-weight: 600;
-      font-family: inherit;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      transition: all 0.2s ease;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    }
-    .google-btn:hover {
-      background: #F1F5F9;
-      transform: translateY(-1px);
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
-    }
-    .google-btn:active {
-      transform: translateY(0);
-    }
-    .google-btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-    .google-icon {
-      width: 20px;
-      height: 20px;
-    }
-    .status-msg {
-      margin-top: 20px;
-      font-size: 13px;
-      color: #94A3B8;
-      display: none;
-    }
-    .status-msg.error {
-      color: #F87171;
-      display: block;
-    }
-    .status-msg.loading {
-      color: #60A5FA;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-    .spinner {
-      width: 16px;
-      height: 16px;
-      border: 2px solid rgba(96, 165, 250, 0.2);
-      border-top-color: #60A5FA;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    .success-view {
-      display: none;
-      animation: fadeIn 0.4s ease;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: scale(0.95); }
-      to { opacity: 1; transform: scale(1); }
-    }
-    .success-badge {
-      width: 64px;
-      height: 64px;
-      border-radius: 50%;
-      background: rgba(34, 197, 94, 0.15);
-      border: 2px solid #22C55E;
-      color: #22C55E;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 32px;
-      margin-bottom: 20px;
-    }
-    .user-pill {
-      background: rgba(15, 23, 42, 0.6);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 12px;
-      padding: 12px 16px;
-      margin: 16px 0;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      text-align: left;
-    }
-    .user-avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: #3B82F6;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      color: #FFF;
-      overflow: hidden;
-      flex-shrink: 0;
-    }
+    :root { color-scheme: light; --page: #F5F5F7; --surface: #ffffff; --text: #1D1D1F; --muted: #6b7280; --line: #e5e7eb; --soft: #f3f4f6; --accent: #0095f6; --button: #111827; --button-text: #fff; }
+    :root[data-theme="dark"], :root[data-theme="oled"] { color-scheme: dark; --page: #0f172a; --surface: #1e293b; --text: #f8fafc; --muted: #94a3b8; --line: #334155; --soft: #263449; --button: #f8fafc; --button-text: #111827; }
+    :root[data-theme="oled"] { --page: #000; --surface: #111; --line: #262626; --soft: #1c1c1c; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; min-height: 100svh; background: var(--page); color: var(--text); font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    .site-header { border-bottom: 1px solid var(--line); background: var(--surface); }
+    .header-inner { max-width: 1152px; margin: auto; padding: 20px 24px; }
+    .brand { display: inline-flex; align-items: center; gap: 12px; color: var(--text); text-decoration: none; }
+    .brand-icon { display: block; width: 52px; height: 52px; border-radius: 50%; object-fit: contain; background: #fff; }
+    .brand-name { display: block; font-size: 22px; font-weight: 800; letter-spacing: -.8px; line-height: 1.2; }
+    .brand-tagline { display: block; margin-top: 5px; color: var(--accent); font-size: 10px; font-weight: 800; letter-spacing: 1.4px; text-transform: uppercase; }
+    main { display: flex; align-items: center; justify-content: center; min-height: calc(100svh - 94px); padding: 48px 24px; }
+    .connection { width: 100%; max-width: 480px; }
+    .intro { margin: 0 4px 22px; }
+    .eyebrow { display: inline-flex; align-items: center; gap: 8px; color: var(--accent); font-size: 10px; font-weight: 800; letter-spacing: 1.8px; text-transform: uppercase; }
+    .eyebrow::before { content: ''; width: 6px; height: 6px; background: var(--accent); border-radius: 50%; }
+    .intro h1 { font-size: clamp(28px, 5vw, 36px); letter-spacing: -1.3px; line-height: 1.2; font-weight: 800; margin: 12px 0 10px; }
+    .intro p { color: var(--muted); font-size: 14px; line-height: 1.7; margin: 0; }
+    .card { background: var(--surface); border: 1px solid var(--line); border-radius: 32px; padding: 32px; box-shadow: 0 10px 30px rgba(15,23,42,.04); }
+    .card-brand { display: flex; align-items: center; gap: 13px; padding-bottom: 24px; border-bottom: 1px solid var(--line); margin-bottom: 24px; }
+    .card-logo { width: 52px; height: 52px; object-fit: contain; background: #fff; border-radius: 50%; flex-shrink: 0; }
+    .card-brand strong { display: block; font-size: 15px; letter-spacing: -.3px; }
+    .card-brand span { display: block; font-size: 12px; color: var(--muted); margin-top: 4px; }
+    .benefits { list-style: none; padding: 0; margin: 0 0 28px; display: grid; gap: 16px; }
+    .benefits li { display: flex; align-items: center; gap: 12px; }
+    .check { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 8px; color: var(--accent); background: rgba(0,149,246,.09); font-size: 13px; font-weight: 800; flex-shrink: 0; }
+    .benefits strong { display: block; font-size: 12px; font-weight: 700; }
+    .benefits small { display: block; color: var(--muted); font-size: 11px; line-height: 1.6; margin-top: 2px; }
+    .code-badge { background: var(--soft); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px; color: var(--muted); font-size: 11px; }
+    .code-value { color: var(--text); font-family: ui-monospace, monospace; font-size: 12px; font-weight: 700; overflow-wrap: anywhere; }
+    .google-btn { width: 100%; border: 0; border-radius: 16px; min-height: 54px; padding: 16px; background: var(--button); color: var(--button-text); font: 700 14px 'Plus Jakarta Sans', sans-serif; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px; transition: transform .15s, opacity .15s; }
+    .google-btn:hover:not(:disabled) { transform: translateY(-1px); opacity: .9; }
+    .google-btn:focus-visible, .brand:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+    .google-btn:disabled { opacity: .55; cursor: wait; }
+    .google-icon { width: 20px; height: 20px; background: #fff; border-radius: 50%; padding: 2px; }
+    .status-msg { display: none; margin-top: 18px; font-size: 12px; line-height: 1.6; text-align: center; }
+    .status-msg.error { color: #dc2626; display: block; }
+    .status-msg.loading { color: var(--muted); display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .spinner { width: 15px; height: 15px; border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; flex-shrink: 0; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .privacy-note { text-align: center; margin: 18px 8px 0; color: var(--muted); font-size: 11px; line-height: 1.8; }
+    .page-footer { text-align: center; margin-top: 25px; font-size: 10px; font-weight: 700; color: var(--muted); letter-spacing: .4px; }
+    .success-view { display: none; text-align: center; }
+    .success-badge { display: inline-flex; align-items: center; justify-content: center; width: 54px; height: 54px; border-radius: 18px; color: #059669; background: rgba(16,185,129,.1); font-size: 28px; margin-bottom: 18px; }
+    .success-view h2 { font-size: 25px; letter-spacing: -.8px; margin: 0 0 10px; }
+    .subtitle, .close-hint { color: var(--muted); font-size: 12px; line-height: 1.8; }
+    .user-pill { display: flex; align-items: center; gap: 12px; text-align: left; background: var(--soft); border: 1px solid var(--line); border-radius: 18px; padding: 16px; margin: 24px 0; }
+    .user-avatar { width: 42px; height: 42px; border-radius: 50%; background: var(--accent); color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; overflow: hidden; flex-shrink: 0; }
     .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
-    .user-info { overflow: hidden; }
-    .user-name { font-weight: 700; font-size: 14px; color: #F8FAFC; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .user-email { font-size: 12px; color: #94A3B8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .wallet-count {
-      font-size: 13px;
-      color: #34D399;
-      font-weight: 600;
-      margin-top: 4px;
-    }
-    .close-hint {
-      color: #64748B;
-      font-size: 13px;
-      margin-top: 16px;
-    }
+    .user-info { min-width: 0; }
+    .user-name { color: var(--text); font-size: 13px; font-weight: 800; }
+    .user-email { color: var(--muted); font-size: 11px; overflow-wrap: anywhere; margin-top: 3px; }
+    .wallet-count { color: #059669; font-size: 11px; font-weight: 700; margin-top: 6px; }
+    @media (max-width: 480px) { .header-inner { padding: 16px 20px; } .brand-name { font-size: 20px; } .brand-icon { width: 44px; height: 44px; } main { padding: 32px 18px; align-items: flex-start; } .card { padding: 24px; border-radius: 26px; } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
   </style>
 </head>
 <body>
-  <div class="card">
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="https://only-cashbacks.up.railway.app" aria-label="OnlyCashbacks home">
+        <img class="brand-icon" src="${ONLYCASHBACKS_LOGO}" alt="" width="52" height="52">
+        <span><span class="brand-name">OnlyCashbacks</span><span class="brand-tagline">Make Your Credit Cards Pay</span></span>
+      </a>
+    </div>
+  </header>
+  <main>
+    <div class="connection">
+      <div class="intro">
+        <span class="eyebrow">Your wallet, connected</span>
+        <h1>Make every purchase count.</h1>
+        <p>Connect your OnlyCashbacks account for recommendations that know your cards.</p>
+      </div>
+      <section class="card" aria-label="Connect your OnlyCashbacks account">
     <div id="auth-view">
-      <div class="logo-container">
-        <span class="logo-icon">💳</span>
+      <div class="card-brand">
+        <img class="card-logo" src="${ONLYCASHBACKS_LOGO}" alt="OnlyCashbacks" width="52" height="52">
+        <div><strong>Your cards. Your rewards.</strong><span>One account, wherever you ask.</span></div>
       </div>
-      <h1>Connect OnlyCashbacks</h1>
-      <p class="subtitle">Sign in with your Google account to tailor AI card recommendations to your wallet.</p>
-      
-      <div class="code-badge">
-        <span>Pairing Code:</span>
-        <span class="code-value" id="display-code">${code}</span>
-      </div>
+      <ul class="benefits">
+        <li><span class="check" aria-hidden="true">✓</span><div><strong>The cards you own</strong><small>Your selected wallet, ready to use.</small></div></li>
+        <li><span class="check" aria-hidden="true">✓</span><div><strong>Rewards that fit your spending</strong><small>Your saved offer usage and reward settings.</small></div></li>
+        <li><span class="check" aria-hidden="true">✓</span><div><strong>Always your account</strong><small>Sign in with the Google account you use for OnlyCashbacks.</small></div></li>
+      </ul>
+      <div class="code-badge"><span>Connection code</span><span class="code-value" id="display-code">${code}</span></div>
 
       <button class="google-btn" id="login-btn" onclick="handleGoogleSignIn()" disabled>
         <svg class="google-icon" viewBox="0 0 24 24">
@@ -249,12 +136,13 @@ export function getLoginHtml(code: string, firebaseConfig: Record<string, string
         Sign in with Google
       </button>
 
-      <div class="status-msg" id="status-msg"></div>
+      <div class="status-msg" id="status-msg" role="status" aria-live="polite"></div>
+      <p class="privacy-note">Your saved cards and reward settings will be available to your assistant. You can disconnect at any time.</p>
     </div>
 
     <div class="success-view" id="success-view">
       <div class="success-badge">✓</div>
-      <h1>Account Connected!</h1>
+      <h2>You’re connected.</h2>
       <p class="subtitle">Your AI assistant now has access to your OnlyCashbacks wallet.</p>
       
       <div class="user-pill" id="user-pill">
@@ -268,7 +156,10 @@ export function getLoginHtml(code: string, firebaseConfig: Record<string, string
 
       <p class="close-hint">You can safely close this browser tab and return to your AI assistant.</p>
     </div>
-  </div>
+      </section>
+      <footer class="page-footer">OnlyCashbacks · Better cards for every checkout.</footer>
+    </div>
+  </main>
 
   <script>
     const firebaseConfig = ${JSON.stringify(firebaseConfig)};

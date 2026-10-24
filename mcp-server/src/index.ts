@@ -28,7 +28,7 @@ import { z } from 'zod';
 import crypto from 'crypto';
 
 import { CARD_DATA, CARD_DICT } from './data/cards.js';
-import { getRecommendations } from './lib/recommendation.js';
+import { getCycleForCard, getRecommendations } from './lib/recommendation.js';
 import { verifyIdToken, getUserData } from './firebase.js';
 import type { MerchantInfo, UserData } from './types.js';
 import { getLoginHtml } from './loginHtml.js';
@@ -64,7 +64,7 @@ function signedInStatus(uid: string, userData: UserData, message: string) {
   return {
     content: [{ type: 'text' as const, text: message + '\n\n' + (selection
       ? selection.mode === 'all_supported_cards'
-        ? `Your saved setting selects all ${selection.cardIds.length} supported cards, matching the app. Billing dates, offer usage and reward settings are loaded. This setting does not independently verify card ownership.`
+        ? `Your saved setting selects all ${selection.cardIds.length} supported cards, matching the cards you own in the app. Billing dates, offer usage and reward settings are loaded.`
         : `Found ${selection.cardIds.length} explicitly selected cards in your wallet. Billing dates, offer usage and reward settings are loaded.`
       : 'Your account is connected, but no saved card selection is configured. Select your cards in the app before requesting recommendations.') }],
     structuredContent: walletContext(uid, userData),
@@ -119,6 +119,7 @@ export function createOnlyCashbacksServer(
       code: z.string().optional().describe('Pairing code (e.g. "OC-1234") to verify or check sign-in status after signing in in your browser.'),
       idToken: z.string().optional().describe('Optional raw Firebase ID token if authenticating programmatically.'),
     },
+    { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
     async ({ code, idToken }) => {
       // 1. Direct ID token passed
       if (idToken) {
@@ -222,6 +223,7 @@ export function createOnlyCashbacksServer(
       isInternational: z.boolean().default(false).describe('Whether this is an international transaction (default: false)'),
       isScanAndPay: z.boolean().default(false).describe('Whether this is a UPI Scan & Pay transaction (default: false)'),
     },
+    { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     async ({ merchant, amount, category, platform, isOnline, isInternational, isScanAndPay }) => {
       // Build MerchantInfo from the input
       const merchantInfo: MerchantInfo = {
@@ -262,10 +264,15 @@ export function createOnlyCashbacksServer(
       if (!selection) return { isError: true, content: [{ type: 'text' as const, text: 'No saved card selection is configured. Select your cards in the app before requesting recommendations.' }] };
       if (userData) {
         walletCards = selection.cardIds;
-        exhaustedCards = userData.exhaustedCards || {};
         offerUsage = userData.offerUsage || {};
         cardBillDates = userData.cardBillDates || {};
         kiwiNeonEarnRate = userData.kiwiNeonEarnRate || 2;
+        // Match useWalletState: a marker from a previous billing cycle is not
+        // an exhausted card in the current cycle. Preserve legacy true markers.
+        for (const card of CARD_DATA) {
+          const saved = userData.exhaustedCards?.[card.id];
+          if (saved === true || saved === getCycleForCard(card.id, cardBillDates)) exhaustedCards[card.id] = true;
+        }
       }
 
       const recommendation = getRecommendations(
@@ -290,10 +297,25 @@ export function createOnlyCashbacksServer(
         };
       }
 
+      // Some engine routes return a fixed card. Never expose a card the user
+      // has excluded from their wallet, even when a route bypasses card scoring.
+      const selectedCardIds = new Set(selection.cardIds);
+      const isSelectedCard = (card: typeof CARD_DATA[0]) => card.isDummy || selectedCardIds.has(card.id);
+      if (!isSelectedCard(recommendation.bestCard)) {
+        return {
+          isError: true,
+          content: [{ type: 'text' as const, text: `No eligible recommendation is available within your selected wallet for "${merchant}". No unowned card was recommended.` }],
+          structuredContent: walletContext(currentUid, userData),
+        };
+      }
+      recommendation.alternatives = recommendation.alternatives.filter(item => isSelectedCard(item.card));
+      if (recommendation.tiedCards) recommendation.tiedCards = recommendation.tiedCards.filter(item => isSelectedCard(item.card));
+      if (recommendation.availableOffers) recommendation.availableOffers = recommendation.availableOffers.filter(offer => !offer.cardId || selectedCardIds.has(offer.cardId));
+
       // Format the response
       const lines: string[] = [];
       if (selection.mode === 'all_supported_cards') {
-        lines.push('Your saved setting selects all supported cards, matching the app. Results use your saved usage and reward settings; this does not independently verify ownership of every card.');
+        lines.push('Your saved setting selects all supported cards, matching your wallet in the app. Results use your own saved usage and reward settings.');
         lines.push('');
       }
       lines.push(`## 💳 Best Card: ${recommendation.bestCard.bank} ${recommendation.bestCard.name}`);
@@ -356,6 +378,7 @@ export function createOnlyCashbacksServer(
     'list_cards',
     'List all credit and debit cards supported by OnlyCashbacks.',
     {},
+    { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     async () => {
       const realCards = CARD_DATA.filter(c => !c.isDummy);
 
@@ -397,24 +420,16 @@ export function createOnlyCashbacksServer(
 
       const lines: string[] = ['## 💳 Your Saved Wallet\n'];
       if (selection.mode === 'all_supported_cards') {
-        lines.push('Your saved setting selects all supported cards, matching the app. This is not an independently verified list of owned cards.\n');
+        lines.push('Your saved setting selects all supported cards, matching your wallet in the app.\n');
       }
       if (userWallet && userWallet.size > 0) {
         const inWallet = realCards.filter(c => userWallet.has(c.id));
-        const notInWallet = realCards.filter(c => !userWallet.has(c.id));
 
         lines.push(`### Active Cards (${inWallet.length})`);
         for (const card of inWallet) {
           lines.push(`- ✅ **${card.bank} ${card.name}** [${card.id}] (${card.type} · ${card.network} ${card.tier || ''})`);
         }
 
-        if (notInWallet.length > 0) {
-          lines.push('');
-          lines.push('### Other Available Cards');
-          for (const card of notInWallet) {
-            lines.push(`- **${card.bank} ${card.name}** [${card.id}] (${card.type} · ${card.network} ${card.tier || ''})`);
-          }
-        }
       } else {
         lines.push('Your OnlyCashbacks wallet does not have any saved cards yet.');
         lines.push(`Add cards in the [OnlyCashbacks App](${baseUrl}) to start receiving personalized recommendations!`);
@@ -437,6 +452,7 @@ export function createOnlyCashbacksServer(
     {
       cardId: z.string().describe('Card ID (e.g., "hdfc-swiggy", "sbi-cashback", "icici-amazon-pay"). Use list_cards to see available IDs.'),
     },
+    { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     async ({ cardId }) => {
       const card = CARD_DICT[cardId];
       if (!card) {

@@ -6,15 +6,16 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { createRemoteApp } from '../src/index.js';
 import { MCP_RESOURCE, PUBLIC_ORIGIN } from '../src/oauth.js';
-import { getRecommendations } from '../src/lib/recommendation.js';
+import { getCycleForCard, getRecommendations } from '../src/lib/recommendation.js';
 
-const identity = vi.hoisted(() => ({ wallet: { walletCards: ['sbi-cashback'] } as any }));
+const identity = vi.hoisted(() => ({ wallet: { walletCards: ['sbi-cashback'] } as any, otherWallet: null as any }));
 vi.mock('../src/firebase.js', () => ({
   verifyIdToken: vi.fn(async (token: string) => {
+    if (token === 'test-other-identity') return { uid: 'other-user', name: 'Other User' };
     if (token !== 'test-identity') throw new Error('Invalid signature');
     return { uid: 'test-user', name: 'Test User' };
   }),
-  getUserData: vi.fn(async () => identity.wallet),
+  getUserData: vi.fn(async (uid: string) => uid === 'test-user' ? identity.wallet : uid === 'other-user' ? identity.otherWallet : null),
 }));
 
 let http: Server;
@@ -22,6 +23,7 @@ let origin: string;
 const clients: Client[] = [];
 beforeEach(async () => {
   identity.wallet = { walletCards: ['sbi-cashback'] };
+  identity.otherWallet = null;
   http = createRemoteApp().listen(0, '127.0.0.1');
   await new Promise<void>(resolve => http.once('listening', resolve));
   origin = `http://127.0.0.1:${(http.address() as any).port}`;
@@ -44,7 +46,7 @@ async function connect(token?: string) {
   return { client, transport };
 }
 function text(result: any) { return result.content.map((c: any) => c.text || '').join('\n'); }
-async function authorization() {
+async function authorization(idToken = 'test-identity') {
   const registration = await (await post('/oauth/register', { redirect_uris: ['https://chatgpt.com/connector/oauth/callback'] })).json();
   const verifier = 'v'.repeat(43);
   const params = new URLSearchParams({
@@ -54,13 +56,21 @@ async function authorization() {
   });
   const page = await (await fetch(origin + '/oauth/authorize?' + params)).text();
   const requestId = JSON.parse(page.match(/const oauthRequestId = ("[^"]+");/)![1]);
-  const approved = await (await post('/oauth/approve', { requestId, idToken: 'test-identity' })).json();
+  const approved = await (await post('/oauth/approve', { requestId, idToken })).json();
   const redirect = new URL(approved.redirectUrl);
   expect(redirect.searchParams.get('state')).toBe('state-to-preserve');
   return { client_id: registration.client_id, redirect_uri: registration.redirect_uris[0], code: redirect.searchParams.get('code'), code_verifier: verifier, resource: MCP_RESOURCE, grant_type: 'authorization_code' };
 }
 
 describe('OnlyCashbacks plugin connection', () => {
+  it('advertises accurate read-only and non-destructive tool annotations', async () => {
+    const { client } = await connect();
+    const { tools } = await client.listTools();
+    expect(tools).toHaveLength(4);
+    for (const tool of tools) {
+      expect(tool.annotations).toMatchObject({ readOnlyHint: tool.name !== 'authenticate', destructiveHint: false, openWorldHint: tool.name === 'authenticate' });
+    }
+  });
   it('advertises Railway discovery and a usable authentication challenge', async () => {
     const metadata = await (await fetch(origin + '/.well-known/oauth-protected-resource/mcp')).json();
     expect(metadata.resource).toBe(MCP_RESOURCE);
@@ -156,5 +166,61 @@ describe('OnlyCashbacks plugin connection', () => {
     expect((await fetch(origin + '/login?code=%3Cscript%3E')).status).toBe(400);
     expect((await fetch(origin + '/oauth/authorize?redirect_uri=https://other.example')).status).toBe(400);
     expect((await post('/oauth/register', { redirect_uris: ['javascript:alert(1)'] })).status).toBe(400);
+  });
+
+  it('matches the app billing-cycle handling for saved exhausted-card markers', async () => {
+    const { client } = await connect();
+    const billDates = { 'sbi-cashback': 4 };
+    identity.wallet = { walletCards: ['sbi-cashback'], exhaustedCards: { 'sbi-cashback': '2000-1' }, cardBillDates: billDates };
+    await client.callTool({ name: 'authenticate', arguments: { idToken: 'test-identity' } });
+    const merchant = { name: 'Amazon', category: 'Other', isOnline: true, isP2P: false };
+    const previousCycle = await client.callTool({ name: 'find_best_card', arguments: { merchant: 'Amazon', amount: 1000 } });
+    expect(previousCycle.structuredContent).toMatchObject({ recommendation: { netValue: getRecommendations(merchant, 1000, true, false, false, {}, {}, 2, ['sbi-cashback'], billDates)!.netValue } });
+    identity.wallet.exhaustedCards['sbi-cashback'] = getCycleForCard('sbi-cashback', billDates);
+    const currentCycle = await client.callTool({ name: 'find_best_card', arguments: { merchant: 'Amazon', amount: 1000 } });
+    const exhaustedValue = getRecommendations(merchant, 1000, true, false, false, { 'sbi-cashback': true }, {}, 2, ['sbi-cashback'], billDates)!.netValue;
+    expect(currentCycle.structuredContent).toMatchObject({ recommendation: { netValue: exhaustedValue } });
+    identity.wallet.exhaustedCards['sbi-cashback'] = true;
+    expect((await client.callTool({ name: 'find_best_card', arguments: { merchant: 'Amazon', amount: 1000 } })).structuredContent).toMatchObject({ recommendation: { netValue: exhaustedValue } });
+  });
+
+  it('isolates two signed-in users, only displays their owned cards, and rejects using another account session', async () => {
+    identity.wallet = { walletCards: ['sbi-cashback'], kiwiNeonEarnRate: 2, cardBillDates: { 'sbi-cashback': 4 }, offerUsage: { 'account-a-only': 1 } };
+    identity.otherWallet = { walletCards: ['icici-amazon-pay'], kiwiNeonEarnRate: 4, cardBillDates: { 'icici-amazon-pay': 19 }, offerUsage: { 'account-b-only': 2 } };
+    const grantA = await authorization();
+    const grantB = await authorization('test-other-identity');
+    const tokenA = await (await post('/oauth/token', grantA)).json();
+    const tokenB = await (await post('/oauth/token', grantB)).json();
+    const a = await connect(tokenA.access_token);
+    const b = await connect(tokenB.access_token);
+    const walletA = await a.client.callTool({ name: 'list_cards', arguments: {} });
+    const walletB = await b.client.callTool({ name: 'list_cards', arguments: {} });
+    expect(walletA.structuredContent).toMatchObject({ uid: 'test-user', cardSelection: { cardIds: ['sbi-cashback'] }, wallet: identity.wallet });
+    expect(walletB.structuredContent).toMatchObject({ uid: 'other-user', cardSelection: { cardIds: ['icici-amazon-pay'] }, wallet: identity.otherWallet });
+    expect(text(walletA)).not.toContain('ICICI');
+    expect(text(walletB)).not.toContain('SBI');
+    expect(JSON.stringify(walletA)).not.toContain('account-b-only');
+    expect(JSON.stringify(walletB)).not.toContain('account-a-only');
+    const recA = await a.client.callTool({ name: 'find_best_card', arguments: { merchant: 'Amazon', amount: 1000 } });
+    const recB = await b.client.callTool({ name: 'find_best_card', arguments: { merchant: 'Amazon', amount: 1000 } });
+    expect(recA.structuredContent).toMatchObject({ recommendation: { bestCard: { id: 'sbi-cashback' } } });
+    expect(recB.structuredContent).toMatchObject({ recommendation: { bestCard: { id: 'icici-amazon-pay' } } });
+    // A fixed engine route must not bypass this user's card selection.
+    const fixedRoute = await b.client.callTool({ name: 'find_best_card', arguments: { merchant: 'Google Play', amount: 1000 } });
+    expect(fixedRoute.isError).toBe(true);
+    expect(JSON.stringify(fixedRoute)).not.toContain('sbi-cashback');
+    const stolenSession = await fetch(origin + '/mcp', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream',
+        Authorization: `Bearer ${tokenB.access_token}`, 'Mcp-Session-Id': a.transport.sessionId!, 'Mcp-Protocol-Version': '2025-03-26' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 85, method: 'tools/call', params: { name: 'list_cards', arguments: {} } }),
+    });
+    expect(stolenSession.status).toBe(401);
+    expect(await stolenSession.text()).not.toContain('sbi-cashback');
+    // Refreshing a token must preserve the original user binding.
+    const invalidRefresh = await post('/oauth/token', { grant_type: 'refresh_token', client_id: grantB.client_id, refresh_token: tokenA.refresh_token });
+    expect(invalidRefresh.status).toBe(400);
+    const refreshedA = await (await post('/oauth/token', { grant_type: 'refresh_token', client_id: grantA.client_id, refresh_token: tokenA.refresh_token })).json();
+    const reconnectedA = await connect(refreshedA.access_token);
+    expect((await reconnectedA.client.callTool({ name: 'list_cards', arguments: {} })).structuredContent).toMatchObject({ uid: 'test-user', wallet: identity.wallet });
   });
 });
