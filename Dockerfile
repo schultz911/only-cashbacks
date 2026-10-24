@@ -16,16 +16,17 @@ RUN npm run build
 
 # Production runtime image
 FROM node:20-slim
-
-# Copy built frontend
 WORKDIR /app
-COPY --from=builder /app/dist ./dist
 
-# Set up MCP server
-WORKDIR /app/mcp-server
+# Copy and install production dependencies for MCP server
 COPY mcp-server/package.json mcp-server/package-lock.json* ./
 RUN npm install --omit=dev
+
+# Copy MCP server compiled code
 COPY --from=builder /app/mcp-server/dist ./dist
+
+# Copy built frontend web app into /app/web
+COPY --from=builder /app/dist ./web
 
 ENV MCP_TRANSPORT=sse
 ENV NODE_ENV=production

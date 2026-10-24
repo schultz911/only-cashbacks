@@ -756,10 +756,9 @@ self.addEventListener('activate', (event) => {
     });
 
     const distCandidates = [
+      path.resolve(process.cwd(), 'web'),
       path.resolve(process.cwd(), 'dist'),
       path.resolve(process.cwd(), '../dist'),
-      path.resolve(__dirname, '../../dist'),
-      path.resolve(__dirname, '../dist'),
     ];
     const distPath = distCandidates.find(p => fs.existsSync(path.join(p, 'index.html')));
 
