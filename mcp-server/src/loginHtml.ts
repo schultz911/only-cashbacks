@@ -1,7 +1,7 @@
 /**
  * Generates the self-contained Google Sign-In HTML page for AI Assistant pairing.
  */
-export function getLoginHtml(code: string, firebaseConfig: Record<string, string>): string {
+export function getLoginHtml(code: string, firebaseConfig: Record<string, string>, oauthRequestId?: string): string {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -274,16 +274,13 @@ export function getLoginHtml(code: string, firebaseConfig: Record<string, string
     firebase.initializeApp(firebaseConfig);
 
     const urlParams = new URLSearchParams(window.location.search);
-    const redirectUri = urlParams.get('redirect_uri');
-    const state = urlParams.get('state');
-    const codeChallenge = urlParams.get('code_challenge');
-    const codeChallengeMethod = urlParams.get('code_challenge_method');
+    const oauthRequestId = ${JSON.stringify(oauthRequestId || '')};
 
     const code = urlParams.get('code') || '${code}';
     document.getElementById('display-code').innerText = code;
 
     // If OAuth redirect flow, hide the manual code badge
-    if (redirectUri) {
+    if (oauthRequestId) {
       const codeBadge = document.querySelector('.code-badge');
       if (codeBadge) codeBadge.style.display = 'none';
     }
@@ -293,15 +290,14 @@ export function getLoginHtml(code: string, firebaseConfig: Record<string, string
       const idToken = await user.getIdToken();
 
       // 1. If OAuth redirect flow, exchange with /oauth/approve and redirect back to client
-      if (redirectUri) {
+      if (oauthRequestId) {
         statusMsg.innerHTML = '<div class="spinner"></div> Authenticated! Returning to ChatGPT...';
         const res = await fetch('/oauth/approve', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             idToken: idToken,
-            codeChallenge: codeChallenge,
-            codeChallengeMethod: codeChallengeMethod
+            requestId: oauthRequestId
           })
         });
 
@@ -310,18 +306,7 @@ export function getLoginHtml(code: string, firebaseConfig: Record<string, string
           throw new Error(data.error || 'Authorization failed');
         }
 
-        const redirectUrl = new URL(redirectUri);
-        redirectUrl.searchParams.set('code', data.code);
-        if (state) redirectUrl.searchParams.set('state', state);
-
-        // Notify opener if opened as popup
-        if (window.opener && window.opener !== window) {
-          try {
-            window.opener.postMessage({ type: 'oauth_complete', code: data.code, state: state }, '*');
-          } catch (e) {}
-        }
-
-        window.location.replace(redirectUrl.toString());
+        window.location.replace(data.redirectUrl);
         return;
       }
 
@@ -383,7 +368,12 @@ export function getLoginHtml(code: string, firebaseConfig: Record<string, string
         await finishAuthWithUser(result.user);
       } catch (err) {
         console.warn('Popup sign in failed, attempting redirect fallback:', err);
-        // Fallback to signInWithRedirect if popup is blocked or cross-origin iframe fails
+        if (!['auth/popup-blocked', 'auth/operation-not-supported-in-this-environment'].includes(err.code)) {
+          btn.disabled = false;
+          statusMsg.className = 'status-msg error';
+          statusMsg.innerText = err.message || 'Unable to connect your account.';
+          return;
+        }
         try {
           statusMsg.innerHTML = '<div class="spinner"></div> Redirecting to Google Sign-In...';
           await firebase.auth().signInWithRedirect(provider);

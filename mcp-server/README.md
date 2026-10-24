@@ -45,14 +45,14 @@ Ask your AI assistant questions like:
    }
    ```
 
-### Remote (Railway / SSE)
+### Remote (Railway / Streamable HTTP)
 
 1. Deploy to Railway:
    - Push to GitHub
    - Create a new Railway project → Deploy from GitHub
-   - Set the root directory to `mcp-server/`
+   - Build from the repository root with the root Dockerfile to include the wallet web app and MCP server. Building only `mcp-server/` omits the wallet web app.
    - Add environment variables:
-     - `MCP_TRANSPORT=sse`
+     - `MCP_TRANSPORT=streamable-http` (the legacy value `sse` also serves both transports)
      - `FIREBASE_SERVICE_ACCOUNT_JSON=<your service account JSON>`
 
 2. Connect your MCP client:
@@ -60,7 +60,8 @@ Ask your AI assistant questions like:
    {
      "mcpServers": {
        "onlycashbacks": {
-         "url": "https://your-service.up.railway.app/sse"
+         "type": "streamable-http",
+         "url": "https://only-cashbacks.up.railway.app/mcp"
        }
      }
    }
@@ -68,14 +69,19 @@ Ask your AI assistant questions like:
 
 ## 🔐 Authentication
 
-The MCP server supports **Google sign-in** via Firebase to personalize recommendations:
+Use the host's OAuth connection when available. Discovery is available at `/.well-known/oauth-authorization-server` and `/.well-known/oauth-protected-resource/mcp`. The server supports public-client registration, registered callback validation, S256 PKCE, single-use authorization codes and rotating refresh tokens.
 
-1. Sign into the [OnlyCashbacks app](https://only-cashbacks.web.app) with Google
-2. Go to **Settings → Developer → Copy ID Token**
-3. Use the `authenticate` MCP tool with your token
-4. All subsequent `find_best_card` calls will use your wallet configuration
+Otherwise, call `authenticate` without arguments, open its Google sign-in link, then call `authenticate` with the returned pairing code in the same MCP connection. Pairing codes expire after 15 minutes and can only be claimed once by the requesting connection. Never paste Firebase tokens or credentials into chat.
 
-Without authentication, recommendations use all available cards in the database.
+Personalized tools load the current saved wallet from the configured named Firestore database on every call, including exhausted cards, offer usage, billing dates and the Kiwi rate. Empty or unavailable wallets block recommendations. An unauthenticated `list_cards` response is explicitly the system catalogue; authenticated results include wallet context and card IDs.
+
+Keep `only-cashbacks.up.railway.app` in Firebase Authentication's authorized domains. OAuth metadata and account links are pinned to this origin; `PUBLIC_URL` does not override it. Server credentials must have access to the named database selected by `FIREBASE_DATABASE_ID`.
+
+OAuth access tokens expire after one hour. Refresh tokens rotate within a maximum 24-hour login period. Clients must include the bearer token on every request to an OAuth-authenticated session. Anonymous connections can use manual pairing.
+
+Registrations, tokens, pairing codes and MCP sessions are in memory. Run one replica; a restart requires reconnecting and signing in again. Multiple replicas require a shared authorization and session store.
+
+After deploying changes, reconnect the plugin, complete Google sign-in, and verify `authenticate` and `list_cards` in the same connection. Local regression tests mock identity and database calls; real sign-in is still required to validate production credentials and domain configuration.
 
 ## 🏗 Development
 

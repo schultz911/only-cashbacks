@@ -8,7 +8,9 @@
  * card recommendations in the MCP server.
  */
 
-import * as admin from 'firebase-admin';
+import { initializeApp, cert, applicationDefault } from 'firebase-admin/app';
+import { getAuth, type UserRecord } from 'firebase-admin/auth';
+import { getFirestore } from 'firebase-admin/firestore';
 import type { UserData } from './types.js';
 
 const FIREBASE_DATABASE_ID = process.env.FIREBASE_DATABASE_ID || 'ai-studio-onlycashbacks-9dfa3f2d-5762-4049-a6c8-583bd3c24948';
@@ -42,23 +44,23 @@ function ensureInitialized() {
   if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
     try {
       const serviceAccount = parseServiceAccount(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
-      admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
+      initializeApp({
+        credential: cert(serviceAccount),
       });
     } catch (err: any) {
       console.error('[Firebase] Failed to parse FIREBASE_SERVICE_ACCOUNT_JSON:', err.message);
-      admin.initializeApp({
+      initializeApp({
         projectId: 'gen-lang-client-0447512961',
       });
     }
   } else {
     try {
-      admin.initializeApp({
-        credential: admin.credential.applicationDefault(),
+      initializeApp({
+        credential: applicationDefault(),
         projectId: 'gen-lang-client-0447512961',
       });
     } catch {
-      admin.initializeApp({
+      initializeApp({
         projectId: 'gen-lang-client-0447512961',
       });
     }
@@ -68,32 +70,11 @@ function ensureInitialized() {
 
 /**
  * Verify a Firebase ID token and return the decoded user info.
- * Supports standard Firebase verification with resilient JWT claims fallback.
+ * Rejects invalid signatures, expired tokens and tokens for other projects.
  */
 export async function verifyIdToken(idToken: string): Promise<any> {
   ensureInitialized();
-  try {
-    return await admin.auth().verifyIdToken(idToken);
-  } catch (err: any) {
-    console.warn('[Firebase] admin.verifyIdToken failed, falling back to JWT claims verification:', err.message);
-    const parts = idToken.split('.');
-    if (parts.length === 3) {
-      const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
-      const isExpValid = payload.exp ? payload.exp * 1000 > Date.now() : true;
-      const isAudValid = payload.aud === 'gen-lang-client-0447512961';
-      const isIssValid = payload.iss === 'https://securetoken.google.com/gen-lang-client-0447512961';
-      if (isExpValid && (isAudValid || isIssValid)) {
-        return {
-          uid: payload.user_id || payload.sub,
-          email: payload.email,
-          name: payload.name || payload.email || 'User',
-          picture: payload.picture,
-          ...payload,
-        };
-      }
-    }
-    throw err;
-  }
+  return getAuth().verifyIdToken(idToken);
 }
 
 /**
@@ -103,7 +84,7 @@ export async function verifyIdToken(idToken: string): Promise<any> {
 export async function getUserData(uid: string): Promise<UserData | null> {
   ensureInitialized();
   try {
-    const db = admin.firestore();
+    const db = getFirestore(FIREBASE_DATABASE_ID);
     const docRef = db.collection('users').doc(uid);
     const snap = await docRef.get();
     
@@ -119,10 +100,10 @@ export async function getUserData(uid: string): Promise<UserData | null> {
  * Look up a user's UID by their email address.
  * Useful for the authenticate flow where the user provides their email.
  */
-export async function getUserByEmail(email: string): Promise<admin.auth.UserRecord | null> {
+export async function getUserByEmail(email: string): Promise<UserRecord | null> {
   ensureInitialized();
   try {
-    return await admin.auth().getUserByEmail(email);
+    return await getAuth().getUserByEmail(email);
   } catch {
     return null;
   }

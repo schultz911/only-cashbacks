@@ -21,6 +21,9 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import express from 'express';
 import path from 'path';
 import fs from 'fs';
+import { pathToFileURL } from 'node:url';
+import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
+import { installOAuthRoutes, AUTH_CHALLENGE } from './oauth.js';
 import { z } from 'zod';
 import crypto from 'crypto';
 
@@ -30,23 +33,16 @@ import { verifyIdToken, getUserData } from './firebase.js';
 import type { MerchantInfo, UserData } from './types.js';
 import { getLoginHtml } from './loginHtml.js';
 
-// ─── In-memory session store for authenticated users ───────────────
-// Maps Firebase UID → UserData (cached for the duration of the session)
-const userSessionCache = new Map<string, { data: UserData; authenticatedAt: number }>();
-const SESSION_TTL_MS = 30 * 60 * 1000; // 30 minutes
-
-function getCachedUserData(uid: string): UserData | null {
-  const entry = userSessionCache.get(uid);
-  if (!entry) return null;
-  if (Date.now() - entry.authenticatedAt > SESSION_TTL_MS) {
-    userSessionCache.delete(uid);
-    return null;
-  }
-  return entry.data;
+function walletUnavailable() {
+  return { isError: true, content: [{ type: 'text' as const, text: 'Saved wallet could not be loaded. Check the Firestore database and server credentials, then reconnect. No personalized recommendation was calculated.' }] };
+}
+function emptyWallet() {
+  return { isError: true, content: [{ type: 'text' as const, text: 'Your saved wallet is empty. Add cards in the OnlyCashbacks app before requesting personalized recommendations.' }] };
 }
 
 // ─── Pending authorization codes for Google Sign-In pairing ───────
 interface PendingAuth {
+  owner: string;
   createdAt: number;
   expiresAt: number;
   status: 'pending' | 'completed';
@@ -73,10 +69,11 @@ function getBaseUrl(): string {
 }
 
 // ─── MCP Server Factory (Per-Connection Isolation) ────────────────
-function createOnlyCashbacksServer(
+export function createOnlyCashbacksServer(
   getSessionUid: () => string | null,
   setSessionUid: (uid: string) => void
 ): McpServer {
+  const pairingOwner = crypto.randomUUID();
   const server = new McpServer({
     name: 'onlycashbacks',
     version: '1.0.0',
@@ -96,12 +93,9 @@ function createOnlyCashbacksServer(
       if (idToken) {
         try {
           const decoded = await verifyIdToken(idToken);
-          setSessionUid(decoded.uid);
-
           const userData = await getUserData(decoded.uid);
-          if (userData) {
-            userSessionCache.set(decoded.uid, { data: userData, authenticatedAt: Date.now() });
-          }
+          if (!userData) return walletUnavailable();
+          setSessionUid(decoded.uid);
 
           const cardCount = userData?.walletCards?.length || 0;
           const displayName = decoded.name || decoded.email || decoded.uid;
@@ -112,7 +106,7 @@ function createOnlyCashbacksServer(
               text: `✅ Signed in as ${displayName}\n\n` +
                 (cardCount > 0
                   ? `Found ${cardCount} cards in your wallet. Recommendations will be personalized to your cards.`
-                  : `No cards found in your wallet yet. Add cards in the OnlyCashbacks app, or recommendations will use all available cards.`),
+                  : `No saved wallet cards were found. Add cards in the OnlyCashbacks app before requesting recommendations.`),
             }],
           };
         } catch (error: any) {
@@ -132,7 +126,7 @@ function createOnlyCashbacksServer(
         const normCode = code.trim().toUpperCase();
         const pending = pendingAuthCodes.get(normCode);
 
-        if (!pending) {
+        if (!pending || pending.owner !== pairingOwner) {
           return {
             content: [{
               type: 'text' as const,
@@ -143,8 +137,11 @@ function createOnlyCashbacksServer(
         }
 
         if (pending.status === 'completed' && pending.uid) {
+          const userData = await getUserData(pending.uid);
+          if (!userData) return walletUnavailable();
           setSessionUid(pending.uid);
-          const cardCount = pending.cardCount || 0;
+          pendingAuthCodes.delete(normCode);
+          const cardCount = userData.walletCards?.length || 0;
           return {
             content: [{
               type: 'text' as const,
@@ -166,7 +163,9 @@ function createOnlyCashbacksServer(
       // 3. Already signed in
       const currentUid = getSessionUid();
       if (currentUid) {
-        const userData = getCachedUserData(currentUid);
+        const userData = await getUserData(currentUid);
+        if (!userData) return walletUnavailable();
+        if (!userData.walletCards?.length) return emptyWallet();
         const cardCount = userData?.walletCards?.length || 0;
         return {
           content: [{
@@ -178,8 +177,9 @@ function createOnlyCashbacksServer(
 
       // 4. Generate new pairing code and return Google sign-in link
       cleanExpiredCodes();
-      const newCode = 'OC-' + Math.floor(1000 + Math.random() * 9000);
+      const newCode = 'OC-' + crypto.randomBytes(16).toString('hex').toUpperCase();
       pendingAuthCodes.set(newCode, {
+        owner: pairingOwner,
         createdAt: Date.now(),
         expiresAt: Date.now() + AUTH_CODE_TTL_MS,
         status: 'pending',
@@ -236,9 +236,9 @@ function createOnlyCashbacksServer(
             type: 'text' as const,
             text: `## 🔒 Authentication Required\n\n` +
               `Personalized wallet comparisons are locked until your OnlyCashbacks account is connected.\n\n` +
-              `👉 **[Click Here to Connect OnlyCashbacks](${baseUrl}/oauth/authorize)**\n\n` +
+              `Run the \`authenticate\` tool to generate a sign-in link for this connection.\n\n` +
               `_Once signed in, OnlyCashbacks will load your saved wallet cards, track monthly caps, and calculate exact cashback for "${merchant}" at ₹${amount}._\n\n` +
-              `💡 Or run the \`authenticate\` tool to pair via one-click Google Sign-In.`
+              `💡 Run the \`authenticate\` tool to pair via one-click Google Sign-In.`
           }],
         };
       }
@@ -249,9 +249,11 @@ function createOnlyCashbacksServer(
       let cardBillDates: Record<string, number> = {};
       let kiwiNeonEarnRate = 2;
 
-      const userData = getCachedUserData(currentUid);
+      const userData = await getUserData(currentUid);
+      if (!userData) return walletUnavailable();
+      if (!userData.walletCards?.length) return emptyWallet();
       if (userData) {
-        walletCards = userData.walletCards && userData.walletCards.length > 0 ? userData.walletCards : null;
+        walletCards = userData.walletCards;
         exhaustedCards = userData.exhaustedCards || {};
         offerUsage = userData.offerUsage || {};
         cardBillDates = userData.cardBillDates || {};
@@ -332,6 +334,7 @@ function createOnlyCashbacksServer(
           type: 'text' as const,
           text: lines.join('\n'),
         }],
+        structuredContent: { authenticated: true, uid: currentUid, checkedAt: new Date().toISOString(), recommendation },
       };
     }
   );
@@ -352,7 +355,7 @@ function createOnlyCashbacksServer(
         const lines: string[] = [
           '## 💳 OnlyCashbacks Card Catalog\n',
           '🔒 **Account not connected**: Connect your account to view your saved wallet cards.\n',
-          `👉 **[Click Here to Connect OnlyCashbacks](${baseUrl}/oauth/authorize)**\n`,
+          `Run the \`authenticate\` tool to generate a sign-in link for this connection.\n`,
           '---\n',
           '### All Supported Cards (System Directory)',
         ];
@@ -360,7 +363,7 @@ function createOnlyCashbacksServer(
         for (const card of realCards) {
           const rewardInfo = card.baseRewardRate > 0 ? ` · ${card.baseRewardRate}% base` : '';
           const forexInfo = card.isZeroForex ? ' · Zero Forex' : '';
-          lines.push(`- **${card.bank} ${card.name}** (${card.type} · ${card.network} ${card.tier || ''}${rewardInfo}${forexInfo})`);
+          lines.push(`- **${card.bank} ${card.name}** [${card.id}] (${card.type} · ${card.network} ${card.tier || ''}${rewardInfo}${forexInfo})`);
         }
 
         lines.push('');
@@ -374,7 +377,9 @@ function createOnlyCashbacksServer(
       }
 
       // If authenticated for THIS session, return the user's saved wallet!
-      const userData = getCachedUserData(currentUid);
+      const userData = await getUserData(currentUid);
+      if (!userData) return walletUnavailable();
+      if (!userData.walletCards?.length) return emptyWallet();
       const userWallet = userData?.walletCards && userData.walletCards.length > 0
         ? new Set(userData.walletCards)
         : null;
@@ -386,14 +391,14 @@ function createOnlyCashbacksServer(
 
         lines.push(`### Active Cards (${inWallet.length})`);
         for (const card of inWallet) {
-          lines.push(`- ✅ **${card.bank} ${card.name}** (${card.type} · ${card.network} ${card.tier || ''})`);
+          lines.push(`- ✅ **${card.bank} ${card.name}** [${card.id}] (${card.type} · ${card.network} ${card.tier || ''})`);
         }
 
         if (notInWallet.length > 0) {
           lines.push('');
           lines.push('### Other Available Cards');
           for (const card of notInWallet) {
-            lines.push(`- **${card.bank} ${card.name}** (${card.type} · ${card.network} ${card.tier || ''})`);
+            lines.push(`- **${card.bank} ${card.name}** [${card.id}] (${card.type} · ${card.network} ${card.tier || ''})`);
           }
         }
       } else {
@@ -406,6 +411,7 @@ function createOnlyCashbacksServer(
           type: 'text' as const,
           text: lines.join('\n'),
         }],
+        structuredContent: { authenticated: true, uid: currentUid, checkedAt: new Date().toISOString(), wallet: userData },
       };
     }
   );
@@ -513,13 +519,9 @@ function formatCardDetails(card: typeof CARD_DATA[0]) {
 }
 
 // ─── Start the server ──────────────────────────────────────────────
-async function main() {
-  const transport = process.env.MCP_TRANSPORT || (process.env.PORT ? 'sse' : 'stdio');
-
-  if (transport === 'sse') {
+export function createRemoteApp() {
     // SSE transport for remote hosting (Railway, etc.)
     const app = express();
-    const PORT = parseInt(process.env.PORT || '3001', 10);
     
     // Store active transports for cleanup
     const transports = new Map<string, SSEServerTransport>();
@@ -527,8 +529,9 @@ async function main() {
     // CORS headers for cross-origin MCP clients
     app.use((req, res, next) => {
       res.setHeader('Access-Control-Allow-Origin', '*');
-      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Mcp-Session-Id, Mcp-Protocol-Version, Last-Event-ID');
+      res.setHeader('Access-Control-Expose-Headers', 'Mcp-Session-Id, WWW-Authenticate');
       if (req.method === 'OPTIONS') {
         res.sendStatus(200);
         return;
@@ -539,7 +542,6 @@ async function main() {
     // NOTE: express.json() MUST NOT be applied globally!
     // Global express.json() consumes the request stream and breaks SSEServerTransport.handlePostMessage (stream is not readable).
     const jsonParser = express.json();
-    const urlEncodedParser = express.urlencoded({ extended: true });
 
     const PUBLIC_FIREBASE_CONFIG = {
       apiKey: process.env.VITE_FIREBASE_API_KEY || 'AIzaSyCHALzi5TDkpVQrUqobauyciLZurzjQsX4',
@@ -548,60 +550,7 @@ async function main() {
       appId: process.env.VITE_FIREBASE_APP_ID || '1:343088435457:web:14d0c083a241a00a86cb00',
     };
 
-    // ─── OAuth 2.0 / 2.1 State Storage ─────────────────────────────
-    interface OAuthRecord {
-      uid: string;
-      idToken: string;
-      codeChallenge?: string;
-      codeChallengeMethod?: string;
-      expiresAt: number;
-    }
-    const oauthCodes = new Map<string, OAuthRecord>();
-
-    // ─── MCP OAuth Discovery: RFC 9728 (Protected Resource) ────────
-    app.get('/.well-known/oauth-protected-resource', (_req, res) => {
-      const baseUrl = getBaseUrl();
-      res.json({
-        resource: baseUrl,
-        authorization_servers: [baseUrl],
-        scopes_supported: ['openid', 'profile', 'email', 'wallet'],
-        bearer_methods_supported: ['header'],
-      });
-    });
-
-    // ─── MCP OAuth Discovery: RFC 8414 & OpenID Connect ────────────
-    const getOAuthServerMetadata = () => {
-      const baseUrl = getBaseUrl();
-      return {
-        issuer: baseUrl,
-        authorization_endpoint: `${baseUrl}/oauth/authorize`,
-        token_endpoint: `${baseUrl}/oauth/token`,
-        registration_endpoint: `${baseUrl}/oauth/register`,
-        response_types_supported: ['code'],
-        grant_types_supported: ['authorization_code', 'refresh_token'],
-        code_challenge_methods_supported: ['S256', 'plain'],
-        token_endpoint_auth_methods_supported: ['none', 'client_secret_post', 'client_secret_basic'],
-        scopes_supported: ['openid', 'profile', 'email', 'wallet'],
-      };
-    };
-
-    app.get('/.well-known/oauth-authorization-server', (_req, res) => {
-      res.json(getOAuthServerMetadata());
-    });
-
-    app.get('/.well-known/openid-configuration', (_req, res) => {
-      res.json(getOAuthServerMetadata());
-    });
-
-    // Dynamic Client Registration (RFC 7591)
-    app.post(['/oauth/register', '/register'], jsonParser, (req, res) => {
-      res.status(201).json({
-        client_id: 'onlycashbacks-mcp-client',
-        client_secret: 'onlycashbacks-mcp-secret',
-        redirect_uris: req.body?.redirect_uris || [],
-        client_name: req.body?.client_name || 'MCP Client',
-      });
-    });
+    const verifyAccessToken = installOAuthRoutes(app, PUBLIC_FIREBASE_CONFIG, verifyIdToken);
 
     // Service Worker killer to purge any legacy PWA service workers on this domain
     const swKiller = (_req: express.Request, res: express.Response) => {
@@ -630,100 +579,13 @@ self.addEventListener('activate', (event) => {
 
     app.get(['/sw.js', '/service-worker.js'], swKiller);
 
-    // OAuth Authorization Endpoint: renders Google Sign-In page
-    app.get(['/oauth/authorize', '/authorize'], (req, res) => {
-      const code = 'OC-' + Math.floor(1000 + Math.random() * 9000);
-      res.setHeader('Content-Type', 'text/html');
-      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-      res.setHeader('Clear-Site-Data', '"cache"');
-      res.send(getLoginHtml(code, PUBLIC_FIREBASE_CONFIG));
-    });
-
-    // Approves OAuth authorization code from browser popup
-    app.post('/oauth/approve', jsonParser, async (req, res) => {
-      const { idToken, codeChallenge, codeChallengeMethod } = req.body || {};
-      if (!idToken) {
-        res.status(400).json({ success: false, error: 'Missing idToken' });
-        return;
-      }
-      try {
-        const decoded = await verifyIdToken(idToken);
-        const authCode = 'oc_auth_' + crypto.randomBytes(16).toString('hex');
-        oauthCodes.set(authCode, {
-          uid: decoded.uid,
-          idToken,
-          codeChallenge,
-          codeChallengeMethod,
-          expiresAt: Date.now() + 10 * 60 * 1000,
-        });
-
-        // Preload user data
-        const userData = await getUserData(decoded.uid);
-        if (userData) {
-          userSessionCache.set(decoded.uid, { data: userData, authenticatedAt: Date.now() });
-        }
-
-        res.json({ success: true, code: authCode });
-      } catch (err: any) {
-        res.status(401).json({ success: false, error: err.message || 'Verification failed' });
-      }
-    });
-
-    // OAuth Token Endpoint: exchanges code for Bearer access token
-    app.post(['/oauth/token', '/token'], urlEncodedParser, jsonParser, async (req, res) => {
-      const grantType = req.body?.grant_type || req.query?.grant_type;
-      if (grantType === 'authorization_code') {
-        const code = req.body?.code || req.query?.code;
-        const verifier = req.body?.code_verifier || req.query?.code_verifier;
-
-        const record = oauthCodes.get(String(code));
-        if (!record || Date.now() > record.expiresAt) {
-          res.status(400).json({ error: 'invalid_grant', error_description: 'Authorization code invalid or expired' });
-          return;
-        }
-
-        // PKCE verification if challenge was set
-        if (record.codeChallenge) {
-          if (record.codeChallengeMethod === 'S256') {
-            const hash = crypto.createHash('sha256').update(String(verifier || '')).digest('base64url');
-            if (hash !== record.codeChallenge) {
-              res.status(400).json({ error: 'invalid_grant', error_description: 'PKCE challenge verification failed' });
-              return;
-            }
-          } else if (record.codeChallengeMethod === 'plain' || !record.codeChallengeMethod) {
-            if (verifier !== record.codeChallenge) {
-              res.status(400).json({ error: 'invalid_grant', error_description: 'PKCE challenge verification failed' });
-              return;
-            }
-          }
-        }
-
-        oauthCodes.delete(String(code));
-
-        res.json({
-          access_token: record.idToken,
-          token_type: 'Bearer',
-          expires_in: 3600,
-          refresh_token: 'oc_refresh_' + record.uid,
-          scope: 'openid profile email wallet',
-          id_token: record.idToken,
-        });
-        return;
-      }
-
-      res.status(400).json({ error: 'unsupported_grant_type' });
-    });
-
     // Google Sign-In webpage (Manual Pairing Flow)
     app.get('/login', (req, res) => {
       cleanExpiredCodes();
-      const code = ((req.query.code as string) || ('OC-' + Math.floor(1000 + Math.random() * 9000))).trim().toUpperCase();
+      const code = typeof req.query.code === 'string' ? req.query.code.trim().toUpperCase() : '';
       if (!pendingAuthCodes.has(code)) {
-        pendingAuthCodes.set(code, {
-          createdAt: Date.now(),
-          expiresAt: Date.now() + AUTH_CODE_TTL_MS,
-          status: 'pending',
-        });
+        res.status(400).send('Generate a sign-in link with the authenticate tool in your assistant first.');
+        return;
       }
       res.setHeader('Content-Type', 'text/html');
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -739,20 +601,26 @@ self.addEventListener('activate', (event) => {
         return;
       }
 
+      cleanExpiredCodes();
       const normCode = String(code).trim().toUpperCase();
+      const pending = pendingAuthCodes.get(normCode);
+      if (!pending || pending.status !== 'pending') {
+        res.status(400).json({ success: false, error: 'Invalid or expired pairing code' });
+        return;
+      }
       try {
         const decoded = await verifyIdToken(idToken);
         const userData = await getUserData(decoded.uid);
-        if (userData) {
-          userSessionCache.set(decoded.uid, { data: userData, authenticatedAt: Date.now() });
-        }
 
         const cardCount = userData?.walletCards?.length || 0;
         const displayName = decoded.name || decoded.email || 'OnlyCashbacks User';
 
+        if (pendingAuthCodes.get(normCode) !== pending || pending.status !== 'pending' || pending.expiresAt <= Date.now()) {
+          res.status(400).json({ success: false, error: 'Pairing code already used or expired' });
+          return;
+        }
         pendingAuthCodes.set(normCode, {
-          createdAt: Date.now(),
-          expiresAt: Date.now() + AUTH_CODE_TTL_MS,
+          ...pending,
           status: 'completed',
           uid: decoded.uid,
           displayName,
@@ -779,7 +647,8 @@ self.addEventListener('activate', (event) => {
         res.status(404).json({ status: 'not_found' });
         return;
       }
-      res.json(pendingAuthCodes.get(code)!);
+      res.setHeader('Cache-Control', 'no-store');
+      res.json({ status: pendingAuthCodes.get(code)!.status });
     });
 
     const distCandidates = [
@@ -831,72 +700,79 @@ self.addEventListener('activate', (event) => {
     interface StreamableSession {
       transport: StreamableHTTPServerTransport;
       server: McpServer;
-      sessionUid: string;
+      sessionUid: string | null;
+      bearerUid: string | null;
     }
     const streamableSessions = new Map<string, StreamableSession>();
 
-    app.all('/mcp', async (req, res) => {
+    app.all('/mcp', jsonParser, async (req, res) => {
+      try {
       // 1. Check for Bearer token if provided by the client
       let verifiedUid: string | null = null;
       const authHeader = req.headers.authorization;
 
       if (authHeader) {
         if (!authHeader.startsWith('Bearer ')) {
-          res.setHeader('WWW-Authenticate', 'Bearer error="invalid_token", error_description="Malformed Authorization header"');
+          res.setHeader('WWW-Authenticate', AUTH_CHALLENGE + ', error="invalid_token"');
           res.status(401).json({ error: 'invalid_token', error_description: 'Malformed Authorization header' });
           return;
         }
 
         const token = authHeader.slice(7).trim();
         try {
-          const decoded = await verifyIdToken(token);
+          const decoded = await verifyAccessToken(token);
           verifiedUid = decoded.uid;
-          const userData = await getUserData(decoded.uid);
-          if (userData) {
-            userSessionCache.set(decoded.uid, { data: userData, authenticatedAt: Date.now() });
-          }
         } catch (err: any) {
-          res.setHeader('WWW-Authenticate', 'Bearer error="invalid_token", error_description="The access token is invalid or expired."');
+          res.setHeader('WWW-Authenticate', AUTH_CHALLENGE + ', error="invalid_token"');
           res.status(401).json({ error: 'invalid_token', error_description: 'The access token is invalid or expired.' });
           return;
         }
       }
 
-      // 2. Resolve or create Streamable HTTP session
-      const reqSessionId = (req.headers['mcp-session-id'] as string) || (req.query.sessionId as string);
+      // A session ID is a transport identifier, never an account credential.
+      const reqSessionId = req.headers['mcp-session-id'] as string | undefined;
       let session = reqSessionId ? streamableSessions.get(reqSessionId) : undefined;
-
+      if (reqSessionId && !session) {
+        res.status(404).json({ error: 'Session not found. Initialize a new MCP connection.' });
+        return;
+      }
+      if (session?.bearerUid && verifiedUid !== session.bearerUid) {
+        res.setHeader('WWW-Authenticate', AUTH_CHALLENGE);
+        res.status(401).json({ error: 'invalid_token' });
+        return;
+      }
       if (!session) {
-        const sessionId = reqSessionId || crypto.randomUUID();
-        let sessionUid = verifiedUid;
-
+        if (req.method !== 'POST' || !isInitializeRequest(req.body)) {
+          res.status(400).json({ error: 'Initialize an MCP connection first.' });
+          return;
+        }
         const transport = new StreamableHTTPServerTransport({
-          sessionIdGenerator: () => sessionId,
+          sessionIdGenerator: () => crypto.randomUUID(),
+          onsessioninitialized: (id) => { streamableSessions.set(id, session!); },
         });
-
-        const server = createOnlyCashbacksServer(
-          () => sessionUid,
-          (uid: string) => { sessionUid = uid; }
+        const state: StreamableSession = { transport, server: null as any, sessionUid: verifiedUid, bearerUid: verifiedUid };
+        state.server = createOnlyCashbacksServer(
+          () => state.sessionUid,
+          (uid: string) => { state.sessionUid = uid; }
         );
-
-        session = {
-          transport,
-          server,
-          sessionUid: sessionUid || '',
-        };
-
-        await server.connect(transport);
-        streamableSessions.set(sessionId, session);
-
+        session = state;
+        await state.server.connect(transport);
         transport.onclose = () => {
-          streamableSessions.delete(sessionId);
-          server.close().catch(() => {});
+          if (transport.sessionId) streamableSessions.delete(transport.sessionId);
         };
       } else if (verifiedUid) {
+        if (session.sessionUid && session.sessionUid !== verifiedUid) {
+          res.status(403).json({ error: 'Session belongs to a different account' });
+          return;
+        }
+        session.bearerUid = verifiedUid;
         session.sessionUid = verifiedUid;
       }
-
-      await session.transport.handleRequest(req, res);
+      await session.transport.handleRequest(req, res, req.body);
+      } catch (error) {
+        console.error('[MCP] Request failed:', error);
+        if (!res.headersSent) res.status(500).json({ error: 'MCP request failed' });
+      }
     });
 
     // ─── Active Connections (Isolated McpServer per Session) ─────────
@@ -904,6 +780,7 @@ self.addEventListener('activate', (event) => {
       transport: SSEServerTransport;
       server: McpServer;
       sessionUid: string | null;
+      bearerUid: string | null;
     }
     const activeSessions = new Map<string, ActiveSession>();
 
@@ -915,11 +792,7 @@ self.addEventListener('activate', (event) => {
       const token = authHeader.slice(7).trim();
       if (!token) return 'invalid';
       try {
-        const decoded = await verifyIdToken(token);
-        const userData = await getUserData(decoded.uid);
-        if (userData) {
-          userSessionCache.set(decoded.uid, { data: userData, authenticatedAt: Date.now() });
-        }
+        const decoded = await verifyAccessToken(token);
         return { uid: decoded.uid };
       } catch {
         return 'invalid';
@@ -929,7 +802,7 @@ self.addEventListener('activate', (event) => {
     app.get('/sse', async (req, res) => {
       const authResult = await verifyBearerToken(req);
       if (authResult === 'invalid') {
-        res.setHeader('WWW-Authenticate', 'Bearer error="invalid_token", error_description="The access token is invalid or expired."');
+        res.setHeader('WWW-Authenticate', AUTH_CHALLENGE + ', error="invalid_token"');
         res.status(401).json({ error: 'invalid_token', error_description: 'The access token is invalid or expired.' });
         return;
       }
@@ -942,6 +815,7 @@ self.addEventListener('activate', (event) => {
         transport: sseTransport,
         server: null as any,
         sessionUid: authResult ? authResult.uid : null,
+        bearerUid: authResult ? authResult.uid : null,
       };
 
       // Dedicated McpServer instance scoped to this session
@@ -973,15 +847,25 @@ self.addEventListener('activate', (event) => {
       if (req.headers.authorization) {
         const authResult = await verifyBearerToken(req);
         if (authResult === 'invalid') {
-          res.setHeader('WWW-Authenticate', 'Bearer error="invalid_token", error_description="The access token is invalid or expired."');
+          res.setHeader('WWW-Authenticate', AUTH_CHALLENGE + ', error="invalid_token"');
           res.status(401).json({ error: 'invalid_token', error_description: 'The access token is invalid or expired.' });
           return;
         }
         if (authResult) {
+          if (session.sessionUid && session.sessionUid !== authResult.uid) {
+            res.status(403).json({ error: 'Session belongs to a different account' });
+            return;
+          }
           session.sessionUid = authResult.uid;
+          session.bearerUid = authResult.uid;
         }
       }
 
+      if (session.bearerUid && !req.headers.authorization) {
+        res.setHeader('WWW-Authenticate', AUTH_CHALLENGE);
+        res.status(401).json({ error: 'invalid_token' });
+        return;
+      }
       await session.transport.handlePostMessage(req, res);
     });
 
@@ -1003,11 +887,15 @@ self.addEventListener('activate', (event) => {
       });
     }
 
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`🚀 OnlyCashbacks MCP Server running on port ${PORT}`);
-      console.log(`   SSE endpoint: http://0.0.0.0:${PORT}/sse`);
-      console.log(`   Health check: http://0.0.0.0:${PORT}/health`);
-      console.log(`   OAuth Discovery: http://0.0.0.0:${PORT}/.well-known/oauth-authorization-server`);
+    return app;
+}
+
+async function main() {
+  const transport = process.env.MCP_TRANSPORT || (process.env.PORT ? 'sse' : 'stdio');
+  if (transport === 'sse' || transport === 'streamable-http') {
+    const port = Number(process.env.PORT || 3001);
+    createRemoteApp().listen(port, '0.0.0.0', () => {
+      console.log(`OnlyCashbacks MCP server listening on port ${port} (/mcp and /sse)`);
     });
   } else {
     // stdio transport for local usage (single-tenant CLI)
@@ -1022,4 +910,6 @@ self.addEventListener('activate', (event) => {
   }
 }
 
-main().catch(console.error);
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
+  main().catch((error) => { console.error(error); process.exitCode = 1; });
+}
