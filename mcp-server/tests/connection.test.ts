@@ -6,6 +6,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { createRemoteApp } from '../src/index.js';
 import { MCP_RESOURCE, PUBLIC_ORIGIN } from '../src/oauth.js';
+import { getRecommendations } from '../src/lib/recommendation.js';
 
 const identity = vi.hoisted(() => ({ wallet: { walletCards: ['sbi-cashback'] } as any }));
 vi.mock('../src/firebase.js', () => ({
@@ -120,9 +121,32 @@ describe('OnlyCashbacks plugin connection', () => {
     const rec = await client.callTool({ name: 'find_best_card', arguments: { merchant: 'Amazon', amount: 1000 } });
     expect(rec.structuredContent).toMatchObject({ recommendation: { bestCard: { id: 'sbi-cashback' } } });
     identity.wallet = { walletCards: [] };
-    expect(text(await client.callTool({ name: 'find_best_card', arguments: { merchant: 'Amazon', amount: 1000 } }))).toContain('wallet is empty');
+    expect(text(await client.callTool({ name: 'find_best_card', arguments: { merchant: 'Amazon', amount: 1000 } }))).toContain('saved setting selects all');
     identity.wallet = null;
     expect((await client.callTool({ name: 'list_cards', arguments: {} })).isError).toBe(true);
+    expect((await client.callTool({ name: 'find_best_card', arguments: { merchant: 'Amazon', amount: 1000 } })).isError).toBe(true);
+  });
+
+  it('matches the app all-cards sentinel, preserves saved settings, and does not expose BYOK credentials', async () => {
+    const { client } = await connect();
+    identity.wallet = {
+      walletCards: [], kiwiNeonEarnRate: 4, cardBillDates: { 'kiwi-neon': 15 },
+      exhaustedCards: {}, offerUsage: { 'axis-myzone-Food-Swiggy-2026-10': 2 },
+      openRouterApiKey: 'test-secret-must-not-be-returned',
+    };
+    const authenticated = await client.callTool({ name: 'authenticate', arguments: { idToken: 'test-identity' } });
+    expect(authenticated.isError).not.toBe(true);
+    expect(authenticated.structuredContent).toMatchObject({ authenticated: true, uid: 'test-user', cardSelection: { mode: 'all_supported_cards' }, wallet: { kiwiNeonEarnRate: 4, walletCards: [] } });
+    const wallet = await client.callTool({ name: 'list_cards', arguments: {} });
+    expect(wallet.isError).not.toBe(true);
+    expect(text(wallet)).toContain('saved setting selects all');
+    expect(JSON.stringify(wallet)).not.toContain('test-secret-must-not-be-returned');
+    const result = await client.callTool({ name: 'find_best_card', arguments: { merchant: 'General Store', amount: 1000, isOnline: false, isScanAndPay: true } });
+    const expected = getRecommendations({ name: 'General Store', category: 'Other', isOnline: false, isP2P: false },
+      1000, false, false, true, identity.wallet.exhaustedCards, identity.wallet.offerUsage, 4, null, identity.wallet.cardBillDates);
+    expect(result.structuredContent).toMatchObject({ cardSelection: { mode: 'all_supported_cards' }, recommendation: { bestCard: { id: expected!.bestCard.id }, netValue: expected!.netValue } });
+    expect(JSON.stringify(result)).not.toContain('test-secret-must-not-be-returned');
+    identity.wallet = { kiwiNeonEarnRate: 4 };
     expect((await client.callTool({ name: 'find_best_card', arguments: { merchant: 'Amazon', amount: 1000 } })).isError).toBe(true);
   });
 

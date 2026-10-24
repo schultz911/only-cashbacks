@@ -36,8 +36,39 @@ import { getLoginHtml } from './loginHtml.js';
 function walletUnavailable() {
   return { isError: true, content: [{ type: 'text' as const, text: 'Saved wallet could not be loaded. Check the Firestore database and server credentials, then reconnect. No personalized recommendation was calculated.' }] };
 }
-function emptyWallet() {
-  return { isError: true, content: [{ type: 'text' as const, text: 'Your saved wallet is empty. Add cards in the OnlyCashbacks app before requesting personalized recommendations.' }] };
+function getWalletSelection(userData: UserData) {
+  // The web app stores [] as its all-cards-selected sentinel, not an empty wallet.
+  if (!Array.isArray(userData.walletCards)) return null;
+  const allSelected = userData.walletCards.length === 0;
+  return {
+    mode: allSelected ? 'all_supported_cards' : 'explicit_cards',
+    cardIds: CARD_DATA.filter(card => !card.isDummy && (allSelected || userData.walletCards!.includes(card.id))).map(card => card.id),
+  };
+}
+
+function walletContext(uid: string, userData: UserData) {
+  // User documents can also contain a BYOK secret. Only expose wallet settings.
+  return {
+    authenticated: true, uid, checkedAt: new Date().toISOString(),
+    cardSelection: getWalletSelection(userData),
+    wallet: {
+      walletCards: userData.walletCards, exhaustedCards: userData.exhaustedCards,
+      offerUsage: userData.offerUsage, cardBillDates: userData.cardBillDates,
+      kiwiNeonEarnRate: userData.kiwiNeonEarnRate,
+    },
+  };
+}
+
+function signedInStatus(uid: string, userData: UserData, message: string) {
+  const selection = getWalletSelection(userData);
+  return {
+    content: [{ type: 'text' as const, text: message + '\n\n' + (selection
+      ? selection.mode === 'all_supported_cards'
+        ? `Your saved setting selects all ${selection.cardIds.length} supported cards, matching the app. Billing dates, offer usage and reward settings are loaded. This setting does not independently verify card ownership.`
+        : `Found ${selection.cardIds.length} explicitly selected cards in your wallet. Billing dates, offer usage and reward settings are loaded.`
+      : 'Your account is connected, but no saved card selection is configured. Select your cards in the app before requesting recommendations.') }],
+    structuredContent: walletContext(uid, userData),
+  };
 }
 
 // ─── Pending authorization codes for Google Sign-In pairing ───────
@@ -97,18 +128,8 @@ export function createOnlyCashbacksServer(
           if (!userData) return walletUnavailable();
           setSessionUid(decoded.uid);
 
-          const cardCount = userData?.walletCards?.length || 0;
           const displayName = decoded.name || decoded.email || decoded.uid;
-
-          return {
-            content: [{
-              type: 'text' as const,
-              text: `✅ Signed in as ${displayName}\n\n` +
-                (cardCount > 0
-                  ? `Found ${cardCount} cards in your wallet. Recommendations will be personalized to your cards.`
-                  : `No saved wallet cards were found. Add cards in the OnlyCashbacks app before requesting recommendations.`),
-            }],
-          };
+          return signedInStatus(decoded.uid, userData, `✅ Signed in as ${displayName}`);
         } catch (error: any) {
           return {
             content: [{
@@ -141,14 +162,7 @@ export function createOnlyCashbacksServer(
           if (!userData) return walletUnavailable();
           setSessionUid(pending.uid);
           pendingAuthCodes.delete(normCode);
-          const cardCount = userData.walletCards?.length || 0;
-          return {
-            content: [{
-              type: 'text' as const,
-              text: `✅ Successfully authenticated as ${pending.displayName || pending.email}!\n\n` +
-                `Found ${cardCount} cards in your wallet. Your recommendations are now personalized to your cards!`,
-            }],
-          };
+          return signedInStatus(pending.uid, userData, `✅ Successfully authenticated as ${pending.displayName || pending.email}!`);
         } else {
           const baseUrl = getBaseUrl();
           return {
@@ -165,14 +179,7 @@ export function createOnlyCashbacksServer(
       if (currentUid) {
         const userData = await getUserData(currentUid);
         if (!userData) return walletUnavailable();
-        if (!userData.walletCards?.length) return emptyWallet();
-        const cardCount = userData?.walletCards?.length || 0;
-        return {
-          content: [{
-            type: 'text' as const,
-            text: `✅ Already signed in (${cardCount} cards in your wallet). Recommendations are tailored to your cards.`,
-          }],
-        };
+        return signedInStatus(currentUid, userData, '✅ Already signed in.');
       }
 
       // 4. Generate new pairing code and return Google sign-in link
@@ -251,9 +258,10 @@ export function createOnlyCashbacksServer(
 
       const userData = await getUserData(currentUid);
       if (!userData) return walletUnavailable();
-      if (!userData.walletCards?.length) return emptyWallet();
+      const selection = getWalletSelection(userData);
+      if (!selection) return { isError: true, content: [{ type: 'text' as const, text: 'No saved card selection is configured. Select your cards in the app before requesting recommendations.' }] };
       if (userData) {
-        walletCards = userData.walletCards;
+        walletCards = selection.cardIds;
         exhaustedCards = userData.exhaustedCards || {};
         offerUsage = userData.offerUsage || {};
         cardBillDates = userData.cardBillDates || {};
@@ -284,6 +292,10 @@ export function createOnlyCashbacksServer(
 
       // Format the response
       const lines: string[] = [];
+      if (selection.mode === 'all_supported_cards') {
+        lines.push('Your saved setting selects all supported cards, matching the app. Results use your saved usage and reward settings; this does not independently verify ownership of every card.');
+        lines.push('');
+      }
       lines.push(`## 💳 Best Card: ${recommendation.bestCard.bank} ${recommendation.bestCard.name}`);
       lines.push('');
       lines.push(`**Benefit:** ${recommendation.expectedBenefit}`);
@@ -334,7 +346,7 @@ export function createOnlyCashbacksServer(
           type: 'text' as const,
           text: lines.join('\n'),
         }],
-        structuredContent: { authenticated: true, uid: currentUid, checkedAt: new Date().toISOString(), recommendation },
+        structuredContent: { ...walletContext(currentUid, userData), recommendation },
       };
     }
   );
@@ -379,12 +391,14 @@ export function createOnlyCashbacksServer(
       // If authenticated for THIS session, return the user's saved wallet!
       const userData = await getUserData(currentUid);
       if (!userData) return walletUnavailable();
-      if (!userData.walletCards?.length) return emptyWallet();
-      const userWallet = userData?.walletCards && userData.walletCards.length > 0
-        ? new Set(userData.walletCards)
-        : null;
+      const selection = getWalletSelection(userData);
+      if (!selection) return signedInStatus(currentUid, userData, '✅ Account connected.');
+      const userWallet = new Set(selection.cardIds);
 
       const lines: string[] = ['## 💳 Your Saved Wallet\n'];
+      if (selection.mode === 'all_supported_cards') {
+        lines.push('Your saved setting selects all supported cards, matching the app. This is not an independently verified list of owned cards.\n');
+      }
       if (userWallet && userWallet.size > 0) {
         const inWallet = realCards.filter(c => userWallet.has(c.id));
         const notInWallet = realCards.filter(c => !userWallet.has(c.id));
@@ -411,7 +425,7 @@ export function createOnlyCashbacksServer(
           type: 'text' as const,
           text: lines.join('\n'),
         }],
-        structuredContent: { authenticated: true, uid: currentUid, checkedAt: new Date().toISOString(), wallet: userData },
+        structuredContent: walletContext(currentUid, userData),
       };
     }
   );

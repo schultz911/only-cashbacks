@@ -73,7 +73,7 @@ Use the host's OAuth connection when available. Discovery is available at `/.wel
 
 Otherwise, call `authenticate` without arguments, open its Google sign-in link, then call `authenticate` with the returned pairing code in the same MCP connection. Pairing codes expire after 15 minutes and can only be claimed once by the requesting connection. Never paste Firebase tokens or credentials into chat.
 
-Personalized tools load the current saved wallet from the configured named Firestore database on every call, including exhausted cards, offer usage, billing dates and the Kiwi rate. Empty or unavailable wallets block recommendations. An unauthenticated `list_cards` response is explicitly the system catalogue; authenticated results include wallet context and card IDs.
+Personalized tools load the current saved wallet from the configured named Firestore database on every call, including exhausted cards, offer usage, billing dates and the Kiwi rate. A saved `walletCards: []` is the web app's all-cards-selected setting. Authenticated tools preserve that meaning and explicitly report `cardSelection.mode: all_supported_cards`; they do not present it as an independently verified list of owned cards. A missing selection or unavailable user document blocks recommendations. An unauthenticated `list_cards` response is explicitly the system catalogue; authenticated results include wallet settings and card IDs, excluding BYOK credentials.
 
 Keep `only-cashbacks.up.railway.app` in Firebase Authentication's authorized domains. OAuth metadata and account links are pinned to this origin; `PUBLIC_URL` does not override it. Server credentials must have access to the named database selected by `FIREBASE_DATABASE_ID`.
 
