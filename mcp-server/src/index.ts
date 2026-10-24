@@ -382,6 +382,18 @@ async function main() {
     // Store active transports for cleanup
     const transports = new Map<string, SSEServerTransport>();
     
+    // CORS headers for cross-origin MCP clients
+    app.use((req, res, next) => {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+      if (req.method === 'OPTIONS') {
+        res.sendStatus(200);
+        return;
+      }
+      next();
+    });
+
     app.get('/health', (_req, res) => {
       res.json({ status: 'ok', server: 'onlycashbacks-mcp', version: '1.0.0' });
     });
