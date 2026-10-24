@@ -17,6 +17,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import express from 'express';
 import { z } from 'zod';
 import crypto from 'crypto';
@@ -728,6 +729,7 @@ async function main() {
         name: 'OnlyCashbacks MCP Server',
         status: 'running',
         endpoints: {
+          mcp: '/mcp',
           sse: '/sse',
           health: '/health',
           messages: '/messages',
@@ -740,6 +742,87 @@ async function main() {
 
     app.get('/health', (_req, res) => {
       res.json({ status: 'ok', server: 'onlycashbacks-mcp', version: '1.0.0' });
+    });
+
+    // ─── Streamable HTTP /mcp (Codex / OpenAI / Modern MCP Standard) ─
+    interface StreamableSession {
+      transport: StreamableHTTPServerTransport;
+      server: McpServer;
+      sessionUid: string;
+    }
+    const streamableSessions = new Map<string, StreamableSession>();
+
+    app.all('/mcp', async (req, res) => {
+      // 1. Check for Bearer token. If missing, challenge with WWW-Authenticate to trigger host auth UI
+      const authHeader = req.headers.authorization;
+      if (!authHeader) {
+        res.setHeader(
+          'WWW-Authenticate',
+          `Bearer realm="onlycashbacks", resource_metadata="${getBaseUrl()}/.well-known/oauth-protected-resource"`
+        );
+        res.status(401).json({
+          error: 'unauthorized',
+          error_description: 'Authentication required. Please sign in with your OnlyCashbacks account.',
+        });
+        return;
+      }
+
+      if (!authHeader.startsWith('Bearer ')) {
+        res.setHeader('WWW-Authenticate', 'Bearer error="invalid_token", error_description="Malformed Authorization header"');
+        res.status(401).json({ error: 'invalid_token', error_description: 'Malformed Authorization header' });
+        return;
+      }
+
+      const token = authHeader.slice(7).trim();
+      let verifiedUid: string;
+      try {
+        const decoded = await verifyIdToken(token);
+        verifiedUid = decoded.uid;
+        const userData = await getUserData(decoded.uid);
+        if (userData) {
+          userSessionCache.set(decoded.uid, { data: userData, authenticatedAt: Date.now() });
+        }
+      } catch (err: any) {
+        res.setHeader('WWW-Authenticate', 'Bearer error="invalid_token", error_description="The access token is invalid or expired."');
+        res.status(401).json({ error: 'invalid_token', error_description: 'The access token is invalid or expired.' });
+        return;
+      }
+
+      // 2. Resolve or create Streamable HTTP session
+      const reqSessionId = (req.headers['mcp-session-id'] as string) || (req.query.sessionId as string);
+      let session = reqSessionId ? streamableSessions.get(reqSessionId) : undefined;
+
+      if (!session) {
+        const sessionId = reqSessionId || crypto.randomUUID();
+        let sessionUid = verifiedUid;
+
+        const transport = new StreamableHTTPServerTransport({
+          sessionIdGenerator: () => sessionId,
+        });
+
+        const server = createOnlyCashbacksServer(
+          () => sessionUid,
+          (uid: string) => { sessionUid = uid; }
+        );
+
+        session = {
+          transport,
+          server,
+          sessionUid,
+        };
+
+        await server.connect(transport);
+        streamableSessions.set(sessionId, session);
+
+        transport.onclose = () => {
+          streamableSessions.delete(sessionId);
+          server.close().catch(() => {});
+        };
+      } else {
+        session.sessionUid = verifiedUid;
+      }
+
+      await session.transport.handleRequest(req, res);
     });
 
     // ─── Active Connections (Isolated McpServer per Session) ─────────
