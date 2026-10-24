@@ -7,14 +7,14 @@ import { getAnalytics, isSupported } from 'firebase/analytics';
 import { getPerformance } from 'firebase/performance';
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
-  firestoreDatabaseId: import.meta.env.VITE_FIREBASE_DATABASE_ID
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyCHALzi5TDkpVQrUqobauyciLZurzjQsX4',
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'gen-lang-client-0447512961.firebaseapp.com',
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'gen-lang-client-0447512961',
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'gen-lang-client-0447512961.firebasestorage.app',
+  messagingSenderId: import.meta.env.VITE_FIREBASE_SENDER_ID || '343088435457',
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:343088435457:web:14d0c083a241a00a86cb00',
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || '',
+  firestoreDatabaseId: import.meta.env.VITE_FIREBASE_DATABASE_ID || 'ai-studio-onlycashbacks-9dfa3f2d-5762-4049-a6c8-583bd3c24948'
 };
 
 const app = initializeApp(firebaseConfig);
@@ -34,7 +34,7 @@ isSupported().then((supported) => {
 export const perf = typeof window !== 'undefined' ? getPerformance(app) : null;
 
 export const appCheck = initializeAppCheck(app, {
-  provider: new ReCaptchaEnterpriseProvider(import.meta.env.VITE_RECAPTCHA_SITE_KEY || ''),
+  provider: new ReCaptchaEnterpriseProvider(import.meta.env.VITE_RECAPTCHA_SITE_KEY || '6LdvmgotAAAAAL2cVPtKL1HIwAds1d7eB5MgxVPu'),
   isTokenAutoRefreshEnabled: true
 });
 
