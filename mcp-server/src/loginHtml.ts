@@ -294,7 +294,7 @@ export function getLoginHtml(code: string, firebaseConfig: Record<string, string
 
       // 1. If OAuth redirect flow, exchange with /oauth/approve and redirect back to client
       if (redirectUri) {
-        statusMsg.innerHTML = '<div class="spinner"></div> Authorizing and returning to assistant...';
+        statusMsg.innerHTML = '<div class="spinner"></div> Authenticated! Returning to ChatGPT...';
         const res = await fetch('/oauth/approve', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -313,7 +313,15 @@ export function getLoginHtml(code: string, firebaseConfig: Record<string, string
         const redirectUrl = new URL(redirectUri);
         redirectUrl.searchParams.set('code', data.code);
         if (state) redirectUrl.searchParams.set('state', state);
-        window.location.href = redirectUrl.toString();
+
+        // Notify opener if opened as popup
+        if (window.opener && window.opener !== window) {
+          try {
+            window.opener.postMessage({ type: 'oauth_complete', code: data.code, state: state }, '*');
+          } catch (e) {}
+        }
+
+        window.location.replace(redirectUrl.toString());
         return;
       }
 
