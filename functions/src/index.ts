@@ -62,7 +62,7 @@ Output strictly a JSON object matching this TypeScript interface:
           "X-Title": "Only Cashbacks",
         },
         body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
+          model: "anthropic/claude-haiku-5.5",
           temperature: 0,
           response_format: { type: "json_object" },
           messages: [
@@ -76,7 +76,7 @@ Output strictly a JSON object matching this TypeScript interface:
       if (!response.ok) {
         throw new HttpsError("internal", `OpenRouter API Error: ${response.status}`);
       }
-      
+
       const responseData = await response.json();
       const content = responseData.choices[0]?.message?.content || "{}";
       return JSON.parse(content);
