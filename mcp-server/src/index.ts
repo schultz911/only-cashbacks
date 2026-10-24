@@ -227,21 +227,35 @@ function createOnlyCashbacksServer(
 
       // Get user-specific state for THIS connection
       const currentUid = getSessionUid();
+      const baseUrl = getBaseUrl();
+
+      // Enforce activation requirement: block personalized comparisons until sign-in succeeds
+      if (!currentUid) {
+        return {
+          content: [{
+            type: 'text' as const,
+            text: `## 🔒 Authentication Required\n\n` +
+              `Personalized wallet comparisons are locked until your OnlyCashbacks account is connected.\n\n` +
+              `👉 **[Click Here to Connect OnlyCashbacks](${baseUrl}/oauth/authorize)**\n\n` +
+              `_Once signed in, OnlyCashbacks will load your saved wallet cards, track monthly caps, and calculate exact cashback for "${merchant}" at ₹${amount}._\n\n` +
+              `💡 Or run the \`authenticate\` tool to pair via one-click Google Sign-In.`
+          }],
+        };
+      }
+
       let walletCards: string[] | null = null;
       let exhaustedCards: Record<string, boolean> = {};
       let offerUsage: Record<string, number> = {};
       let cardBillDates: Record<string, number> = {};
       let kiwiNeonEarnRate = 2;
 
-      if (currentUid) {
-        const userData = getCachedUserData(currentUid);
-        if (userData) {
-          walletCards = userData.walletCards && userData.walletCards.length > 0 ? userData.walletCards : null;
-          exhaustedCards = userData.exhaustedCards || {};
-          offerUsage = userData.offerUsage || {};
-          cardBillDates = userData.cardBillDates || {};
-          kiwiNeonEarnRate = userData.kiwiNeonEarnRate || 2;
-        }
+      const userData = getCachedUserData(currentUid);
+      if (userData) {
+        walletCards = userData.walletCards && userData.walletCards.length > 0 ? userData.walletCards : null;
+        exhaustedCards = userData.exhaustedCards || {};
+        offerUsage = userData.offerUsage || {};
+        cardBillDates = userData.cardBillDates || {};
+        kiwiNeonEarnRate = userData.kiwiNeonEarnRate || 2;
       }
 
       const recommendation = getRecommendations(
@@ -330,23 +344,47 @@ function createOnlyCashbacksServer(
     async () => {
       const realCards = CARD_DATA.filter(c => !c.isDummy);
 
-      // If authenticated for THIS session, mark which cards are in the user's wallet
       const currentUid = getSessionUid();
-      let userWallet: Set<string> | null = null;
-      if (currentUid) {
-        const userData = getCachedUserData(currentUid);
-        if (userData?.walletCards && userData.walletCards.length > 0) {
-          userWallet = new Set(userData.walletCards);
+      const baseUrl = getBaseUrl();
+
+      // If not authenticated, inform that sign-in is required to view saved wallet cards
+      if (!currentUid) {
+        const lines: string[] = [
+          '## 💳 OnlyCashbacks Card Catalog\n',
+          '🔒 **Account not connected**: Connect your account to view your saved wallet cards.\n',
+          `👉 **[Click Here to Connect OnlyCashbacks](${baseUrl}/oauth/authorize)**\n`,
+          '---\n',
+          '### All Supported Cards (System Directory)',
+        ];
+
+        for (const card of realCards) {
+          const rewardInfo = card.baseRewardRate > 0 ? ` · ${card.baseRewardRate}% base` : '';
+          const forexInfo = card.isZeroForex ? ' · Zero Forex' : '';
+          lines.push(`- **${card.bank} ${card.name}** (${card.type} · ${card.network} ${card.tier || ''}${rewardInfo}${forexInfo})`);
         }
+
+        lines.push('');
+        lines.push(`Total: ${realCards.length} supported cards.`);
+        return {
+          content: [{
+            type: 'text' as const,
+            text: lines.join('\n'),
+          }],
+        };
       }
 
-      const lines: string[] = ['## 💳 Supported Cards\n'];
+      // If authenticated for THIS session, return the user's saved wallet!
+      const userData = getCachedUserData(currentUid);
+      const userWallet = userData?.walletCards && userData.walletCards.length > 0
+        ? new Set(userData.walletCards)
+        : null;
 
-      if (userWallet) {
-        lines.push('### Your Wallet');
-        const inWallet = realCards.filter(c => userWallet!.has(c.id));
-        const notInWallet = realCards.filter(c => !userWallet!.has(c.id));
+      const lines: string[] = ['## 💳 Your Saved Wallet\n'];
+      if (userWallet && userWallet.size > 0) {
+        const inWallet = realCards.filter(c => userWallet.has(c.id));
+        const notInWallet = realCards.filter(c => !userWallet.has(c.id));
 
+        lines.push(`### Active Cards (${inWallet.length})`);
         for (const card of inWallet) {
           lines.push(`- ✅ **${card.bank} ${card.name}** (${card.type} · ${card.network} ${card.tier || ''})`);
         }
@@ -359,19 +397,8 @@ function createOnlyCashbacksServer(
           }
         }
       } else {
-        for (const card of realCards) {
-          const rewardInfo = card.baseRewardRate > 0 ? ` · ${card.baseRewardRate}% base` : '';
-          const forexInfo = card.isZeroForex ? ' · Zero Forex' : '';
-          lines.push(`- **${card.bank} ${card.name}** (${card.type} · ${card.network} ${card.tier || ''}${rewardInfo}${forexInfo})`);
-        }
-      }
-
-      lines.push('');
-      lines.push(`Total: ${realCards.length} cards`);
-
-      if (!currentUid) {
-        lines.push('');
-        lines.push('_💡 Sign in with the `authenticate` tool to see which cards are in your wallet._');
+        lines.push('Your OnlyCashbacks wallet does not have any saved cards yet.');
+        lines.push(`Add cards in the [OnlyCashbacks App](${baseUrl}) to start receiving personalized recommendations!`);
       }
 
       return {
@@ -809,39 +836,30 @@ self.addEventListener('activate', (event) => {
     const streamableSessions = new Map<string, StreamableSession>();
 
     app.all('/mcp', async (req, res) => {
-      // 1. Check for Bearer token. If missing, challenge with WWW-Authenticate to trigger host auth UI
+      // 1. Check for Bearer token if provided by the client
+      let verifiedUid: string | null = null;
       const authHeader = req.headers.authorization;
-      if (!authHeader) {
-        res.setHeader(
-          'WWW-Authenticate',
-          `Bearer realm="onlycashbacks", resource_metadata="${getBaseUrl()}/.well-known/oauth-protected-resource"`
-        );
-        res.status(401).json({
-          error: 'unauthorized',
-          error_description: 'Authentication required. Please sign in with your OnlyCashbacks account.',
-        });
-        return;
-      }
 
-      if (!authHeader.startsWith('Bearer ')) {
-        res.setHeader('WWW-Authenticate', 'Bearer error="invalid_token", error_description="Malformed Authorization header"');
-        res.status(401).json({ error: 'invalid_token', error_description: 'Malformed Authorization header' });
-        return;
-      }
-
-      const token = authHeader.slice(7).trim();
-      let verifiedUid: string;
-      try {
-        const decoded = await verifyIdToken(token);
-        verifiedUid = decoded.uid;
-        const userData = await getUserData(decoded.uid);
-        if (userData) {
-          userSessionCache.set(decoded.uid, { data: userData, authenticatedAt: Date.now() });
+      if (authHeader) {
+        if (!authHeader.startsWith('Bearer ')) {
+          res.setHeader('WWW-Authenticate', 'Bearer error="invalid_token", error_description="Malformed Authorization header"');
+          res.status(401).json({ error: 'invalid_token', error_description: 'Malformed Authorization header' });
+          return;
         }
-      } catch (err: any) {
-        res.setHeader('WWW-Authenticate', 'Bearer error="invalid_token", error_description="The access token is invalid or expired."');
-        res.status(401).json({ error: 'invalid_token', error_description: 'The access token is invalid or expired.' });
-        return;
+
+        const token = authHeader.slice(7).trim();
+        try {
+          const decoded = await verifyIdToken(token);
+          verifiedUid = decoded.uid;
+          const userData = await getUserData(decoded.uid);
+          if (userData) {
+            userSessionCache.set(decoded.uid, { data: userData, authenticatedAt: Date.now() });
+          }
+        } catch (err: any) {
+          res.setHeader('WWW-Authenticate', 'Bearer error="invalid_token", error_description="The access token is invalid or expired."');
+          res.status(401).json({ error: 'invalid_token', error_description: 'The access token is invalid or expired.' });
+          return;
+        }
       }
 
       // 2. Resolve or create Streamable HTTP session
@@ -864,7 +882,7 @@ self.addEventListener('activate', (event) => {
         session = {
           transport,
           server,
-          sessionUid,
+          sessionUid: sessionUid || '',
         };
 
         await server.connect(transport);
@@ -874,7 +892,7 @@ self.addEventListener('activate', (event) => {
           streamableSessions.delete(sessionId);
           server.close().catch(() => {});
         };
-      } else {
+      } else if (verifiedUid) {
         session.sessionUid = verifiedUid;
       }
 
