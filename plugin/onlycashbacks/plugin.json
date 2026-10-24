@@ -1,0 +1,37 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "onlycashbacks",
+  "version": "1.0.1",
+  "description": "Compare Indian retailer prices using the cards, offer usage and reward settings saved in your own OnlyCashbacks account. Each user signs in separately to load their own wallet and eligible benefits.",
+  "author": {
+    "name": "Kiran Saldanha",
+    "email": "schultz911@gmail.com",
+    "url": "https://only-cashbacks.up.railway.app"
+  },
+  "homepage": "https://only-cashbacks.up.railway.app",
+  "keywords": [
+    "India",
+    "shopping",
+    "cashback",
+    "cards"
+  ],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "OnlyCashbacks",
+        "shortDescription": "Compare prices with your cards",
+        "longDescription": "Compare Indian retailer prices using the cards, offer usage and reward settings saved in your own OnlyCashbacks account. Each user signs in separately to load their own wallet and eligible benefits.",
+        "developerName": "Kiran Saldanha",
+        "category": "Finance",
+        "capabilities": [],
+        "websiteURL": "https://only-cashbacks.up.railway.app",
+        "defaultPrompt": "Find the three best places in India to buy my product using the cards saved in my OnlyCashbacks account.",
+        "logo": "./assets/logo.png",
+        "logoDark": "./assets/logo.png",
+        "composerIcon": "./assets/logo.png",
+        "composerIconDark": "./assets/logo.png"
+      },
+      "apps": "./.app.json"
+    }
+  }
+}

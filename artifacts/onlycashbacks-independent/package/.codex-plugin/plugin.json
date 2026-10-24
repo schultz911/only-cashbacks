@@ -1,0 +1,19 @@
+{
+  "apps": "./.app.json",
+  "author": {
+    "name": "App developer"
+  },
+  "description": "Compare Indian prices using your saved cards and reward limits. By Kiran Saldanha. https://only-cashbacks.up.railway.app",
+  "interface": {
+    "capabilities": [],
+    "category": "Other",
+    "defaultPrompt": null,
+    "developerName": "App developer",
+    "displayName": "OnlyCashbacks",
+    "longDescription": "Compare Indian prices using your saved cards and reward limits. By Kiran Saldanha. https://only-cashbacks.up.railway.app",
+    "shortDescription": "Compare Indian prices using your saved cards and reward limits. By Kiran Saldanha. https://only-cashbacks.up.railway.app"
+  },
+  "name": "dev-6add20a1b588819189816e93c0d921bf",
+  "version": "1.0.1",
+  "skills": "./skills/"
+}

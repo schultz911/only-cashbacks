@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "onlycashbacks": {
+      "type": "streamable-http",
+      "url": "https://only-cashbacks.up.railway.app/mcp"
+    }
+  }
+}
