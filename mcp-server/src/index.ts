@@ -574,10 +574,39 @@ async function main() {
       });
     });
 
+    // Service Worker killer to purge any legacy PWA service workers on this domain
+    const swKiller = (_req: express.Request, res: express.Response) => {
+      res.setHeader('Content-Type', 'application/javascript');
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.send(`
+self.addEventListener('install', () => {
+  self.skipWaiting();
+});
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
+      .then(() => self.registration.unregister())
+      .then(() => self.clients.matchAll({ type: 'window' }))
+      .then((clients) => {
+        clients.forEach((client) => {
+          if (client.url && 'navigate' in client) {
+            client.navigate(client.url);
+          }
+        });
+      })
+  );
+});
+      `.trim());
+    };
+
+    app.get(['/sw.js', '/service-worker.js'], swKiller);
+
     // OAuth Authorization Endpoint: renders Google Sign-In page
     app.get(['/oauth/authorize', '/authorize'], (req, res) => {
       const code = 'OC-' + Math.floor(1000 + Math.random() * 9000);
       res.setHeader('Content-Type', 'text/html');
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Clear-Site-Data', '"cache"');
       res.send(getLoginHtml(code, PUBLIC_FIREBASE_CONFIG));
     });
 
@@ -668,6 +697,8 @@ async function main() {
         });
       }
       res.setHeader('Content-Type', 'text/html');
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Clear-Site-Data', '"cache"');
       res.send(getLoginHtml(code, PUBLIC_FIREBASE_CONFIG));
     });
 
