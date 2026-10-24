@@ -11,8 +11,9 @@ export function getLoginHtml(code: string, firebaseConfig: Record<string, string
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.13.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.13.0/firebase-app-check-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.13.0/firebase-auth-compat.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(function(regs) {
@@ -238,7 +239,7 @@ export function getLoginHtml(code: string, firebaseConfig: Record<string, string
         <span class="code-value" id="display-code">${code}</span>
       </div>
 
-      <button class="google-btn" id="login-btn" onclick="handleGoogleSignIn()">
+      <button class="google-btn" id="login-btn" onclick="handleGoogleSignIn()" disabled>
         <svg class="google-icon" viewBox="0 0 24 24">
           <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
           <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -272,6 +273,15 @@ export function getLoginHtml(code: string, firebaseConfig: Record<string, string
   <script>
     const firebaseConfig = ${JSON.stringify(firebaseConfig)};
     firebase.initializeApp(firebaseConfig);
+    // Authentication enforcement requires App Check on this standalone page too.
+    // Activate it before creating Auth so Auth can attach attestation tokens.
+    const appCheck = firebase.appCheck();
+    appCheck.activate(
+      new firebase.appCheck.ReCaptchaEnterpriseProvider(firebaseConfig.recaptchaSiteKey),
+      true
+    );
+    const auth = firebase.auth();
+    let appCheckReady = false;
 
     const urlParams = new URLSearchParams(window.location.search);
     const oauthRequestId = ${JSON.stringify(oauthRequestId || '')};
@@ -339,23 +349,53 @@ export function getLoginHtml(code: string, firebaseConfig: Record<string, string
       }
     }
 
-    // Check for redirect sign-in result on page load
-    firebase.auth().getRedirectResult().then(async (result) => {
-      if (result && result.user) {
-        const btn = document.getElementById('login-btn');
-        const statusMsg = document.getElementById('status-msg');
-        btn.disabled = true;
-        statusMsg.className = 'status-msg loading';
-        await finishAuthWithUser(result.user);
-      }
-    }).catch((err) => {
-      console.warn('Redirect result check:', err);
-    });
-
-    async function handleGoogleSignIn() {
+    function showAuthError(err, stage) {
+      console.warn(stage, err.code || err.message || 'Unknown sign-in error');
       const btn = document.getElementById('login-btn');
       const statusMsg = document.getElementById('status-msg');
-      
+      btn.disabled = false;
+      statusMsg.className = 'status-msg error';
+      if ((err.code || '').startsWith('appCheck/') || (err.code || '').startsWith('app-check/')) {
+        statusMsg.innerText = 'Browser verification failed. Reload this page and try again. If this continues, contact the OnlyCashbacks administrator.';
+      } else if (err.code === 'auth/unauthorized-domain') {
+        statusMsg.innerText = 'This sign-in domain is not authorized. Contact the OnlyCashbacks administrator.';
+      } else {
+        statusMsg.innerText = err.message || 'Unable to connect your account. Please try again.';
+      }
+    }
+
+    async function initializeSignIn() {
+      const btn = document.getElementById('login-btn');
+      const statusMsg = document.getElementById('status-msg');
+      btn.disabled = true;
+      statusMsg.className = 'status-msg loading';
+      statusMsg.innerHTML = '<div class="spinner"></div> Verifying your browser...';
+      try {
+        // Complete attestation before any Auth request, including redirect recovery.
+        // Preloading also keeps the popup call directly inside the user's click.
+        await appCheck.getToken(false);
+        appCheckReady = true;
+        const result = await auth.getRedirectResult();
+        if (result && result.user) {
+          await finishAuthWithUser(result.user);
+          return;
+        }
+        btn.disabled = false;
+        statusMsg.className = 'status-msg';
+      } catch (err) {
+        showAuthError(err, 'Sign-in initialization failed:');
+      }
+    }
+
+    initializeSignIn();
+
+    async function handleGoogleSignIn() {
+      if (!appCheckReady) {
+        await initializeSignIn();
+        return;
+      }
+      const btn = document.getElementById('login-btn');
+      const statusMsg = document.getElementById('status-msg');
       btn.disabled = true;
       statusMsg.className = 'status-msg loading';
       statusMsg.innerHTML = '<div class="spinner"></div> Signing in with Google...';
@@ -363,29 +403,27 @@ export function getLoginHtml(code: string, firebaseConfig: Record<string, string
       const provider = new firebase.auth.GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
 
+      let result;
       try {
-        const result = await firebase.auth().signInWithPopup(provider);
-        await finishAuthWithUser(result.user);
+        result = await auth.signInWithPopup(provider);
       } catch (err) {
-        console.warn('Popup sign in failed, attempting redirect fallback:', err);
         if (!['auth/popup-blocked', 'auth/operation-not-supported-in-this-environment'].includes(err.code)) {
-          btn.disabled = false;
-          statusMsg.className = 'status-msg error';
-          statusMsg.innerText = err.message || 'Unable to connect your account.';
+          showAuthError(err, 'Google sign-in failed:');
           return;
         }
+        console.warn('Popup unavailable, attempting redirect sign-in:', err.code);
         try {
           statusMsg.innerHTML = '<div class="spinner"></div> Redirecting to Google Sign-In...';
-          await firebase.auth().signInWithRedirect(provider);
+          await auth.signInWithRedirect(provider);
         } catch (redirectErr) {
-          btn.disabled = false;
-          statusMsg.className = 'status-msg error';
-          let msg = redirectErr.message || err.message || 'Sign in failed.';
-          if (msg.includes('internal-error') || msg.includes('unauthorized-domain')) {
-            msg += ' Ensure only-cashbacks.up.railway.app is added to Authorized Domains in Firebase Console.';
-          }
-          statusMsg.innerText = '❌ ' + msg;
+          showAuthError(redirectErr, 'Redirect sign-in failed:');
         }
+        return;
+      }
+      try {
+        await finishAuthWithUser(result.user);
+      } catch (err) {
+        showAuthError(err, 'Account connection failed:');
       }
     }
   </script>

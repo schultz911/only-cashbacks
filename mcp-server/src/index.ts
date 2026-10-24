@@ -548,6 +548,7 @@ export function createRemoteApp() {
       authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN || 'gen-lang-client-0447512961.firebaseapp.com',
       projectId: process.env.VITE_FIREBASE_PROJECT_ID || 'gen-lang-client-0447512961',
       appId: process.env.VITE_FIREBASE_APP_ID || '1:343088435457:web:14d0c083a241a00a86cb00',
+      recaptchaSiteKey: process.env.VITE_RECAPTCHA_SITE_KEY || '6LdvmgotAAAAAL2cVPtKL1HIwAds1d7eB5MgxVPu',
     };
 
     const verifyAccessToken = installOAuthRoutes(app, PUBLIC_FIREBASE_CONFIG, verifyIdToken);

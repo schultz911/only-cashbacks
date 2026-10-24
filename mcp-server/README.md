@@ -77,6 +77,8 @@ Personalized tools load the current saved wallet from the configured named Fires
 
 Keep `only-cashbacks.up.railway.app` in Firebase Authentication's authorized domains. OAuth metadata and account links are pinned to this origin; `PUBLIC_URL` does not override it. Server credentials must have access to the named database selected by `FIREBASE_DATABASE_ID`.
 
+The standalone sign-in page also initializes App Check with reCAPTCHA Enterprise before making Auth requests. Configure `VITE_RECAPTCHA_SITE_KEY` with the same public key registered for the wallet app, and allow the Railway domain on that key. Missing or invalid App Check tokens can cause Google sign-in to surface `auth/internal-error` when Authentication enforcement is enabled.
+
 OAuth access tokens expire after one hour. Refresh tokens rotate within a maximum 24-hour login period. Clients must include the bearer token on every request to an OAuth-authenticated session. Anonymous connections can use manual pairing.
 
 Registrations, tokens, pairing codes and MCP sessions are in memory. Run one replica; a restart requires reconnecting and signing in again. Multiple replicas require a shared authorization and session store.
