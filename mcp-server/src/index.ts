@@ -71,347 +71,354 @@ function getBaseUrl(): string {
   return 'https://only-cashbacks.up.railway.app';
 }
 
-// ─── Currently authenticated user for this connection ──────────────
-let currentUid: string | null = null;
+// ─── MCP Server Factory (Per-Connection Isolation) ────────────────
+function createOnlyCashbacksServer(
+  getSessionUid: () => string | null,
+  setSessionUid: (uid: string) => void
+): McpServer {
+  const server = new McpServer({
+    name: 'onlycashbacks',
+    version: '1.0.0',
+    description: 'Find the best credit/debit card for any purchase. Sign in with your OnlyCashbacks Google account for personalized recommendations.',
+  });
 
-// ─── Create MCP Server ─────────────────────────────────────────────
-const server = new McpServer({
-  name: 'onlycashbacks',
-  version: '1.0.0',
-  description: 'Find the best credit/debit card for any purchase. Sign in with your OnlyCashbacks Google account for personalized recommendations.',
-});
+  // ─── Tool: authenticate ────────────────────────────────────────────
+  server.tool(
+    'authenticate',
+    'Sign in with your OnlyCashbacks account to personalize recommendations to your wallet. Calling with no arguments returns a one-click Google sign-in link. Once you sign in via Google in your browser, your wallet is automatically linked.',
+    {
+      code: z.string().optional().describe('Pairing code (e.g. "OC-1234") to verify or check sign-in status after signing in in your browser.'),
+      idToken: z.string().optional().describe('Optional raw Firebase ID token if authenticating programmatically.'),
+    },
+    async ({ code, idToken }) => {
+      // 1. Direct ID token passed
+      if (idToken) {
+        try {
+          const decoded = await verifyIdToken(idToken);
+          setSessionUid(decoded.uid);
 
-// ─── Tool: authenticate ────────────────────────────────────────────
-server.tool(
-  'authenticate',
-  'Sign in with your OnlyCashbacks account to personalize recommendations to your wallet. Calling with no arguments returns a one-click Google sign-in link. Once you sign in via Google in your browser, your wallet is automatically linked.',
-  {
-    code: z.string().optional().describe('Pairing code (e.g. "OC-1234") to verify or check sign-in status after signing in in your browser.'),
-    idToken: z.string().optional().describe('Optional raw Firebase ID token if authenticating programmatically.'),
-  },
-  async ({ code, idToken }) => {
-    // 1. Direct ID token passed
-    if (idToken) {
-      try {
-        const decoded = await verifyIdToken(idToken);
-        currentUid = decoded.uid;
+          const userData = await getUserData(decoded.uid);
+          if (userData) {
+            userSessionCache.set(decoded.uid, { data: userData, authenticatedAt: Date.now() });
+          }
 
-        const userData = await getUserData(decoded.uid);
-        if (userData) {
-          userSessionCache.set(decoded.uid, { data: userData, authenticatedAt: Date.now() });
+          const cardCount = userData?.walletCards?.length || 0;
+          const displayName = decoded.name || decoded.email || decoded.uid;
+
+          return {
+            content: [{
+              type: 'text' as const,
+              text: `✅ Signed in as ${displayName}\n\n` +
+                (cardCount > 0
+                  ? `Found ${cardCount} cards in your wallet. Recommendations will be personalized to your cards.`
+                  : `No cards found in your wallet yet. Add cards in the OnlyCashbacks app, or recommendations will use all available cards.`),
+            }],
+          };
+        } catch (error: any) {
+          return {
+            content: [{
+              type: 'text' as const,
+              text: `❌ Authentication failed: ${error.message || 'Invalid token'}`,
+            }],
+            isError: true,
+          };
+        }
+      }
+
+      // 2. Check code status
+      if (code) {
+        cleanExpiredCodes();
+        const normCode = code.trim().toUpperCase();
+        const pending = pendingAuthCodes.get(normCode);
+
+        if (!pending) {
+          return {
+            content: [{
+              type: 'text' as const,
+              text: `❌ Code "${normCode}" is invalid or expired. Please call \`authenticate\` without arguments to generate a new sign-in link.`,
+            }],
+            isError: true,
+          };
         }
 
+        if (pending.status === 'completed' && pending.uid) {
+          setSessionUid(pending.uid);
+          const cardCount = pending.cardCount || 0;
+          return {
+            content: [{
+              type: 'text' as const,
+              text: `✅ Successfully authenticated as ${pending.displayName || pending.email}!\n\n` +
+                `Found ${cardCount} cards in your wallet. Your recommendations are now personalized to your cards!`,
+            }],
+          };
+        } else {
+          const baseUrl = getBaseUrl();
+          return {
+            content: [{
+              type: 'text' as const,
+              text: `⏳ Sign-in pending for code **${normCode}**.\n\nPlease open this link to sign in with Google:\n👉 ${baseUrl}/login?code=${normCode}\n\nAfter signing in, call \`authenticate({ code: "${normCode}" })\` again!`,
+            }],
+          };
+        }
+      }
+
+      // 3. Already signed in
+      const currentUid = getSessionUid();
+      if (currentUid) {
+        const userData = getCachedUserData(currentUid);
         const cardCount = userData?.walletCards?.length || 0;
-        const displayName = decoded.name || decoded.email || decoded.uid;
-
         return {
           content: [{
             type: 'text' as const,
-            text: `✅ Signed in as ${displayName}\n\n` +
-              (cardCount > 0
-                ? `Found ${cardCount} cards in your wallet. Recommendations will be personalized to your cards.`
-                : `No cards found in your wallet yet. Add cards in the OnlyCashbacks app, or recommendations will use all available cards.`),
+            text: `✅ Already signed in (${cardCount} cards in your wallet). Recommendations are tailored to your cards.`,
           }],
-        };
-      } catch (error: any) {
-        return {
-          content: [{
-            type: 'text' as const,
-            text: `❌ Authentication failed: ${error.message || 'Invalid token'}`,
-          }],
-          isError: true,
         };
       }
-    }
 
-    // 2. Check code status
-    if (code) {
+      // 4. Generate new pairing code and return Google sign-in link
       cleanExpiredCodes();
-      const normCode = code.trim().toUpperCase();
-      const pending = pendingAuthCodes.get(normCode);
+      const newCode = 'OC-' + Math.floor(1000 + Math.random() * 9000);
+      pendingAuthCodes.set(newCode, {
+        createdAt: Date.now(),
+        expiresAt: Date.now() + AUTH_CODE_TTL_MS,
+        status: 'pending',
+      });
 
-      if (!pending) {
-        return {
-          content: [{
-            type: 'text' as const,
-            text: `❌ Code "${normCode}" is invalid or expired. Please call \`authenticate\` without arguments to generate a new sign-in link.`,
-          }],
-          isError: true,
-        };
-      }
+      const baseUrl = getBaseUrl();
+      const loginUrl = `${baseUrl}/login?code=${newCode}`;
 
-      if (pending.status === 'completed' && pending.uid) {
-        currentUid = pending.uid;
-        const cardCount = pending.cardCount || 0;
-        return {
-          content: [{
-            type: 'text' as const,
-            text: `✅ Successfully authenticated as ${pending.displayName || pending.email}!\n\n` +
-              `Found ${cardCount} cards in your wallet. Your recommendations are now personalized to your cards!`,
-          }],
-        };
-      } else {
-        const baseUrl = getBaseUrl();
-        return {
-          content: [{
-            type: 'text' as const,
-            text: `⏳ Sign-in pending for code **${normCode}**.\n\nPlease open this link to sign in with Google:\n👉 ${baseUrl}/login?code=${normCode}\n\nAfter signing in, call \`authenticate({ code: "${normCode}" })\` again!`,
-          }],
-        };
-      }
-    }
-
-    // 3. Already signed in
-    if (currentUid) {
-      const userData = getCachedUserData(currentUid);
-      const cardCount = userData?.walletCards?.length || 0;
       return {
         content: [{
           type: 'text' as const,
-          text: `✅ Already signed in (${cardCount} cards in your wallet). Recommendations are tailored to your cards.`,
+          text: `### 🔐 Sign in with Google to Connect OnlyCashbacks\n\n` +
+            `To tailor card recommendations to your wallet, please sign in with your OnlyCashbacks Google account:\n\n` +
+            `👉 **[Click Here to Sign in with Google](${loginUrl})**\n\n` +
+            `1. Click the link above to open the sign-in page in your browser.\n` +
+            `2. Click **"Sign in with Google"** (your pairing code is **\`${newCode}\`**).\n` +
+            `3. Return here and run \`authenticate({ code: "${newCode}" })\` or ask me to check your login!`,
         }],
       };
     }
+  );
 
-    // 4. Generate new pairing code and return Google sign-in link
-    cleanExpiredCodes();
-    const newCode = 'OC-' + Math.floor(1000 + Math.random() * 9000);
-    pendingAuthCodes.set(newCode, {
-      createdAt: Date.now(),
-      expiresAt: Date.now() + AUTH_CODE_TTL_MS,
-      status: 'pending',
-    });
-
-    const baseUrl = getBaseUrl();
-    const loginUrl = `${baseUrl}/login?code=${newCode}`;
-
-    return {
-      content: [{
-        type: 'text' as const,
-        text: `### 🔐 Sign in with Google to Connect OnlyCashbacks\n\n` +
-          `To tailor card recommendations to your wallet, please sign in with your OnlyCashbacks Google account:\n\n` +
-          `👉 **[Click Here to Sign in with Google](${loginUrl})**\n\n` +
-          `1. Click the link above to open the sign-in page in your browser.\n` +
-          `2. Click **"Sign in with Google"** (your pairing code is **\`${newCode}\`**).\n` +
-          `3. Return here and run \`authenticate({ code: "${newCode}" })\` or ask me to check your login!`,
-      }],
-    };
-  }
-);
-
-// ─── Tool: find_best_card ──────────────────────────────────────────
-server.tool(
-  'find_best_card',
-  'Find the best credit/debit card for a purchase. Provide the merchant name and amount to get the optimal card recommendation with cashback calculations.',
-  {
-    merchant: z.string().describe('Merchant or store name (e.g., "Swiggy", "Amazon", "Blinkit", "PVR", "Starbucks")'),
-    amount: z.number().positive().describe('Transaction amount in INR (e.g., 500, 1500, 3000)'),
-    category: z.string().optional().describe('Merchant category if known (e.g., "Food Delivery", "E-commerce", "Grocery", "Movies", "Dining")'),
-    platform: z.string().optional().describe('Platform if applicable (e.g., "Swiggy", "Amazon", "Tata Brands")'),
-    isOnline: z.boolean().default(true).describe('Whether this is an online transaction (default: true)'),
-    isInternational: z.boolean().default(false).describe('Whether this is an international transaction (default: false)'),
-    isScanAndPay: z.boolean().default(false).describe('Whether this is a UPI Scan & Pay transaction (default: false)'),
-  },
-  async ({ merchant, amount, category, platform, isOnline, isInternational, isScanAndPay }) => {
-    // Build MerchantInfo from the input
-    const merchantInfo: MerchantInfo = {
-      name: merchant,
-      category: category || 'Other',
-      isOnline: isOnline,
-      platform: platform,
-      isP2P: false,
-    };
-
-    // Get user-specific state if authenticated
-    let walletCards: string[] | null = null;
-    let exhaustedCards: Record<string, boolean> = {};
-    let offerUsage: Record<string, number> = {};
-    let cardBillDates: Record<string, number> = {};
-    let kiwiNeonEarnRate = 2;
-
-    if (currentUid) {
-      const userData = getCachedUserData(currentUid);
-      if (userData) {
-        walletCards = userData.walletCards && userData.walletCards.length > 0 ? userData.walletCards : null;
-        exhaustedCards = userData.exhaustedCards || {};
-        offerUsage = userData.offerUsage || {};
-        cardBillDates = userData.cardBillDates || {};
-        kiwiNeonEarnRate = userData.kiwiNeonEarnRate || 2;
-      }
-    }
-
-    const recommendation = getRecommendations(
-      merchantInfo,
-      amount,
-      isOnline,
-      isInternational,
-      isScanAndPay,
-      exhaustedCards,
-      offerUsage,
-      kiwiNeonEarnRate,
-      walletCards,
-      cardBillDates
-    );
-
-    if (!recommendation) {
-      return {
-        content: [{
-          type: 'text' as const,
-          text: `No recommendation found for "${merchant}" at ₹${amount}. This may be an excluded category (rent, fuel, wallet loads, etc.) for all your cards.`,
-        }],
+  // ─── Tool: find_best_card ──────────────────────────────────────────
+  server.tool(
+    'find_best_card',
+    'Find the best credit/debit card for a purchase. Provide the merchant name and amount to get the optimal card recommendation with cashback calculations.',
+    {
+      merchant: z.string().describe('Merchant or store name (e.g., "Swiggy", "Amazon", "Blinkit", "PVR", "Starbucks")'),
+      amount: z.number().positive().describe('Transaction amount in INR (e.g., 500, 1500, 3000)'),
+      category: z.string().optional().describe('Merchant category if known (e.g., "Food Delivery", "E-commerce", "Grocery", "Movies", "Dining")'),
+      platform: z.string().optional().describe('Platform if applicable (e.g., "Swiggy", "Amazon", "Tata Brands")'),
+      isOnline: z.boolean().default(true).describe('Whether this is an online transaction (default: true)'),
+      isInternational: z.boolean().default(false).describe('Whether this is an international transaction (default: false)'),
+      isScanAndPay: z.boolean().default(false).describe('Whether this is a UPI Scan & Pay transaction (default: false)'),
+    },
+    async ({ merchant, amount, category, platform, isOnline, isInternational, isScanAndPay }) => {
+      // Build MerchantInfo from the input
+      const merchantInfo: MerchantInfo = {
+        name: merchant,
+        category: category || 'Other',
+        isOnline: isOnline,
+        platform: platform,
+        isP2P: false,
       };
-    }
 
-    // Format the response
-    const lines: string[] = [];
-    lines.push(`## 💳 Best Card: ${recommendation.bestCard.bank} ${recommendation.bestCard.name}`);
-    lines.push('');
-    lines.push(`**Benefit:** ${recommendation.expectedBenefit}`);
-    lines.push(`**Net Value:** ₹${recommendation.netValue.toFixed(2)}`);
-    lines.push(`**Cashback Earned:** ₹${recommendation.cashbackEarned.toFixed(2)}`);
-    if (recommendation.feesPaid > 0) {
-      lines.push(`**Fees Paid:** ₹${recommendation.feesPaid.toFixed(2)}`);
-    }
-    lines.push('');
-    lines.push(`> ${recommendation.reason}`);
+      // Get user-specific state for THIS connection
+      const currentUid = getSessionUid();
+      let walletCards: string[] | null = null;
+      let exhaustedCards: Record<string, boolean> = {};
+      let offerUsage: Record<string, number> = {};
+      let cardBillDates: Record<string, number> = {};
+      let kiwiNeonEarnRate = 2;
 
-    // Tied cards
-    if (recommendation.tiedCards && recommendation.tiedCards.length > 1) {
-      lines.push('');
-      lines.push('### 🤝 Tied Cards');
-      for (const tied of recommendation.tiedCards) {
-        lines.push(`- **${tied.card.bank} ${tied.card.name}**: ${tied.benefit}`);
-      }
-    }
-
-    // Alternatives
-    if (recommendation.alternatives.length > 0) {
-      lines.push('');
-      lines.push('### 📊 Alternatives');
-      for (const alt of recommendation.alternatives) {
-        lines.push(`- **${alt.card.bank} ${alt.card.name}**: ${alt.benefit} (₹${alt.netValue.toFixed(2)} net)`);
-      }
-    }
-
-    // Available offers
-    if (recommendation.availableOffers && recommendation.availableOffers.length > 0) {
-      lines.push('');
-      lines.push('### 🎁 Available Offers');
-      for (const offer of recommendation.availableOffers) {
-        lines.push(`- ${offer.icon} **${offer.title}**: ${offer.description} (${offer.category})`);
-      }
-    }
-
-    // Auth status note
-    if (!currentUid) {
-      lines.push('');
-      lines.push('---');
-      lines.push('_💡 Sign in with the `authenticate` tool to get personalized recommendations based on your wallet._');
-    }
-
-    return {
-      content: [{
-        type: 'text' as const,
-        text: lines.join('\n'),
-      }],
-    };
-  }
-);
-
-// ─── Tool: list_cards ──────────────────────────────────────────────
-server.tool(
-  'list_cards',
-  'List all credit and debit cards supported by OnlyCashbacks.',
-  {},
-  async () => {
-    const realCards = CARD_DATA.filter(c => !c.isDummy);
-
-    // If authenticated, mark which cards are in the user's wallet
-    let userWallet: Set<string> | null = null;
-    if (currentUid) {
-      const userData = getCachedUserData(currentUid);
-      if (userData?.walletCards && userData.walletCards.length > 0) {
-        userWallet = new Set(userData.walletCards);
-      }
-    }
-
-    const lines: string[] = ['## 💳 Supported Cards\n'];
-
-    if (userWallet) {
-      lines.push('### Your Wallet');
-      const inWallet = realCards.filter(c => userWallet!.has(c.id));
-      const notInWallet = realCards.filter(c => !userWallet!.has(c.id));
-
-      for (const card of inWallet) {
-        lines.push(`- ✅ **${card.bank} ${card.name}** (${card.type} · ${card.network} ${card.tier || ''})`);
-      }
-
-      if (notInWallet.length > 0) {
-        lines.push('');
-        lines.push('### Other Available Cards');
-        for (const card of notInWallet) {
-          lines.push(`- **${card.bank} ${card.name}** (${card.type} · ${card.network} ${card.tier || ''})`);
+      if (currentUid) {
+        const userData = getCachedUserData(currentUid);
+        if (userData) {
+          walletCards = userData.walletCards && userData.walletCards.length > 0 ? userData.walletCards : null;
+          exhaustedCards = userData.exhaustedCards || {};
+          offerUsage = userData.offerUsage || {};
+          cardBillDates = userData.cardBillDates || {};
+          kiwiNeonEarnRate = userData.kiwiNeonEarnRate || 2;
         }
       }
-    } else {
-      for (const card of realCards) {
-        const rewardInfo = card.baseRewardRate > 0 ? ` · ${card.baseRewardRate}% base` : '';
-        const forexInfo = card.isZeroForex ? ' · Zero Forex' : '';
-        lines.push(`- **${card.bank} ${card.name}** (${card.type} · ${card.network} ${card.tier || ''}${rewardInfo}${forexInfo})`);
-      }
-    }
 
-    lines.push('');
-    lines.push(`Total: ${realCards.length} cards`);
-
-    if (!currentUid) {
-      lines.push('');
-      lines.push('_💡 Sign in with the `authenticate` tool to see which cards are in your wallet._');
-    }
-
-    return {
-      content: [{
-        type: 'text' as const,
-        text: lines.join('\n'),
-      }],
-    };
-  }
-);
-
-// ─── Tool: get_card_details ────────────────────────────────────────
-server.tool(
-  'get_card_details',
-  'Get detailed information about a specific credit or debit card, including all benefits, exclusions, and lounge access.',
-  {
-    cardId: z.string().describe('Card ID (e.g., "hdfc-swiggy", "sbi-cashback", "icici-amazon-pay"). Use list_cards to see available IDs.'),
-  },
-  async ({ cardId }) => {
-    const card = CARD_DICT[cardId];
-    if (!card) {
-      // Try fuzzy match
-      const searchLower = cardId.toLowerCase();
-      const match = CARD_DATA.find(c =>
-        c.id.includes(searchLower) ||
-        c.name.toLowerCase().includes(searchLower) ||
-        `${c.bank} ${c.name}`.toLowerCase().includes(searchLower)
+      const recommendation = getRecommendations(
+        merchantInfo,
+        amount,
+        isOnline,
+        isInternational,
+        isScanAndPay,
+        exhaustedCards,
+        offerUsage,
+        kiwiNeonEarnRate,
+        walletCards,
+        cardBillDates
       );
 
-      if (!match) {
+      if (!recommendation) {
         return {
           content: [{
             type: 'text' as const,
-            text: `Card "${cardId}" not found. Use the \`list_cards\` tool to see all available cards and their IDs.`,
+            text: `No recommendation found for "${merchant}" at ₹${amount}. This may be an excluded category (rent, fuel, wallet loads, etc.) for all your cards.`,
           }],
-          isError: true,
         };
       }
 
-      return formatCardDetails(match);
-    }
+      // Format the response
+      const lines: string[] = [];
+      lines.push(`## 💳 Best Card: ${recommendation.bestCard.bank} ${recommendation.bestCard.name}`);
+      lines.push('');
+      lines.push(`**Benefit:** ${recommendation.expectedBenefit}`);
+      lines.push(`**Net Value:** ₹${recommendation.netValue.toFixed(2)}`);
+      lines.push(`**Cashback Earned:** ₹${recommendation.cashbackEarned.toFixed(2)}`);
+      if (recommendation.feesPaid > 0) {
+        lines.push(`**Fees Paid:** ₹${recommendation.feesPaid.toFixed(2)}`);
+      }
+      lines.push('');
+      lines.push(`> ${recommendation.reason}`);
 
-    return formatCardDetails(card);
-  }
-);
+      // Tied cards
+      if (recommendation.tiedCards && recommendation.tiedCards.length > 1) {
+        lines.push('');
+        lines.push('### 🤝 Tied Cards');
+        for (const tied of recommendation.tiedCards) {
+          lines.push(`- **${tied.card.bank} ${tied.card.name}**: ${tied.benefit}`);
+        }
+      }
+
+      // Alternatives
+      if (recommendation.alternatives.length > 0) {
+        lines.push('');
+        lines.push('### 📊 Alternatives');
+        for (const alt of recommendation.alternatives) {
+          lines.push(`- **${alt.card.bank} ${alt.card.name}**: ${alt.benefit} (₹${alt.netValue.toFixed(2)} net)`);
+        }
+      }
+
+      // Available offers
+      if (recommendation.availableOffers && recommendation.availableOffers.length > 0) {
+        lines.push('');
+        lines.push('### 🎁 Available Offers');
+        for (const offer of recommendation.availableOffers) {
+          lines.push(`- ${offer.icon} **${offer.title}**: ${offer.description} (${offer.category})`);
+        }
+      }
+
+      // Auth status note
+      if (!currentUid) {
+        lines.push('');
+        lines.push('---');
+        lines.push('_💡 Sign in with the `authenticate` tool to get personalized recommendations based on your wallet._');
+      }
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: lines.join('\n'),
+        }],
+      };
+    }
+  );
+
+  // ─── Tool: list_cards ──────────────────────────────────────────────
+  server.tool(
+    'list_cards',
+    'List all credit and debit cards supported by OnlyCashbacks.',
+    {},
+    async () => {
+      const realCards = CARD_DATA.filter(c => !c.isDummy);
+
+      // If authenticated for THIS session, mark which cards are in the user's wallet
+      const currentUid = getSessionUid();
+      let userWallet: Set<string> | null = null;
+      if (currentUid) {
+        const userData = getCachedUserData(currentUid);
+        if (userData?.walletCards && userData.walletCards.length > 0) {
+          userWallet = new Set(userData.walletCards);
+        }
+      }
+
+      const lines: string[] = ['## 💳 Supported Cards\n'];
+
+      if (userWallet) {
+        lines.push('### Your Wallet');
+        const inWallet = realCards.filter(c => userWallet!.has(c.id));
+        const notInWallet = realCards.filter(c => !userWallet!.has(c.id));
+
+        for (const card of inWallet) {
+          lines.push(`- ✅ **${card.bank} ${card.name}** (${card.type} · ${card.network} ${card.tier || ''})`);
+        }
+
+        if (notInWallet.length > 0) {
+          lines.push('');
+          lines.push('### Other Available Cards');
+          for (const card of notInWallet) {
+            lines.push(`- **${card.bank} ${card.name}** (${card.type} · ${card.network} ${card.tier || ''})`);
+          }
+        }
+      } else {
+        for (const card of realCards) {
+          const rewardInfo = card.baseRewardRate > 0 ? ` · ${card.baseRewardRate}% base` : '';
+          const forexInfo = card.isZeroForex ? ' · Zero Forex' : '';
+          lines.push(`- **${card.bank} ${card.name}** (${card.type} · ${card.network} ${card.tier || ''}${rewardInfo}${forexInfo})`);
+        }
+      }
+
+      lines.push('');
+      lines.push(`Total: ${realCards.length} cards`);
+
+      if (!currentUid) {
+        lines.push('');
+        lines.push('_💡 Sign in with the `authenticate` tool to see which cards are in your wallet._');
+      }
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: lines.join('\n'),
+        }],
+      };
+    }
+  );
+
+  // ─── Tool: get_card_details ────────────────────────────────────────
+  server.tool(
+    'get_card_details',
+    'Get detailed information about a specific credit or debit card, including all benefits, exclusions, and lounge access.',
+    {
+      cardId: z.string().describe('Card ID (e.g., "hdfc-swiggy", "sbi-cashback", "icici-amazon-pay"). Use list_cards to see available IDs.'),
+    },
+    async ({ cardId }) => {
+      const card = CARD_DICT[cardId];
+      if (!card) {
+        // Try fuzzy match
+        const searchLower = cardId.toLowerCase();
+        const match = CARD_DATA.find(c =>
+          c.id.includes(searchLower) ||
+          c.name.toLowerCase().includes(searchLower) ||
+          `${c.bank} ${c.name}`.toLowerCase().includes(searchLower)
+        );
+
+        if (!match) {
+          return {
+            content: [{
+              type: 'text' as const,
+              text: `Card "${cardId}" not found. Use the \`list_cards\` tool to see all available cards and their IDs.`,
+            }],
+            isError: true,
+          };
+        }
+
+        return formatCardDetails(match);
+      }
+
+      return formatCardDetails(card);
+    }
+  );
+
+  return server;
+}
 
 function formatCardDetails(card: typeof CARD_DATA[0]) {
   const lines: string[] = [];
@@ -635,7 +642,6 @@ async function main() {
         }
 
         oauthCodes.delete(String(code));
-        currentUid = record.uid;
 
         res.json({
           access_token: record.idToken,
@@ -695,9 +701,6 @@ async function main() {
           cardCount,
         });
 
-        // Set currentUid for the connection
-        currentUid = decoded.uid;
-
         res.json({
           success: true,
           displayName,
@@ -739,48 +742,90 @@ async function main() {
       res.json({ status: 'ok', server: 'onlycashbacks-mcp', version: '1.0.0' });
     });
 
-    // Helper to extract Bearer token user on request
-    const authenticateFromBearer = async (req: express.Request) => {
+    // ─── Active Connections (Isolated McpServer per Session) ─────────
+    interface ActiveSession {
+      transport: SSEServerTransport;
+      server: McpServer;
+      sessionUid: string | null;
+    }
+    const activeSessions = new Map<string, ActiveSession>();
+
+    // Helper to strictly verify Bearer token
+    const verifyBearerToken = async (req: express.Request): Promise<{ uid: string } | null | 'invalid'> => {
       const authHeader = req.headers.authorization;
-      if (authHeader && authHeader.startsWith('Bearer ')) {
-        const token = authHeader.slice(7);
-        try {
-          const decoded = await verifyIdToken(token);
-          currentUid = decoded.uid;
-          const userData = await getUserData(decoded.uid);
-          if (userData) {
-            userSessionCache.set(decoded.uid, { data: userData, authenticatedAt: Date.now() });
-          }
-        } catch {
-          // Ignore invalid bearer tokens, fallback to unauthenticated/session
+      if (!authHeader) return null;
+      if (!authHeader.startsWith('Bearer ')) return 'invalid';
+      const token = authHeader.slice(7).trim();
+      if (!token) return 'invalid';
+      try {
+        const decoded = await verifyIdToken(token);
+        const userData = await getUserData(decoded.uid);
+        if (userData) {
+          userSessionCache.set(decoded.uid, { data: userData, authenticatedAt: Date.now() });
         }
+        return { uid: decoded.uid };
+      } catch {
+        return 'invalid';
       }
     };
 
     app.get('/sse', async (req, res) => {
-      await authenticateFromBearer(req);
+      const authResult = await verifyBearerToken(req);
+      if (authResult === 'invalid') {
+        res.setHeader('WWW-Authenticate', 'Bearer error="invalid_token", error_description="The access token is invalid or expired."');
+        res.status(401).json({ error: 'invalid_token', error_description: 'The access token is invalid or expired.' });
+        return;
+      }
 
       const sseTransport = new SSEServerTransport('/messages', res);
-      transports.set(sseTransport.sessionId, sseTransport);
-      
+      const sessionId = sseTransport.sessionId;
+
+      // Isolated session state for THIS exact client connection
+      const sessionState: ActiveSession = {
+        transport: sseTransport,
+        server: null as any,
+        sessionUid: authResult ? authResult.uid : null,
+      };
+
+      // Dedicated McpServer instance scoped to this session
+      const sessionServer = createOnlyCashbacksServer(
+        () => sessionState.sessionUid,
+        (uid: string) => { sessionState.sessionUid = uid; }
+      );
+      sessionState.server = sessionServer;
+
+      activeSessions.set(sessionId, sessionState);
+
       res.on('close', () => {
-        transports.delete(sseTransport.sessionId);
+        activeSessions.delete(sessionId);
+        sessionServer.close().catch(() => {});
       });
 
-      await server.connect(sseTransport);
+      await sessionServer.connect(sseTransport);
     });
 
     // NOTE: This route receives the raw request stream directly, without body-parser
     app.post('/messages', async (req, res) => {
-      await authenticateFromBearer(req);
-
       const sessionId = req.query.sessionId as string;
-      const sseTransport = transports.get(sessionId);
-      if (!sseTransport) {
+      const session = activeSessions.get(sessionId);
+      if (!session) {
         res.status(404).json({ error: 'Session not found' });
         return;
       }
-      await sseTransport.handlePostMessage(req, res);
+
+      if (req.headers.authorization) {
+        const authResult = await verifyBearerToken(req);
+        if (authResult === 'invalid') {
+          res.setHeader('WWW-Authenticate', 'Bearer error="invalid_token", error_description="The access token is invalid or expired."');
+          res.status(401).json({ error: 'invalid_token', error_description: 'The access token is invalid or expired.' });
+          return;
+        }
+        if (authResult) {
+          session.sessionUid = authResult.uid;
+        }
+      }
+
+      await session.transport.handlePostMessage(req, res);
     });
 
     app.listen(PORT, '0.0.0.0', () => {
@@ -790,9 +835,14 @@ async function main() {
       console.log(`   OAuth Discovery: http://0.0.0.0:${PORT}/.well-known/oauth-authorization-server`);
     });
   } else {
-    // stdio transport for local usage
+    // stdio transport for local usage (single-tenant CLI)
+    let stdioUid: string | null = null;
+    const stdioServer = createOnlyCashbacksServer(
+      () => stdioUid,
+      (uid: string) => { stdioUid = uid; }
+    );
     const stdioTransport = new StdioServerTransport();
-    await server.connect(stdioTransport);
+    await stdioServer.connect(stdioTransport);
     console.error('OnlyCashbacks MCP Server running on stdio');
   }
 }
