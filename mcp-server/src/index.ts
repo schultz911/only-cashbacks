@@ -481,6 +481,13 @@ export function createOnlyCashbacksServer(
     }
   );
 
+  const onclose = server.server.onclose;
+  server.server.onclose = () => {
+    for (const [code, pending] of pendingAuthCodes) {
+      if (pending.owner === pairingOwner) pendingAuthCodes.delete(code);
+    }
+    onclose?.();
+  };
   return server;
 }
 
@@ -552,6 +559,11 @@ function formatCardDetails(card: typeof CARD_DATA[0]) {
 export function createRemoteApp() {
     // SSE transport for remote hosting (Railway, etc.)
     const app = express();
+    const idleTimeoutMinutes = Number(process.env.MCP_SESSION_IDLE_TIMEOUT_MINUTES || 60);
+    const idleTimeoutMs = idleTimeoutMinutes * 60 * 1000;
+    if (!Number.isFinite(idleTimeoutMs) || idleTimeoutMinutes <= 0) {
+      throw new Error('MCP_SESSION_IDLE_TIMEOUT_MINUTES must be a positive number');
+    }
     
     // Store active transports for cleanup
     const transports = new Map<string, SSEServerTransport>();
@@ -733,8 +745,33 @@ self.addEventListener('activate', (event) => {
       server: McpServer;
       sessionUid: string | null;
       bearerUid: string | null;
+      lastActiveAt: number;
+      activeRequests: number;
     }
     const streamableSessions = new Map<string, StreamableSession>();
+    let sessionCleanupTimer: ReturnType<typeof setInterval> | undefined;
+    const stopSessionCleanup = () => {
+      if (sessionCleanupTimer) clearInterval(sessionCleanupTimer);
+      sessionCleanupTimer = undefined;
+    };
+    const removeSession = (id: string) => {
+      streamableSessions.delete(id);
+      if (streamableSessions.size === 0) stopSessionCleanup();
+    };
+    const startSessionCleanup = () => {
+      if (sessionCleanupTimer) return;
+      sessionCleanupTimer = setInterval(() => {
+        const now = Date.now();
+        cleanExpiredCodes();
+        for (const [id, session] of streamableSessions) {
+          if (session.activeRequests === 0 && now - session.lastActiveAt >= idleTimeoutMs) {
+            removeSession(id);
+            session.server.close().catch(error => console.warn('[MCP] Session cleanup failed:', error));
+          }
+        }
+      }, Math.min(60 * 1000, idleTimeoutMs));
+      sessionCleanupTimer.unref();
+    };
 
     app.all('/mcp', jsonParser, async (req, res) => {
       try {
@@ -779,18 +816,25 @@ self.addEventListener('activate', (event) => {
         }
         const transport = new StreamableHTTPServerTransport({
           sessionIdGenerator: () => crypto.randomUUID(),
-          onsessioninitialized: (id) => { streamableSessions.set(id, session!); },
+          onsessioninitialized: (id) => {
+            streamableSessions.set(id, session!);
+            startSessionCleanup();
+          },
         });
-        const state: StreamableSession = { transport, server: null as any, sessionUid: verifiedUid, bearerUid: verifiedUid };
+        const state: StreamableSession = {
+          transport, server: null as any, sessionUid: verifiedUid, bearerUid: verifiedUid,
+          lastActiveAt: Date.now(), activeRequests: 0,
+        };
         state.server = createOnlyCashbacksServer(
           () => state.sessionUid,
           (uid: string) => { state.sessionUid = uid; }
         );
         session = state;
-        await state.server.connect(transport);
+        // Install before connect so the SDK chains its own protocol cleanup.
         transport.onclose = () => {
-          if (transport.sessionId) streamableSessions.delete(transport.sessionId);
+          if (transport.sessionId) removeSession(transport.sessionId);
         };
+        await state.server.connect(transport);
       } else if (verifiedUid) {
         if (session.sessionUid && session.sessionUid !== verifiedUid) {
           res.status(403).json({ error: 'Session belongs to a different account' });
@@ -799,6 +843,21 @@ self.addEventListener('activate', (event) => {
         session.bearerUid = verifiedUid;
         session.sessionUid = verifiedUid;
       }
+      session.activeRequests += 1;
+      session.lastActiveAt = Date.now();
+      const activeSession = session;
+      let requestFinished = false;
+      const finishRequest = () => {
+        if (requestFinished) return;
+        requestFinished = true;
+        activeSession.activeRequests -= 1;
+        activeSession.lastActiveAt = Date.now();
+        res.off('finish', finishRequest);
+        res.off('close', finishRequest);
+      };
+      // A GET event stream and a pending tool response both keep the session active.
+      res.once('finish', finishRequest);
+      res.once('close', finishRequest);
       await session.transport.handleRequest(req, res, req.body);
       } catch (error) {
         console.error('[MCP] Request failed:', error);
@@ -918,6 +977,24 @@ self.addEventListener('activate', (event) => {
       });
     }
 
+    const disposeSessions = () => {
+      stopSessionCleanup();
+      for (const session of streamableSessions.values()) {
+        session.server.close().catch(() => {});
+      }
+      streamableSessions.clear();
+      for (const session of activeSessions.values()) {
+        session.server.close().catch(() => {});
+      }
+      activeSessions.clear();
+    };
+    app.locals.disposeMcpSessions = disposeSessions;
+    const listen = app.listen;
+    app.listen = function (...args: any[]) {
+      const httpServer = Reflect.apply(listen, app, args) as import('node:http').Server;
+      httpServer.once('close', disposeSessions);
+      return httpServer;
+    } as typeof app.listen;
     return app;
 }
 
@@ -925,9 +1002,16 @@ async function main() {
   const transport = process.env.MCP_TRANSPORT || (process.env.PORT ? 'sse' : 'stdio');
   if (transport === 'sse' || transport === 'streamable-http') {
     const port = Number(process.env.PORT || 3001);
-    createRemoteApp().listen(port, '0.0.0.0', () => {
+    const app = createRemoteApp();
+    const httpServer = app.listen(port, '0.0.0.0', () => {
       console.log(`OnlyCashbacks MCP server listening on port ${port} (/mcp and /sse)`);
     });
+    const shutdown = () => {
+      app.locals.disposeMcpSessions();
+      httpServer.close();
+    };
+    process.once('SIGTERM', shutdown);
+    process.once('SIGINT', shutdown);
   } else {
     // stdio transport for local usage (single-tenant CLI)
     let stdioUid: string | null = null;

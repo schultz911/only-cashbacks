@@ -85,6 +85,8 @@ Set a persistent, cryptographically random `OAUTH_CLIENT_SIGNING_KEY` (at least 
 
 Tokens, pairing codes and MCP sessions are in memory. Run one replica; after a restart users must sign in again, but configured client registrations remain usable. Multiple replicas still require a shared authorization and session store. The registration key does not grant wallet access: Firebase identity verification, exact callback matching, PKCE, single-use codes and token expiry remain required.
 
+Abandoned Streamable HTTP sessions expire after 60 idle minutes by default. Configure a positive `MCP_SESSION_IDLE_TIMEOUT_MINUTES` to change this interval. One cleanup task checks once per minute (or once per timeout for shorter intervals); active requests and open event streams are protected. Expired session IDs return 404, so clients initialize a new connection and restore authorization. Explicit DELETE and application shutdown also close session resources and release associated pairing codes. This bounds idle retention; it is not a connection admission limit.
+
 After deploying changes, reconnect the plugin, complete Google sign-in, and verify `authenticate` and `list_cards` in the same connection. Local regression tests mock identity and database calls; real sign-in is still required to validate production credentials and domain configuration.
 
 ## 🏗 Development

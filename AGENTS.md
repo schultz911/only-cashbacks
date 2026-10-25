@@ -105,6 +105,8 @@
 
 ## Approved and Implemented
 
+- (2026-10-25 sweep, Phase 2) Added configurable MCP_SESSION_IDLE_TIMEOUT_MINUTES (default 60), one shared unref cleanup timer, request/stream activity protection, protocol/server/pairing-code cleanup, and HTTP/process shutdown disposal. Preserved SDK close-handler chaining and existing OAuth/account isolation. Validation: 51 tests passed (7 new session tests plus 13 Phase 1 regressions); controlled 1,000-session idle-expiry probe reclaimed 77,771,960 of 79,959,448 bytes (97.3%); expired sessions return 404 and fresh initialization works. Timing used a controlled clock, not a production one-hour soak.
+
 - (2026-10-25 sweep, Phase 1) Implemented local-edit tracking for wallet, theme and BYOK settings; cloud hydration no longer schedules echo saves. Guarded delayed hydration, visibility refreshes and save acknowledgements against newer edits/account changes; merged offline logs remain pending for upload. Validation: 44 tests passed (13 new sync regressions); zero writes over 60 simulated idle seconds, including repeated snapshots, plus manual sync, offline/reconnect, paused sync, in-flight edits and deletion coverage. Root TypeScript and production frontend/PWA build passed. Firebase Functions, schemas and recommendation logic unchanged.
 
 - (Phase 9) Preconnected Google Fonts and preloaded stylesheet in `index.html` while removing render-blocking `@import` from `src/index.css` to eliminate the network waterfall and accelerate FCP.
@@ -131,6 +133,8 @@
 - Phase 1: Migrated gemini.ts to use Firebase Functions (httpsCallable(functions, 'categorize')) instead of local Express fetch API. (User pivoted from deletion).
 
 ## Denied or Not Implemented
+
+- (2026-10-25 sweep, final implementation status) User explicitly approved all phases, pushing code and deployment, superseding the earlier per-phase approval wait. Both scoped optimizations are implemented and locally validated; no scoped optimization was rejected. The earlier pending Phase 2 note below records its prior status. Production deployment verification will be recorded after release.
 
 - (2026-10-25 sweep) No approved optimization rejected. Extra compression was excluded after live Brotli delivery was verified; micro-optimizations and cosmetic deletions failed the impact threshold. Historical decisions below remain in force. Phase 2 implementation/release validation is pending.
 
