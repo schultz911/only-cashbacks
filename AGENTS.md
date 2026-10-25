@@ -8,6 +8,9 @@
 
 ## Discovered Optimizations
 
+- (2026-10-25 sweep, Phase 1) Cloud hydration clears its suppression flag after 100 ms, but the 500 ms wallet persistence timer marks that cloud data dirty again; controlled reproduction: 8 writes in 12 seconds without user edits. Distinct from the already-implemented Phase 6 storage debounce.
+- (2026-10-25 sweep, Phase 2) Streamable HTTP MCP sessions remain referenced without idle expiry after clients abandon them; 1,000 local sessions retained 72.7 MB, with explicit cleanup reclaiming 70.4 MB.
+
 - (Phase 8) `src/services/gemini.ts:167` Iterating over EXHAUSTIVE_MERCHANT_MAPPINGS with regex `.test()` sequentially.
 - (Phase 8) `src/lib/recommendation.ts:699` Calling `DEFAULT_EXCLUSIONS.find` dynamically during recommendation calculation.
 - (Phase 8) `server.ts:28` Content Security Policy uses 'unsafe-inline' for script-src and style-src.
@@ -52,6 +55,9 @@
 - Dead code in firebase.ts identified.
 
 ## Previously Suggested
+
+- (2026-10-25 sweep, Phase 1) Track local wallet/settings revisions at setter time; suppress tracking only during synchronous hydration, preserve edits across acknowledgements and account changes, and retain the 500 ms local persistence debounce.
+- (2026-10-25 sweep, Phase 2) Reclaim abandoned MCP sessions with a configurable 60-minute idle timeout, protect active requests/streams, close associated resources and preserve reconnection/account isolation. User approved the timeout policy, then explicitly approved all phases, push and deployment.
 
 - (Phase 8) Combining RegExp patterns in `src/services/gemini.ts`.
 - (Phase 8) Replacing `DEFAULT_EXCLUSIONS.find` with a pre-computed Set or Map in `src/lib/recommendation.ts`.
@@ -99,6 +105,8 @@
 
 ## Approved and Implemented
 
+- (2026-10-25 sweep, Phase 1) Implemented local-edit tracking for wallet, theme and BYOK settings; cloud hydration no longer schedules echo saves. Guarded delayed hydration, visibility refreshes and save acknowledgements against newer edits/account changes; merged offline logs remain pending for upload. Validation: 44 tests passed (13 new sync regressions); zero writes over 60 simulated idle seconds, including repeated snapshots, plus manual sync, offline/reconnect, paused sync, in-flight edits and deletion coverage. Root TypeScript and production frontend/PWA build passed. Firebase Functions, schemas and recommendation logic unchanged.
+
 - (Phase 9) Preconnected Google Fonts and preloaded stylesheet in `index.html` while removing render-blocking `@import` from `src/index.css` to eliminate the network waterfall and accelerate FCP.
 - (Phase 9) Added static `<link rel="manifest">` in `index.html` to guarantee automated PWA install prompt triggers across modern mobile viewports.
 - (Phase 8) None.
@@ -123,6 +131,8 @@
 - Phase 1: Migrated gemini.ts to use Firebase Functions (httpsCallable(functions, 'categorize')) instead of local Express fetch API. (User pivoted from deletion).
 
 ## Denied or Not Implemented
+
+- (2026-10-25 sweep) No approved optimization rejected. Extra compression was excluded after live Brotli delivery was verified; micro-optimizations and cosmetic deletions failed the impact threshold. Historical decisions below remain in force. Phase 2 implementation/release validation is pending.
 
 - (Phase 8) Combining RegExp patterns in `src/services/gemini.ts` (Rejected: Previously rejected in Phase 7; reduces code readability and maintainability).
 - (Phase 8) Replacing `DEFAULT_EXCLUSIONS.find` with Set in `src/lib/recommendation.ts:699` (Rejected: Already hoisted out of card loop; Set lookups break substring matching).

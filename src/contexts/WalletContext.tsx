@@ -5,8 +5,8 @@ import { useAuthSyncContext } from './AuthSyncContext';
 const WalletContext = createContext<ReturnType<typeof useWalletState> | null>(null);
 
 export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { skipSyncRef, setIsDirty } = useAuthSyncContext();
-  const walletState = useWalletState(skipSyncRef, setIsDirty);
+  const { skipSyncRef, markDirty } = useAuthSyncContext();
+  const walletState = useWalletState(skipSyncRef, markDirty);
 
   return (
     <WalletContext.Provider value={walletState}>

@@ -1,19 +1,30 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { getInitialState, safeSetItem } from '../lib/storage';
 import { CARD_DATA } from '../data/cards';
 import { getCycleForCard } from '../lib/recommendation';
 import { CashbackLog } from '../types';
 
 export function useWalletState(skipSyncRef: React.MutableRefObject<boolean>, setIsDirty: (dirty: boolean) => void) {
-  const [exhaustedCards, setExhaustedCards] = useState<Record<string, any>>(() => getInitialState('oc_exhaustedCards', {}));
-  const [cardBillDates, setCardBillDates] = useState<Record<string, number>>(() => getInitialState('oc_cardBillDates', {}));
-  const [paidBills, setPaidBills] = useState<Record<string, string>>(() => getInitialState('oc_paidBills', {}));
-  const [loungePassesUsed, setLoungePassesUsed] = useState<Record<string, number>>(() => getInitialState('oc_loungePassesUsed', {}));
-  const [loungeMilestonesVerified, setLoungeMilestonesVerified] = useState<Record<string, boolean>>(() => getInitialState('oc_loungeMilestonesVerified', {}));
-  const [offerUsage, setOfferUsage] = useState<Record<string, number>>(() => getInitialState('oc_offerUsage', {}));
-  const [walletCards, setWalletCards] = useState<string[]>(() => getInitialState('oc_walletCards', []));
-  const [cashbackLogs, setCashbackLogs] = useState<CashbackLog[]>(() => getInitialState('oc_cashbackLogs', []));
-  const [kiwiNeonEarnRate, setKiwiNeonEarnRate] = useState(() => getInitialState('oc_kiwiNeonEarnRate', 2));
+  // Record edits when setters are called, before any save can acknowledge them.
+  // Cloud hydration suppresses tracking only around its synchronous setters.
+  function useWalletValue<T>(initialValue: () => T) {
+    const [value, setValue] = useState(initialValue);
+    const setTrackedValue = useCallback<React.Dispatch<React.SetStateAction<T>>>((next) => {
+      setValue(next);
+      if (!skipSyncRef.current) setIsDirty(true);
+    }, [skipSyncRef, setIsDirty]);
+    return [value, setTrackedValue] as const;
+  }
+
+  const [exhaustedCards, setExhaustedCards] = useWalletValue<Record<string, any>>(() => getInitialState('oc_exhaustedCards', {}));
+  const [cardBillDates, setCardBillDates] = useWalletValue<Record<string, number>>(() => getInitialState('oc_cardBillDates', {}));
+  const [paidBills, setPaidBills] = useWalletValue<Record<string, string>>(() => getInitialState('oc_paidBills', {}));
+  const [loungePassesUsed, setLoungePassesUsed] = useWalletValue<Record<string, number>>(() => getInitialState('oc_loungePassesUsed', {}));
+  const [loungeMilestonesVerified, setLoungeMilestonesVerified] = useWalletValue<Record<string, boolean>>(() => getInitialState('oc_loungeMilestonesVerified', {}));
+  const [offerUsage, setOfferUsage] = useWalletValue<Record<string, number>>(() => getInitialState('oc_offerUsage', {}));
+  const [walletCards, setWalletCards] = useWalletValue<string[]>(() => getInitialState('oc_walletCards', []));
+  const [cashbackLogs, setCashbackLogs] = useWalletValue<CashbackLog[]>(() => getInitialState('oc_cashbackLogs', []));
+  const [kiwiNeonEarnRate, setKiwiNeonEarnRate] = useWalletValue(() => getInitialState('oc_kiwiNeonEarnRate', 2));
 
   const normalizedExhaustedCards = useMemo(() => {
     const result: Record<string, boolean> = {};
@@ -43,9 +54,6 @@ export function useWalletState(skipSyncRef: React.MutableRefObject<boolean>, set
       safeSetItem('oc_walletCards', walletCards);
       safeSetItem('oc_cashbackLogs', cashbackLogs);
 
-      if (!skipSyncRef.current) {
-        setIsDirty(true);
-      }
     }, 500);
 
     return () => clearTimeout(timer);
