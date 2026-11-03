@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import type { RewardProgram, RewardAllocation } from '../mcp-server/src/lib/rewardRules';
+
 interface CardBenefit {
   type: 'cashback' | 'points' | 'offer' | 'lounge' | 'exclusion' | 'forex' | 'upi';
   category: string;
@@ -32,6 +34,10 @@ export interface Card {
   gradient?: string;
   type: 'Credit' | 'Debit' | 'Prepaid';
   annualFee?: string;
+  officialName?: string;
+  sourceUrl?: string;
+  rewardProgram?: RewardProgram;
+  offerReset?: 'calendar';
   isExempt?: boolean;
   forexMarkup: number; // Base markup e.g., 3.5
   baseRewardRate: number; // e.g., 1.0 or 1.5
@@ -50,6 +56,7 @@ export interface MerchantInfo {
 }
 
 export interface Recommendation {
+  rewardAllocations?: RewardAllocation[];
   bestCard: Card;
   tiedCards?: { card: Card; benefit: string }[];
   reason: string;

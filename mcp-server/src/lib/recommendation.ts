@@ -5,6 +5,8 @@
 
 import { Card, MerchantInfo, Recommendation } from '../types.js';
 import { CARD_DATA, CARD_DICT } from '../data/cards.js';
+import { billingCycle, indiaDate, statementDay } from './billingDates.js';
+import { calculateRewardProgram } from './rewardRules.js';
 
 const TATA_NEU_MERCHANTS = ['croma', 'westside', 'zudio', 'ihcl', 'bigbasket', '1mg', 'cliq', 'air india', 'air india express', 'qmin', 'cult', 'tata play', 'titan', 'tanishq', 'mia', 'fastrack', 'caratlane', 'helios', 'zoya'];
 const DEFAULT_EXCLUSIONS = ['fuel', 'wallet', 'rent', 'housing', 'gambling', 'gaming', 'tolls', 'toll', 'finance', 'school', 'education', 'jewellery', 'insurance', 'railway', 'rail', 'government', 'tax', 'utilities', 'utility', 'bills', 'bill', 'telecom', 'internet', 'atm', 'cash', 'charity', 'donation'];
@@ -390,6 +392,13 @@ const ALLOWED_P2P_CARDS_SET = new Set(['amazon-pay-upi', 'cred-pay-upi', 'kotak-
 const round2 = (num: number) => Math.round((num + Number.EPSILON) * 100) / 100;
 
 function evaluateCard(card: Card, ctx: RecommendationContext, kiwiNeonEarnRate: number) {
+  if (card.rewardProgram) {
+    const result = calculateRewardProgram(card, ctx.merchant, ctx.amount, ctx.isOnline, ctx.isScanToPay,
+      ctx.isIntl, ctx.offerUsage, ctx.cardBillDates, ctx.exhaustedCards[card.id]);
+    const forexFee = ctx.isIntl ? round2(ctx.amount * card.forexMarkup * 1.18 / 100) : 0;
+    return { card, netValue: round2(result.cashbackAmount - forexFee), cashbackEarned: result.cashbackAmount,
+      feesPaid: forexFee, benefitText: result.benefitText, isExcluded: result.isExcluded, rewardAllocations: result.allocations };
+  }
   let cashbackAmount = 0;
   let benefitText = 'Base Rewards';
   let isExcluded = false;
@@ -648,45 +657,33 @@ function evaluateCard(card: Card, ctx: RecommendationContext, kiwiNeonEarnRate: 
 }
 
 export function getQuarterCycle(): string {
-  const now = new Date();
-  const quarter = Math.floor(now.getMonth() / 3) + 1;
-  return `${now.getFullYear()}-Q${quarter}`;
+  const now = indiaDate();
+  const quarter = Math.floor(now.getUTCMonth() / 3) + 1;
+  return `${now.getUTCFullYear()}-Q${quarter}`;
 }
 
 
 export function getOfferCycleForCard(cardId: string, cardBillDates: Record<string, number>): string {
-  let billDay = cardBillDates[cardId] || 1;
+  let billDay = statementDay(cardId, cardBillDates) ?? 1;
   const card = CARD_DICT[cardId];
   if (card && card.type === 'Debit') {
     billDay = 1;
   }
-  if (cardId === 'axis-myzone') {
+  if (cardId === 'axis-myzone' || card?.offerReset === 'calendar') {
     billDay = 1;
   }
 
-  const now = new Date();
-  if (now.getDate() >= billDay) {
-    return `${now.getFullYear()}-${now.getMonth() + 1}`;
-  } else {
-    const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    return `${prev.getFullYear()}-${prev.getMonth() + 1}`;
-  }
+  return billingCycle(billDay);
 }
 
 export function getCycleForCard(cardId: string, cardBillDates: Record<string, number>): string {
-  let billDay = cardBillDates[cardId] || 1;
+  let billDay = statementDay(cardId, cardBillDates) ?? 1;
   const card = CARD_DICT[cardId];
-  if (card && card.type === 'Debit') {
+  if (card && (card.type === 'Debit' || card.rewardProgram)) {
     billDay = 1;
   }
 
-  const now = new Date();
-  if (now.getDate() >= billDay) {
-    return `${now.getFullYear()}-${now.getMonth() + 1}`;
-  } else {
-    const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    return `${prev.getFullYear()}-${prev.getMonth() + 1}`;
-  }
+  return billingCycle(billDay);
 }
 
 export function getRecommendations(
@@ -713,7 +710,7 @@ export function getRecommendations(
   const isMovie = hasKeyword(targets, MOVIE_REGEX);
 
   // Google Play special logic
-  if (nameL.includes('google') || platL.includes('google')) {
+  if ((nameL.includes('google') || platL.includes('google')) && (!walletCards?.length || !walletCards.every(id => CARD_DICT[id]?.rewardProgram))) {
     return {
       bestCard: SBI_CASHBACK_CARD,
       reason: "For Google Play, recharge using Amazon's Rewards Gold offer of 5%. Note: Gift card purchases are now excluded from 5% cashback on SBI Cashback.",
@@ -956,6 +953,22 @@ export function getRecommendations(
 
   const availableOffers: { id: string; icon: string; title: string; description: string; cardId?: string; category: string; }[] = [];
 
+  for (const result of calculationResults) {
+    if (!result.card.rewardProgram || result.isExcluded || isIntl) continue;
+    if (result.cashbackEarned > 0 && result.benefitText.includes('instant discount')) {
+      availableOffers.push({ id: `${result.card.id}-instant`, icon: '🏷️', title: `${result.card.bank} ${result.card.name}`,
+        description: result.benefitText, cardId: result.card.id, category: merchant.category });
+    }
+    const movieBenefit = result.card.benefits.find(benefit => benefit.category === 'Movies' && benefit.usageLimit);
+    if (movieBenefit && isOnline && /movie|cinema|ticket/i.test(`${merchant.category} ${merchant.name}`) && shouldShowOffer('district')) {
+      const cycle = getOfferCycleForCard(result.card.id, cardBillDates);
+      const key = `${result.card.id}-${movieBenefit.category}-${movieBenefit.value}-${cycle}`;
+      if ((offerUsage[key] || 0) < movieBenefit.usageLimit!) availableOffers.push({
+        id: `${result.card.id}-movies`, icon: '🍿', title: `${result.card.bank} ${result.card.name}`,
+        description: movieBenefit.description, cardId: result.card.id, category: 'District' });
+    }
+  }
+
   const kCycle = getOfferCycleForCard('kotak-811-infinity', cardBillDates);
   const aCycle = getOfferCycleForCard('axis-myzone', cardBillDates);
   const iCycle = getOfferCycleForCard('hdfc-imperia', cardBillDates);
@@ -1019,8 +1032,9 @@ export function getRecommendations(
     expectedBenefit: finalBestResult.benefitText,
     netValue: finalBestResult.netValue,
     cashbackEarned: finalBestResult.cashbackEarned,
+    rewardAllocations: 'rewardAllocations' in finalBestResult ? finalBestResult.rewardAllocations : undefined,
     feesPaid: finalBestResult.feesPaid,
     alternatives: validOptions.slice(tiedCards.length, tiedCards.length + 3).map(s => ({ card: s.card, benefit: s.benefitText, netValue: round2(s.netValue) })),
-    availableOffers: availableOffers.filter(o => !o.cardId || !excludedCardIds.has(o.cardId))
+    availableOffers: availableOffers.filter(o => (!o.cardId || !excludedCardIds.has(o.cardId)) && (!walletCards || !o.cardId || walletCards.includes(o.cardId)))
   };
 }

@@ -3,25 +3,28 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, TrendingUp, Undo2, RotateCcw, AlertTriangle } from 'lucide-react';
 import { CashbackLog } from '../types';
 import { Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
+import { indiaDate } from '../lib/billingDates';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   logs: CashbackLog[];
   setLogs: React.Dispatch<React.SetStateAction<CashbackLog[]>>;
+  onRemoveLogs?: (dates: number[]) => void;
 }
 
-export function DashboardModal({ isOpen, onClose, logs, setLogs }: Props) {
+export function DashboardModal({ isOpen, onClose, logs, setLogs, onRemoveLogs }: Props) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [viewMode, setViewMode] = useState<'category' | 'card'>('category');
 
   // calculate this month's cashback
-  const currentMonth = new Date().getMonth();
-  const currentYear = new Date().getFullYear();
+  const today = indiaDate();
+  const currentMonth = today.getUTCMonth();
+  const currentYear = today.getUTCFullYear();
   
   const thisMonthLogs = logs.filter(log => {
-    const d = new Date(log.date);
-    return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    const d = indiaDate(new Date(log.date));
+    return d.getUTCMonth() === currentMonth && d.getUTCFullYear() === currentYear;
   });
 
   const totalThisMonth = thisMonthLogs.reduce((acc, log) => acc + log.amount, 0);
@@ -41,10 +44,12 @@ export function DashboardModal({ isOpen, onClose, logs, setLogs }: Props) {
   const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
 
   const handleUndo = () => {
+    if (logs.length) onRemoveLogs?.([logs[logs.length - 1].date]);
     setLogs(prev => prev.slice(0, -1));
   };
 
   const handleReset = () => {
+    onRemoveLogs?.(logs.map(log => log.date));
     setLogs([]);
     setShowConfirm(false);
   };

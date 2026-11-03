@@ -3,8 +3,11 @@ import { getInitialState, safeSetItem } from '../lib/storage';
 import { CARD_DATA } from '../data/cards';
 import { getCycleForCard } from '../lib/recommendation';
 import { CashbackLog } from '../types';
+import { paymentReminder } from '../lib/billingDates';
+import { useBillingDay } from './useBillingDay';
 
 export function useWalletState(skipSyncRef: React.MutableRefObject<boolean>, setIsDirty: (dirty: boolean) => void) {
+  const billingDay = useBillingDay();
   // Record edits when setters are called, before any save can acknowledge them.
   // Cloud hydration suppresses tracking only around its synchronous setters.
   function useWalletValue<T>(initialValue: () => T) {
@@ -35,15 +38,15 @@ export function useWalletState(skipSyncRef: React.MutableRefObject<boolean>, set
       else if (ex === cycle) result[card.id] = true;
     }
     return result;
-  }, [exhaustedCards, cardBillDates]);
+  }, [exhaustedCards, cardBillDates, billingDay]);
 
   const markBillPaid = (cardId: string) => {
-    const cycle = getCycleForCard(cardId, cardBillDates);
-    setPaidBills(prev => ({ ...prev, [cardId]: cycle }));
+    const reminder = paymentReminder(cardId, cardBillDates, paidBills);
+    if (reminder) setPaidBills(prev => ({ ...prev, [cardId]: reminder.cycle }));
   };
 
   useEffect(() => {
-    const timer = setTimeout(() => {
+    const persist = () => {
       safeSetItem('oc_exhaustedCards', exhaustedCards);
       safeSetItem('oc_cardBillDates', cardBillDates);
       safeSetItem('oc_paidBills', paidBills);
@@ -54,9 +57,17 @@ export function useWalletState(skipSyncRef: React.MutableRefObject<boolean>, set
       safeSetItem('oc_walletCards', walletCards);
       safeSetItem('oc_cashbackLogs', cashbackLogs);
 
-    }, 500);
+    };
+    const timer = setTimeout(persist, 500);
+    const persistWhenHidden = () => { if (document.visibilityState === 'hidden') persist(); };
+    window.addEventListener('pagehide', persist);
+    document.addEventListener('visibilitychange', persistWhenHidden);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('pagehide', persist);
+      document.removeEventListener('visibilitychange', persistWhenHidden);
+    };
   }, [exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, cardBillDates, paidBills, kiwiNeonEarnRate, walletCards, cashbackLogs]);
 
   return {

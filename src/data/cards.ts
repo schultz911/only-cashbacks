@@ -4,8 +4,10 @@
  */
 
 import { Card } from '../types';
+import { ETERNAL_CARDS } from '../../mcp-server/src/data/eternal';
 
 export const CARD_DATA: Card[] = [
+  ...ETERNAL_CARDS,
   {
     id: 'hdfc-swiggy',
     name: 'Swiggy BLCK',

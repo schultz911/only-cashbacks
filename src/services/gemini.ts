@@ -138,6 +138,8 @@ const EXHAUSTIVE_MERCHANT_MAPPINGS = [
 const EXACT_MATCH_MAP: Record<string, MerchantInfo> = {
   'swiggy': { name: 'Swiggy', category: 'Food Delivery', isOnline: true, isP2P: false, platform: 'Swiggy' },
   'zomato': { name: 'Zomato', category: 'Food Delivery', isOnline: true, isP2P: false, platform: 'Zomato' },
+  'bistro': { name: 'Bistro', category: 'Food Delivery', isOnline: true, isP2P: false, platform: 'Bistro' },
+  'district': { name: 'District', category: 'Other', isOnline: true, isP2P: false, platform: 'District' },
   'amazon': { name: 'Amazon', category: 'E-commerce', isOnline: true, isP2P: false, platform: 'Amazon' },
   'amazon fresh': { name: 'Amazon Fresh', category: 'Grocery', isOnline: true, isP2P: false, platform: 'Amazon' },
   'amazon pay': { name: 'Amazon Pay', category: 'E-commerce', isOnline: true, isP2P: false, platform: 'Amazon' },

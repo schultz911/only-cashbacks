@@ -1,93 +1,69 @@
 import { useEffect } from 'react';
 import { CARD_DICT } from '../data/cards';
+import { dateInMonth, formatBillDate, indiaDate, paymentReminder, statementDay } from '../lib/billingDates';
 
 export function usePushNotifications(
   isDataLoaded: boolean,
   walletCards: string[],
   cardBillDates: Record<string, number>,
   paidBills: Record<string, string>,
-  getCycleForCard: (id: string, dates: Record<string, number>) => string
+  _getCycleForCard: (id: string, dates: Record<string, number>) => string
 ) {
   useEffect(() => {
     if (typeof window === 'undefined' || !('Notification' in window)) return;
-    
-    // Request permission if not already granted/denied
-    if (window.Notification.permission === 'default') {
-      window.Notification.requestPermission();
-    }
+    if (window.Notification.permission === 'default') window.Notification.requestPermission();
   }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined' || !('Notification' in window)) return;
-    if (!isDataLoaded || !walletCards || walletCards.length === 0) return;
-    if (window.Notification.permission !== 'granted') return;
+    if (!isDataLoaded || !walletCards) return;
+    // [] is the app's all-selected sentinel. Notify only cards with an actual
+    // account date when selection is implicit, matching the reminder panel.
+    const effectiveCards = walletCards.length ? walletCards : Object.keys(cardBillDates).filter(id => CARD_DICT[id]);
 
-    // Use a small timeout to avoid showing immediately on load
-    const timer = setTimeout(() => {
-      let unpaidCards = [];
-      const today = new Date();
-      
-      for (const cardId of walletCards) {
-        // Optimization: Use O(1) CARD_DICT lookup instead of O(N) CARD_DATA.find() to avoid performance bottlenecks inside loop
-        const card = CARD_DICT[cardId];
-        if (!card || card.isDummy || card.type !== 'Credit') continue;
-
-        const billDay = cardBillDates[cardId] || 1;
-        const cycle = getCycleForCard(cardId, cardBillDates);
-        const isPaid = paidBills[cardId] === cycle;
-
-        if (!isPaid) {
-          // If today is past the bill day by 2+ days, notify
-          if (today.getDate() >= billDay + 2) {
-             unpaidCards.push(card.name);
-          }
-        }
-      }
-
-      if (unpaidCards.length > 0) {
-         try {
-            const notifKey = `oc_notif_bill_${today.getFullYear()}_${today.getMonth()}_${today.getDate()}`;
-            if (!localStorage.getItem(notifKey)) {
-               new window.Notification('Unpaid Credit Card Bills', {
-                  body: `You have unpaid bills past their billing dates for: ${unpaidCards.join(', ')}`,
-                  icon: '/pwa-192x192.png',
-               });
-               localStorage.setItem(notifKey, 'true');
-            }
-         } catch(e) {
-            console.error("Failed to trigger local notification", e);
-         }
-      }
-
-      // Check for offers that have been reset today (e.g. 1st of month, or bill date)
-      const resetCards = [];
-      for (const cardId of walletCards) {
-        // Optimization: Use O(1) CARD_DICT lookup instead of O(N) CARD_DATA.find() to avoid performance bottlenecks inside loop
+    const notify = () => {
+      if (window.Notification.permission !== 'granted') return;
+      const today = indiaDate();
+      const dateKey = today.toISOString().slice(0, 10);
+      for (const cardId of effectiveCards) {
         const card = CARD_DICT[cardId];
         if (!card || card.isDummy) continue;
-        const resetDay = card.type === 'Credit' ? (cardBillDates[cardId] || 1) : 1;
-        if (today.getDate() === resetDay) {
-           resetCards.push(card.name);
-        }
-      }
-
-      if (resetCards.length > 0) {
-         try {
-            const notifKey = `oc_notif_reset_${today.getFullYear()}_${today.getMonth()}_${today.getDate()}`;
-            if (!localStorage.getItem(notifKey)) {
-               new window.Notification('Offers Reset Today', {
-                  body: `Monthly limits and offers have been reset for: ${resetCards.join(', ')}`,
-                  icon: '/pwa-192x192.png',
-               });
-               localStorage.setItem(notifKey, 'true');
+        const reminder = card.type === 'Credit' ? paymentReminder(cardId, cardBillDates, paidBills) : null;
+        if (reminder?.ready) {
+          const key = `oc_notif_bill_${cardId}_${reminder.cycle}_${reminder.dueDate.getUTCDate()}_${reminder.leadDays}_${dateKey}`;
+          try {
+            if (!localStorage.getItem(key)) {
+              new window.Notification(reminder.overdue ? 'Credit Card Payment Overdue' : 'Credit Card Payment Reminder', {
+                body: `${card.bank} ${card.name}: payment due ${formatBillDate(reminder.dueDate)} (IST).${reminder.leadDays ? ` Reminder starts ${formatBillDate(reminder.reminderDate)}.` : ''}`,
+                icon: '/pwa-192x192.png',
+              });
+              localStorage.setItem(key, 'true');
             }
-         } catch(e) {
-            console.error("Failed to trigger local notification", e);
-         }
+          } catch (error) { console.error('Failed to trigger local notification', error); }
+        }
+
+        const resetDay = card.type !== 'Credit' || card.offerReset === 'calendar' || card.id === 'axis-myzone'
+          ? 1 : statementDay(cardId, cardBillDates);
+        if (!resetDay || today.getTime() !== dateInMonth(today.getUTCFullYear(), today.getUTCMonth(), resetDay).getTime()) continue;
+        const key = `oc_notif_reset_${cardId}_${dateKey}`;
+        try {
+          if (!localStorage.getItem(key)) {
+            new window.Notification('Offers Reset Today', {
+              body: `Monthly offer limits have reset for ${card.bank} ${card.name}.`, icon: '/pwa-192x192.png',
+            });
+            localStorage.setItem(key, 'true');
+          }
+        } catch (error) { console.error('Failed to trigger local notification', error); }
       }
-
-    }, 3000);
-
-    return () => clearTimeout(timer);
-  }, [isDataLoaded, walletCards, paidBills, cardBillDates, getCycleForCard]);
+    };
+    const timer = window.setTimeout(notify, 3000);
+    const interval = window.setInterval(notify, 60000);
+    window.addEventListener('focus', notify);
+    document.addEventListener('visibilitychange', notify);
+    return () => {
+      clearTimeout(timer); clearInterval(interval);
+      window.removeEventListener('focus', notify);
+      document.removeEventListener('visibilitychange', notify);
+    };
+  }, [isDataLoaded, walletCards, paidBills, cardBillDates]);
 }

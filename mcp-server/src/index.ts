@@ -505,6 +505,11 @@ function formatCardDetails(card: typeof CARD_DATA[0]) {
   if (card.isZeroForex) lines.push(`| Forex | ✅ Zero Forex |`);
   if (card.isForexPositive) lines.push(`| Forex | 💚 Forex Positive |`);
   lines.push(`| ID | \`${card.id}\` |`);
+  if (card.sourceUrl) lines.push(`\n[Official benefits and terms](${card.sourceUrl})`);
+  if (card.rewardProgram) {
+    lines.push(`\n${card.rewardProgram.notes}`);
+    for (const cap of card.rewardProgram.caps) lines.push(`- ${cap.label}: ₹${cap.limit} per ${cap.period === 'calendar' ? 'calendar month' : 'statement cycle'}.`);
+  }
 
   // Benefits
   const cashbackBenefits = card.benefits.filter(b => b.type === 'cashback' || b.type === 'upi' || b.type === 'forex');

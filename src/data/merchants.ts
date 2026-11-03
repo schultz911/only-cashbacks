@@ -7,5 +7,5 @@ export const KNOWN_MERCHANTS = [
   "Croma", "Reliance Digital", "Vijay Sales", "Lenskart", "FirstCry",
   "IRCTC", "Redbus", "Pepperfry", "Urban Ladder", "IKEA",
   "Steam", "PlayStation", "Xbox", "Epic Games", "BMS", "Domino's", "KFC", "McDonald's",
-  "Starbucks", "Cinepolis"
+  "Starbucks", "Cinepolis", "District", "Bistro", "Urban Company", "ixigo", "Apollo 24|7"
 ];

@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Calendar, CheckCircle2 } from 'lucide-react';
 import { Card } from '../types';
 import { CARD_DATA, CARD_DICT } from '../data/cards';
-import { getCycleForCard } from '../lib/recommendation';
+import { formatBillDate, paymentReminder } from '../lib/billingDates';
+import { useBillingDay } from '../hooks/useBillingDay';
 import { cn } from '../lib/utils';
 
 interface BillRemindersProps {
@@ -17,10 +18,10 @@ const DEFAULT_EFFECTIVE_CARDS = CARD_DATA.filter(c => !c.isDummy).map(c => c.id)
 
 export function BillReminders({ walletCards, cardBillDates, paidBills, markBillPaid }: BillRemindersProps) {
   const [animatingCardId, setAnimatingCardId] = useState<string | null>(null);
+  const billingDay = useBillingDay();
 
   const bills = useMemo(() => {
-    const today = new Date();
-    const result: { card: Card, status: 'ready' | 'upcoming', daysUntil: number }[] = [];
+    const result: { card: Card, status: 'ready' | 'upcoming', daysUntil: number, dueDate: Date, reminderDate: Date, leadDays: number }[] = [];
 
     const effectiveCards = walletCards.length > 0 ? walletCards : DEFAULT_EFFECTIVE_CARDS;
 
@@ -28,30 +29,9 @@ export function BillReminders({ walletCards, cardBillDates, paidBills, markBillP
       const card = CARD_DICT[cardId];
       if (!card || card.isDummy || card.type !== 'Credit') continue;
       
-      const billDay = cardBillDates[cardId] || 1;
-      const cycle = getCycleForCard(cardId, cardBillDates);
-      const isPaid = paidBills[cardId] === cycle;
-
-      if (!isPaid) {
-        result.push({ card, status: 'ready', daysUntil: 0 });
-      } else {
-        // If current cycle is paid, check if next is upcoming
-        let daysUntilNextBill: number;
-        if (today.getDate() < billDay) {
-          daysUntilNextBill = billDay - today.getDate();
-        } else if (today.getDate() === billDay) {
-          // Wait, if today is the bill day, it should have been caught by !isPaid 
-          // because cycle would be this month. But if they just paid it today, then the NEXT bill is next month!
-          const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-          daysUntilNextBill = daysInMonth; // it's next month
-        } else {
-          const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-          daysUntilNextBill = (daysInMonth - today.getDate()) + billDay;
-        }
-
-        if (daysUntilNextBill <= 5) {
-          result.push({ card, status: 'upcoming', daysUntil: daysUntilNextBill });
-        }
+      const reminder = paymentReminder(cardId, cardBillDates, paidBills);
+      if (reminder && (reminder.ready || reminder.daysUntil <= 7)) {
+        result.push({ card, status: reminder.ready ? 'ready' : 'upcoming', ...reminder });
       }
     }
 
@@ -60,7 +40,7 @@ export function BillReminders({ walletCards, cardBillDates, paidBills, markBillP
       if (a.status !== 'ready' && b.status === 'ready') return 1;
       return a.daysUntil - b.daysUntil;
     });
-  }, [walletCards, cardBillDates, paidBills]);
+  }, [walletCards, cardBillDates, paidBills, billingDay]);
 
   const handlePay = (cardId: string) => {
     setAnimatingCardId(cardId);
@@ -86,7 +66,7 @@ export function BillReminders({ walletCards, cardBillDates, paidBills, markBillP
         <div className="flex flex-col items-center justify-center p-6 text-center h-full min-h-[120px] relative z-10">
           <Calendar className="w-8 h-8 text-gray-300 dark:text-gray-700/50 mb-2" />
           <p className="text-sm font-medium text-gray-500 dark:text-gray-400">All caught up!</p>
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">No upcoming bills for your active cards.</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Set each card's payment due day in card details to enable reminders.</p>
         </div>
       </section>
     );
@@ -101,7 +81,7 @@ export function BillReminders({ walletCards, cardBillDates, paidBills, markBillP
         </div>
         <div className="relative z-10">
           <h3 className="font-bold text-gray-900 dark:text-white leading-tight">Upcoming Bills</h3>
-          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">Next 7 days</p>
+          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">Due dates and reminder lead times · IST</p>
         </div>
       </div>
       <div className="relative flex flex-col gap-3 z-10">
@@ -141,6 +121,8 @@ export function BillReminders({ walletCards, cardBillDates, paidBills, markBillP
                 <div className="flex justify-between items-center h-full relative z-10 w-full transition-opacity">
                   <div className="flex flex-col flex-1 pl-1">
                     <span className="font-semibold text-gray-800 dark:text-gray-200 text-sm line-clamp-1 pr-2">{bill.card.name}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Payment due {formatBillDate(bill.dueDate)}</span>
+                    {bill.leadDays > 0 && <span className="text-[10px] text-gray-500 dark:text-gray-400">Reminder {formatBillDate(bill.reminderDate)}</span>}
                   </div>
                   <div className="shrink-0 flex items-center justify-end">
                     {bill.status === 'ready' ? (

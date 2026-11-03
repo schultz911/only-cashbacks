@@ -6,6 +6,8 @@
  * Mirrors the frontend types without React/Vite dependencies.
  */
 
+import type { RewardProgram, RewardAllocation } from './lib/rewardRules.js';
+
 export interface CardBenefit {
   type: 'cashback' | 'points' | 'offer' | 'lounge' | 'exclusion' | 'forex' | 'upi';
   category: string;
@@ -35,6 +37,10 @@ export interface Card {
   gradient?: string;
   type: 'Credit' | 'Debit' | 'Prepaid';
   annualFee?: string;
+  officialName?: string;
+  sourceUrl?: string;
+  rewardProgram?: RewardProgram;
+  offerReset?: 'calendar';
   isExempt?: boolean;
   forexMarkup: number;
   baseRewardRate: number;
@@ -53,6 +59,7 @@ export interface MerchantInfo {
 }
 
 export interface Recommendation {
+  rewardAllocations?: RewardAllocation[];
   bestCard: Card;
   tiedCards?: { card: Card; benefit: string }[];
   reason: string;

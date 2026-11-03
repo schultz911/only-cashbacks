@@ -7,8 +7,10 @@
  */
 
 import { Card } from '../types.js';
+import { ETERNAL_CARDS } from './eternal.js';
 
 export const CARD_DATA: Card[] = [
+  ...ETERNAL_CARDS,
   {
     id: 'hdfc-swiggy',
     name: 'Swiggy BLCK',

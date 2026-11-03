@@ -13,7 +13,11 @@ import { Recommendation, MerchantInfo, Card, CashbackLog } from './types';
 import { CARD_DATA, CARD_DICT } from './data/cards';
 import { CardItem } from './components/CardItem';
 import { BillReminders } from './components/BillReminders';
-import { BillDateSelector } from './components/BillDateSelector';
+import { CardBillingSettings } from './components/CardBillingSettings';
+import { CardRewardUsage } from './components/CardRewardUsage';
+import { dateInMonth, indiaDate, paymentReminder, statementDay } from './lib/billingDates';
+import { recordRewardAllocations, removeRewardLogs } from './lib/rewardRules';
+import { useBillingDay } from './hooks/useBillingDay';
 
 const LoungeTrackerModal = lazy(() => import('./components/LoungeTrackerModal').then(module => ({ default: module.LoungeTrackerModal })));
 const WalletManagerModal = lazy(() => import('./components/WalletManagerModal').then(module => ({ default: module.WalletManagerModal })));
@@ -57,6 +61,7 @@ const VOUCHER_PORTALS: Record<string, string> = {
 const FALLBACK_EXCHANGE_RATES: Record<string, number> = { 'USD': 0.012, 'EUR': 0.011, 'GBP': 0.0094, 'AED': 0.044 };
 
 export default function App() {
+  const billingDay = useBillingDay();
   const {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
@@ -281,34 +286,29 @@ export default function App() {
     if (!isDataLoaded || !walletCards || walletCards.length === 0) return;
     const timer = setTimeout(() => {
       let hasUnpaidPastDue = false;
-      const today = new Date();
       for (const cardId of walletCards) {
         const card = CARD_DICT[cardId];
         if (!card || card.isDummy || card.type !== 'Credit') continue;
-        const billDay = cardBillDates[cardId] || 1;
-        const cycle = getCycleForCard(cardId, cardBillDates);
-        const isPaid = paidBills[cardId] === cycle;
-        if (!isPaid) {
-          if (today.getDate() >= billDay + 2) {
-            hasUnpaidPastDue = true;
-            break;
-          }
+        const reminder = paymentReminder(cardId, cardBillDates, paidBills);
+        if (reminder?.overdue) {
+          hasUnpaidPastDue = true;
+          break;
         }
       }
       if (hasUnpaidPastDue) {
-        showToast('You have unpaid credit card bills past their billing dates.', 'info');
+        showToast('You have unpaid credit card bills past their payment due dates.', 'info');
       }
     }, 2000);
     return () => clearTimeout(timer);
-  }, [isDataLoaded, walletCards, paidBills, cardBillDates]);
+  }, [isDataLoaded, walletCards, paidBills, cardBillDates, billingDay]);
 
   useEffect(() => {
     if (!isDataLoaded) return;
 
     const timeoutId = setTimeout(() => {
-      const today = new Date();
-      const todayDate = today.getDate();
-      const todayKey = `${today.getFullYear()}-${today.getMonth() + 1}-${todayDate}`;
+      const today = indiaDate();
+      const todayDate = today.getUTCDate();
+      const todayKey = `${today.getUTCFullYear()}-${today.getUTCMonth() + 1}-${todayDate}`;
       let lastResetDates: Record<string, string> = {};
       try {
         const stored = localStorage.getItem('oc_lastOfferResetDates');
@@ -328,8 +328,9 @@ export default function App() {
     for (const card of CARD_DATA) {
       if (card.isDummy) continue;
 
-      const billResetDay = card.type === 'Credit' ? (cardBillDates[card.id] || 1) : 1;
-      const offerResetDay = card.id === 'axis-myzone' ? 1 : billResetDay;
+      const configuredReset = card.type === 'Credit' && !card.rewardProgram ? (statementDay(card.id, cardBillDates) ?? 1) : 1;
+      const billResetDay = dateInMonth(today.getUTCFullYear(), today.getUTCMonth(), configuredReset).getUTCDate();
+      const offerResetDay = card.id === 'axis-myzone' || card.offerReset === 'calendar' ? 1 : billResetDay;
 
       // Handle offer usage resets
       if (todayDate === offerResetDay) {
@@ -363,7 +364,7 @@ export default function App() {
     }
 
     const quarterStartMonths = [0, 3, 6, 9];
-    const isQuarterStart = todayDate === 1 && quarterStartMonths.includes(today.getMonth());
+    const isQuarterStart = todayDate === 1 && quarterStartMonths.includes(today.getUTCMonth());
     const shouldResetQuarterly = isQuarterStart && lastResetDates['_quarterly'] !== todayKey;
     const currentQuarter = getQuarterCycle();
 
@@ -427,7 +428,7 @@ export default function App() {
     }, 100);
 
     return () => clearTimeout(timeoutId);
-  }, [isDataLoaded, cardBillDates]);
+  }, [isDataLoaded, cardBillDates, billingDay]);
 
   const handleDeleteData = async () => {
     if (deleteConfirmText !== 'DELETE' || !user) return;
@@ -495,7 +496,7 @@ export default function App() {
         setRecommendation(null);
       }
     }
-  }, [normalizedExhaustedCards, offerUsage, cardBillDates, debouncedAmount, debouncedForeignAmount, isIntl, isOnline, isScanToPay, kiwiNeonEarnRate, exchangeRates, baseCurrency, walletCards]);
+  }, [normalizedExhaustedCards, offerUsage, cardBillDates, debouncedAmount, debouncedForeignAmount, isIntl, isOnline, isScanToPay, kiwiNeonEarnRate, exchangeRates, baseCurrency, walletCards, billingDay]);
 
   const formatAmountStr = useCallback((val: string) => {
     if (!val) return '';
@@ -515,6 +516,9 @@ export default function App() {
         category: lastSearchInfo?.category || 'General'
       };
       setCashbackLogs(prev => [...prev, newLog]);
+      if (recommendation.rewardAllocations?.length) {
+        setOfferUsage(previous => recordRewardAllocations(previous, recommendation.rewardAllocations!, newLog.date));
+      }
       showToast('Transaction logged!', 'success');
     } else {
       showToast('No cashback earned for this transaction.', 'info');
@@ -1118,6 +1122,7 @@ export default function App() {
                   {selectedCardForDetails.card.name}
                 </h2>
                 <div className="flex items-center gap-2 mt-2">
+                  {selectedCardForDetails.card.image && <img src={selectedCardForDetails.card.image} alt={`${selectedCardForDetails.card.officialName || selectedCardForDetails.card.name} official card artwork`} className="h-12 w-auto rounded-md" />}
                   <span className="text-sm font-semibold opacity-90">{selectedCardForDetails.card.network}</span>
                   {selectedCardForDetails.card.tier && (
                     <span className="text-xs font-bold uppercase tracking-widest bg-white/20 px-2 py-0.5 rounded shadow-sm backdrop-blur-md">
@@ -1160,6 +1165,9 @@ export default function App() {
               </div>
 
               <div className="overflow-y-auto pr-2 space-y-3 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent relative z-10 pb-4">
+                {selectedCardForDetails.card.annualFee && <div className="p-4 border border-white/10 rounded-2xl bg-black/20 text-sm text-white/90">Annual fee: {selectedCardForDetails.card.annualFee}</div>}
+                {selectedCardForDetails.card.sourceUrl && <a href={selectedCardForDetails.card.sourceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex text-xs font-bold text-white underline">Official benefits and terms</a>}
+                <CardRewardUsage card={selectedCardForDetails.card} dates={cardBillDates} usage={offerUsage} setUsage={setOfferUsage} />
                 {selectedCardForDetails.card.benefits.filter(b => b.type !== 'exclusion' && b.type !== 'lounge' && !b.isHidden).map((b, i) => {
                   const isQuarterly = b.description.toLowerCase().includes('quarter') || b.description.toLowerCase().includes('qtr');
                   const cycle = isQuarterly ? getQuarterCycle() : getOfferCycleForCard(selectedCardForDetails.card.id, cardBillDates);
@@ -1222,16 +1230,7 @@ export default function App() {
                 )}
 
                 {selectedCardForDetails.card.type === 'Credit' && (
-                  <div className="mt-2 border-t border-white/20 pt-4">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm font-semibold opacity-90 text-white">Bill Generation Date</span>
-                      <BillDateSelector
-                        date={cardBillDates[selectedCardForDetails.card.id] || 1}
-                        onChange={(date) => setCardBillDates(prev => ({ ...prev, [selectedCardForDetails.card.id]: date }))}
-                      />
-                    </div>
-                    <p className="text-xs text-white/70">Used to send payment reminders and reset monthly offer limits.</p>
-                  </div>
+                  <CardBillingSettings cardId={selectedCardForDetails.card.id} dates={cardBillDates} setDates={setCardBillDates} />
                 )}
               </div>
 
@@ -1599,6 +1598,7 @@ export default function App() {
           onClose={() => setIsDashboardOpen(false)}
           logs={cashbackLogs}
           setLogs={setCashbackLogs}
+          onRemoveLogs={(dates) => setOfferUsage(previous => removeRewardLogs(previous, dates))}
         />
       </Suspense>
 

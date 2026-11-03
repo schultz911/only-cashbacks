@@ -1,11 +1,18 @@
 import React from 'react';
-import { render, act, cleanup, fireEvent, screen } from '@testing-library/react';
+import { render, act, cleanup, fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import App from '../App';
 import { AuthSyncProvider, useAuthSyncContext } from '../contexts/AuthSyncContext';
 import { WalletProvider, useWalletContext } from '../contexts/WalletContext';
 import { SearchProvider, useSearchContext } from '../contexts/SearchContext';
 import { getDocFromServer, deleteDoc } from 'firebase/firestore';
+
+// State/persistence tests do not wait for exit animations. Real animation and
+// responsive layout are verified separately in the compiled browser app.
+vi.mock('motion/react', async () => {
+  const actual = await vi.importActual<typeof import('motion/react')>('motion/react');
+  return { ...actual, AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</> };
+});
 
 const state = vi.hoisted(() => ({
   snapshot: null as any, authChanged: null as any, writes: [] as any[],
@@ -81,6 +88,7 @@ function deferred<T>() {
 
 beforeEach(() => {
   vi.useFakeTimers();
+  vi.setSystemTime(new Date('2026-11-03T06:30Z'));
   const values = new Map<string, string>();
   const storage = { getItem: (key: string) => values.get(key) ?? null,
     setItem: (key: string, value: string) => values.set(key, value), clear: () => values.clear() };
@@ -95,6 +103,77 @@ afterEach(() => {
 });
 
 describe('cloud synchronization provenance', () => {
+  it('edits and reloads billing dates through the shared card details controls', async () => {
+    mount(); await hydrate({ ...cloudWallet(), walletCards: ['sbi-eternal'], cardBillDates: { 'sbi-eternal': 3 } });
+    fireEvent.click(screen.getByRole('heading', { name: 'Eternal' }));
+    const due = within(screen.getByRole('group', { name: 'Payment due day' }));
+    expect(due.getByText('3')).toBeTruthy();
+    fireEvent.keyDown(due.getByRole('button', { name: 'Next day' }), { key: 'Enter' });
+    expect(wallet.cardBillDates['sbi-eternal']).toBe(4);
+    const statement = within(screen.getByRole('group', { name: 'Statement day' }));
+    fireEvent.keyDown(statement.getByRole('button', { name: 'Previous day' }), { key: 'Enter' });
+    expect(wallet.cardBillDates['sbi-eternal:statement']).toBe(31);
+    fireEvent.change(screen.getByLabelText('Remind before due date (days)'), { target: { value: '2' } });
+    await advance(2000);
+    expect(state.writes.at(-1).data.cardBillDates).toEqual({ 'sbi-eternal': 4, 'sbi-eternal:statement': 31, 'sbi-eternal:reminderDays': 2 });
+  });
+
+  it('logs Eternal savings, persists allocations, and restores usage through the dashboard undo action', async () => {
+    const animation = Object.getOwnPropertyDescriptor(Element.prototype, 'animate');
+    Object.defineProperty(Element.prototype, 'animate', { configurable: true, value: () => ({ onfinish: null }) });
+    try {
+      mount(); await hydrate({ ...cloudWallet(), walletCards: ['sbi-eternal'] });
+      fireEvent.change(screen.getByLabelText('Search merchant, category, or item'), { target: { value: 'Zomato' } });
+      fireEvent.change(screen.getByLabelText('Amount'), { target: { value: '19000' } });
+      await act(async () => { fireEvent.submit(screen.getByRole('button', { name: 'Check' }).closest('form')!); });
+      await advance(1000);
+      expect(document.body.textContent).toContain('Log Transaction');
+      fireEvent.click(screen.getByRole('button', { name: 'Log Transaction' }));
+      await advance(1600);
+      expect(wallet.cashbackLogs).toHaveLength(1);
+      expect(wallet.cashbackLogs[0]).toMatchObject({ cardId: 'sbi-eternal', amount: 1900 });
+      expect(Object.values(wallet.offerUsage)).toContain(1900);
+      fireEvent.click(screen.getByRole('button', { name: 'My Savings' }));
+      await advance(500);
+      expect(screen.getByText('₹1900.00')).toBeTruthy();
+      fireEvent.click(screen.getByRole('button', { name: /Undo/ }));
+      expect(wallet.cashbackLogs).toHaveLength(0);
+      expect(Object.keys(wallet.offerUsage).filter(key => key.startsWith('reward:'))).toHaveLength(0);
+    } finally {
+      if (animation) Object.defineProperty(Element.prototype, 'animate', animation);
+      else delete (Element.prototype as any).animate;
+    }
+  });
+  it('flushes an edited payment day before the 500ms debounce when the page is closed', async () => {
+    mount(); await hydrate({ ...cloudWallet(), cardBillDates: { 'icici-amazon-pay': 3 } }); await advance(1000);
+    await act(async () => { wallet.setCardBillDates({ 'icici-amazon-pay': 15 }); });
+    act(() => window.dispatchEvent(new Event('pagehide')));
+    expect(JSON.parse(localStorage.getItem('oc_cardBillDates')!)).toEqual({ 'icici-amazon-pay': 15 });
+    expect(state.writes).toHaveLength(0);
+  });
+  it('persists and reloads Eternal selection, distinct billing dates and numeric cap usage without rewriting existing settings', async () => {
+    const dates = { 'icici-amazon-pay': 3, 'sbi-eternal': 31, 'sbi-eternal:statement': 15, 'sbi-eternal:reminderDays': 2 };
+    const usage = { 'reward:sbi-eternal:eternal-apps:2026-11:opening': 500 };
+    const view = mount();
+    await hydrate({ ...cloudWallet(), walletCards: ['icici-amazon-pay', 'sbi-eternal'], cardBillDates: dates, offerUsage: usage });
+    await advance(1500);
+    expect(state.writes).toHaveLength(0);
+    expect(JSON.parse(localStorage.getItem('oc_cardBillDates')!)).toEqual(dates);
+    await act(async () => { wallet.setCardBillDates(previous => ({ ...previous, 'sbi-eternal': 3 })); });
+    await advance(3000);
+    expect(state.writes.at(-1).data.cardBillDates).toEqual({ ...dates, 'sbi-eternal': 3 });
+    expect(state.writes.at(-1).data.offerUsage).toEqual(usage);
+    const saved = state.writes.at(-1).data;
+    view.unmount(); mount(); await hydrate(saved); await advance(1500);
+    expect(wallet.cardBillDates['sbi-eternal']).toBe(3);
+    expect(wallet.cardBillDates['icici-amazon-pay']).toBe(3);
+    expect(wallet.cardBillDates['sbi-eternal:statement']).toBe(15);
+    await act(async () => { wallet.setWalletCards(['icici-amazon-pay']); });
+    await advance(2000);
+    expect(wallet.cardBillDates['sbi-eternal:statement']).toBe(15);
+    await act(async () => { wallet.setWalletCards(['icici-amazon-pay', 'sbi-eternal']); wallet.markBillPaid('icici-amazon-pay'); });
+    expect(wallet.paidBills['icici-amazon-pay']).toBe('2026-11');
+  });
   it('persists hydrated data locally without writing it back during 60 seconds of inactivity', async () => {
     mount(); await hydrate(); await advance(60000);
     expect(state.writes).toHaveLength(0);

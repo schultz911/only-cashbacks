@@ -1,8 +1,8 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface BillDateSelectorProps {
-  date: number;
+  date?: number;
   onChange: (date: number) => void;
 }
 
@@ -11,7 +11,7 @@ export function BillDateSelector({ date, onChange }: BillDateSelectorProps) {
   const timeoutRef = useRef<number | null>(null);
 
   const startAdjusting = (increment: number) => {
-    let current = date;
+    let current = date ?? 0;
     const change = () => {
       let next = current + increment;
       if (next > 31) next = 1;
@@ -32,9 +32,14 @@ export function BillDateSelector({ date, onChange }: BillDateSelectorProps) {
     if (intervalRef.current) clearInterval(intervalRef.current);
   };
 
+  useEffect(() => stopAdjusting, []);
+
   return (
     <div className="flex items-center gap-2 bg-black/20 border border-white/10 rounded-xl p-1 backdrop-blur-sm">
       <button
+        type="button"
+        aria-label="Previous day"
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onChange((date ?? 1) <= 1 ? 31 : date! - 1); } }}
         onMouseDown={() => startAdjusting(-1)}
         onMouseUp={stopAdjusting}
         onMouseLeave={stopAdjusting}
@@ -56,10 +61,13 @@ export function BillDateSelector({ date, onChange }: BillDateSelectorProps) {
       </button>
       
       <div className="w-8 flex items-center justify-center">
-        <span className="text-white font-black tabular-nums">{date}</span>
+        <span className="text-white font-black tabular-nums">{date ?? '—'}</span>
       </div>
       
       <button
+        type="button"
+        aria-label="Next day"
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onChange((date ?? 0) >= 31 ? 1 : (date ?? 0) + 1); } }}
         onMouseDown={() => startAdjusting(1)}
         onMouseUp={stopAdjusting}
         onMouseLeave={stopAdjusting}
