@@ -17,15 +17,15 @@ it('registers the exact same catalogue in browser and MCP without invented accou
   expect(CARD_DATA.map(card => card.id)).toEqual(SERVER_CARDS.map(card => card.id));
   expect(CARD_DATA.filter(card => card.rewardProgram)).toEqual(SERVER_CARDS.filter(card => card.rewardProgram));
   expect(new Set(CARD_DATA.map(card => card.id)).size).toBe(CARD_DATA.length);
+  expect(CARD_DATA.filter(card => card.officialName === 'Eternal SBI Credit Card').map(card => card.network)).toEqual(['Mastercard']);
   expect(CARD_DICT['sbi-eternal']).toMatchObject({ bank: 'SBI', network: 'Mastercard', type: 'Credit', hasLounge: false });
-  expect(CARD_DICT['sbi-eternal-rupay']).toMatchObject({ network: 'RuPay', hasLounge: false });
-  for (const id of ['sbi-eternal', 'sbi-eternal-rupay']) {
+  for (const id of ['sbi-eternal']) {
     expect(CARD_DICT[id]).not.toHaveProperty('creditLimit');
     expect(CARD_DICT[id]).not.toHaveProperty('dueDate');
   }
 });
 
-describe.each(['sbi-eternal', 'sbi-eternal-rupay'])('%s reward rules', id => {
+describe.each(['sbi-eternal'])('%s reward rules', id => {
   it.each([
     ['Zomato', 'Food Delivery', 100], ['District', 'Dining', 100], ['Bistro', 'Food Delivery', 100],
     ['Blinkit beauty', 'Beauty', 100], ['Blinkit electronics', 'Electronics', 100], ['Blinkit', 'Grocery', 50],
@@ -98,12 +98,9 @@ describe.each(['sbi-eternal', 'sbi-eternal-rupay'])('%s reward rules', id => {
   });
 });
 
-it('permits merchant UPI only for the issued RuPay variant and never boosts it to an app checkout rate', () => {
-  expect(recommend('Retail store', 'Shopping', 1000, {}, 'sbi-eternal-rupay', false, true)!.cashbackEarned).toBe(10);
-  expect(recommend('Zomato', 'Food Delivery', 1000, {}, 'sbi-eternal-rupay', false, true)!.cashbackEarned).toBe(10);
+it('does not offer merchant UPI for the Mastercard card', () => {
   expect(recommend('Retail store', 'Shopping', 1000, {}, 'sbi-eternal', false, true)).toBeNull();
-  expect(getRecommendations({ name: 'Friend', category: 'Personal', isOnline: false, isP2P: true }, 1000, false, false, true, {}, {}, 2, ['sbi-eternal-rupay'])).toBeNull();
-  expect(recommend('UPI transfer', 'Personal', 1000, {}, 'sbi-eternal-rupay', false, true)).toBeNull();
+  expect(recommend('Zomato', 'Food Delivery', 1000, {}, 'sbi-eternal', false, true)).toBeNull();
 });
 
 it('tracks confirmed allocations, clamps later recommendations, and restores caps on undo/reset', () => {
@@ -121,7 +118,7 @@ it('tracks confirmed allocations, clamps later recommendations, and restores cap
 it('keeps browser and MCP results identical with saved limits, statement dates and exclusions', () => {
   for (const name of ['Zomato', 'Blinkit beauty', 'Apollo', 'ixigo hotel', 'Wallet', 'Google software']) {
     const merchant: MerchantInfo = { name, category: 'Shopping', isOnline: true };
-    for (const id of ['sbi-eternal', 'sbi-eternal-rupay', 'icici-amazon-pay']) {
+    for (const id of ['sbi-eternal', 'icici-amazon-pay']) {
       const args: Parameters<typeof getRecommendations> = [merchant, 10000, true, false, false, {}, {}, 2, [id], { [id]: 3, [`${id}:statement`]: 15 }];
       expect(getRecommendations(...args)).toEqual(serverRecommendations(...args));
     }

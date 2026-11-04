@@ -4,6 +4,19 @@ import { Card } from '../types';
 import { cn } from '../lib/utils';
 import { Check } from 'lucide-react';
 
+// Display copy is separate from benefit descriptions used to calculate eligibility.
+const LOUNGE_ACCESS_INSTRUCTIONS: Record<string, string> = {
+  'hsbc-live-plus-Domestic': 'Present your card and boarding pass to the concierge.',
+  'kotak-811-infinity-Domestic': 'Present your card and boarding pass to the concierge.',
+  'hdfc-imperia-Domestic': 'Generate your lounge access code through the SmartBuy portal and show it to the concierge. Available only if your quarterly spending exceeds ₹10,000.',
+  'hdfc-tata-neu-infinity-Domestic': 'Generate your lounge access code through the SmartBuy portal and show it to the concierge. Available only if your quarterly spending exceeds ₹50,000.',
+  'axis-myzone-Domestic': 'Present your card and boarding pass to the concierge. Available only if quarterly spend exceeds ₹50,000.',
+  'kiwi-neon-Domestic': 'Generate your lounge access voucher in the Kiwi app and present it to the concierge. Earn up to three lounge passes, one per ₹50,000 spent.',
+  'hsbc-live-plus-International': 'Activate your lounge benefit on Thriwe to receive your voucher code and PIN. Present your code, passport, and boarding pass to the concierge.',
+  'hdfc-tata-neu-infinity-International': 'Present your card, Priority Pass, passport, and boarding pass to the concierge.',
+  'niyo-dcb-International': 'Generate your lounge key pass through the Niyo app and show it to the concierge. Available only if your international spending exceeds ₹75,000.'
+};
+
 interface LoungeTrackerItemProps {
   card: Card;
   parsed: any;
@@ -114,8 +127,9 @@ export const LoungeTrackerItem: React.FC<LoungeTrackerItemProps> = ({
       </div>
       <div className="flex flex-col gap-2 relative z-20 mt-1">
         <div className="text-sm text-gray-500 font-medium leading-relaxed">
-          {parsed.description}
+          {LOUNGE_ACCESS_INSTRUCTIONS[`${card.id}-${category}`] ?? parsed.description}
         </div>
+        {card.id === 'hsbc-live-plus' && category === 'International' && <a href="https://hsbcliveplus.thriwe.com" target="_blank" rel="noopener noreferrer" onClick={event => event.stopPropagation()} className="inline-flex w-fit rounded-lg bg-blue-600 hover:bg-blue-700 px-3 py-2 mt-1 text-xs font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400">Activate benefit ↗</a>}
         {isVerified && passesCount > 0 && category === 'Domestic' && (card.id === 'hdfc-tata-neu-infinity' || card.id === 'hdfc-imperia') && (
           <div className="flex gap-2 items-center flex-wrap pt-1">
             {!isExhausted && card.id === 'hdfc-tata-neu-infinity' && (

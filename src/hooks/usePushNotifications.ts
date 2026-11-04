@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { CARD_DICT } from '../data/cards';
-import { dateInMonth, formatBillDate, indiaDate, paymentReminder, statementDay } from '../lib/billingDates';
+import { dateInMonth, formatBillDate, indiaDate, statementReminder, statementDay, validBillDay } from '../lib/billingDates';
 
 export function usePushNotifications(
   isDataLoaded: boolean,
@@ -19,7 +19,7 @@ export function usePushNotifications(
     if (!isDataLoaded || !walletCards) return;
     // [] is the app's all-selected sentinel. Notify only cards with an actual
     // account date when selection is implicit, matching the reminder panel.
-    const effectiveCards = walletCards.length ? walletCards : Object.keys(cardBillDates).filter(id => CARD_DICT[id]);
+    const effectiveCards = walletCards.length ? walletCards : Object.keys(CARD_DICT).filter(id => validBillDay(cardBillDates[`${id}:statement`]));
 
     const notify = () => {
       if (window.Notification.permission !== 'granted') return;
@@ -28,13 +28,13 @@ export function usePushNotifications(
       for (const cardId of effectiveCards) {
         const card = CARD_DICT[cardId];
         if (!card || card.isDummy) continue;
-        const reminder = card.type === 'Credit' ? paymentReminder(cardId, cardBillDates, paidBills) : null;
+        const reminder = card.type === 'Credit' ? statementReminder(cardId, cardBillDates, paidBills) : null;
         if (reminder?.ready) {
           const key = `oc_notif_bill_${cardId}_${reminder.cycle}_${reminder.dueDate.getUTCDate()}_${reminder.leadDays}_${dateKey}`;
           try {
             if (!localStorage.getItem(key)) {
-              new window.Notification(reminder.overdue ? 'Credit Card Payment Overdue' : 'Credit Card Payment Reminder', {
-                body: `${card.bank} ${card.name}: payment due ${formatBillDate(reminder.dueDate)} (IST).${reminder.leadDays ? ` Reminder starts ${formatBillDate(reminder.reminderDate)}.` : ''}`,
+              new window.Notification('Credit Card Statement Reminder', {
+                body: `${card.bank} ${card.name}: statement date ${formatBillDate(reminder.dueDate)} (IST).`,
                 icon: '/pwa-192x192.png',
               });
               localStorage.setItem(key, 'true');

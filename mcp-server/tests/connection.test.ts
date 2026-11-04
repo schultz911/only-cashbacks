@@ -66,25 +66,25 @@ async function authorization(idToken = 'test-identity') {
 }
 
 describe('OnlyCashbacks plugin connection', () => {
-  it('loads both Eternal variants and calculates using the authenticated account cap and statement cycle', async () => {
-    identity.wallet = { walletCards: ['sbi-eternal-rupay'], cardBillDates: { 'sbi-eternal-rupay': 3, 'sbi-eternal-rupay:statement': 15 }, offerUsage: {} };
+  it('loads the Eternal Mastercard card and calculates using the authenticated account cap and statement cycle', async () => {
+    identity.wallet = { walletCards: ['sbi-eternal'], cardBillDates: { 'sbi-eternal': 3, 'sbi-eternal:statement': 15 }, offerUsage: {} };
     const { client } = await connect();
     const token = await (await post('/oauth/token', await authorization())).json();
     const signedIn = await connect(token.access_token);
     const catalogue = text(await client.callTool({ name: 'list_cards', arguments: {} }));
-    expect(catalogue).toContain('sbi-eternal'); expect(catalogue).toContain('sbi-eternal-rupay');
-    const details = text(await client.callTool({ name: 'get_card_details', arguments: { cardId: 'sbi-eternal-rupay' } }));
-    expect(details).toContain('RuPay'); expect(details).toContain('₹500'); expect(details).toContain('IXIGOSBI');
+    expect(catalogue).toContain('sbi-eternal');
+    const details = text(await client.callTool({ name: 'get_card_details', arguments: { cardId: 'sbi-eternal' } }));
+    expect(details).toContain('Mastercard'); expect(details).toContain('₹500'); expect(details).toContain('IXIGOSBI');
     const result = await signedIn.client.callTool({ name: 'find_best_card', arguments: { merchant: 'Zomato', amount: 1000 } });
     expect(text(result)).toContain('100');
-    expect(JSON.stringify(result.structuredContent)).toContain('sbi-eternal-rupay');
+    expect(JSON.stringify(result.structuredContent)).toContain('sbi-eternal');
     expect(JSON.stringify(result.structuredContent)).not.toContain('sbi-cashback');
-    identity.wallet.offerUsage[`reward:sbi-eternal-rupay:eternal-apps:${calendarCycle()}:opening`] = 1980;
+    identity.wallet.offerUsage[`reward:sbi-eternal:eternal-apps:${calendarCycle()}:opening`] = 1980;
     const capped = await signedIn.client.callTool({ name: 'find_best_card', arguments: { merchant: 'Blinkit', amount: 1000 } });
     expect(text(capped)).toContain('₹20.00');
     const next = await signedIn.client.callTool({ name: 'find_best_card', arguments: { merchant: 'Apollo', amount: 1000 } });
     expect(text(next)).toContain('50');
-    expect(identity.wallet.cardBillDates['sbi-eternal-rupay']).toBe(3);
+    expect(identity.wallet.cardBillDates['sbi-eternal']).toBe(3);
   });
   it('advertises accurate read-only and non-destructive tool annotations', async () => {
     const { client } = await connect();

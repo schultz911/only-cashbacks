@@ -3,7 +3,7 @@ import { getInitialState, safeSetItem } from '../lib/storage';
 import { CARD_DATA } from '../data/cards';
 import { getCycleForCard } from '../lib/recommendation';
 import { CashbackLog } from '../types';
-import { paymentReminder } from '../lib/billingDates';
+import { statementReminder } from '../lib/billingDates';
 import { useBillingDay } from './useBillingDay';
 
 export function useWalletState(skipSyncRef: React.MutableRefObject<boolean>, setIsDirty: (dirty: boolean) => void) {
@@ -41,7 +41,7 @@ export function useWalletState(skipSyncRef: React.MutableRefObject<boolean>, set
   }, [exhaustedCards, cardBillDates, billingDay]);
 
   const markBillPaid = (cardId: string) => {
-    const reminder = paymentReminder(cardId, cardBillDates, paidBills);
+    const reminder = statementReminder(cardId, cardBillDates, paidBills);
     if (reminder) setPaidBills(prev => ({ ...prev, [cardId]: reminder.cycle }));
   };
 

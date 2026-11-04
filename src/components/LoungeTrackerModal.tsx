@@ -138,7 +138,7 @@ export function LoungeTrackerModal({
                 </div>
                 <div>
                   <h2 className="text-xl font-black text-gray-900 dark:text-white leading-tight">Lounge Tracker</h2>
-                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Your complimentary passes</p>
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Your ticket to a premium flying experience</p>
                 </div>
               </div>
               <button

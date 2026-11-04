@@ -11,11 +11,12 @@ import { categorizeMerchant } from './services/gemini';
 import { getCycleForCard, getOfferCycleForCard, getQuarterCycle, getRecommendations } from './lib/recommendation';
 import { Recommendation, MerchantInfo, Card, CashbackLog } from './types';
 import { CARD_DATA, CARD_DICT } from './data/cards';
+import { CARD_DETAIL_INFO, getCardDetailBenefits, getCardDetailGroups, getBenefitDetailChips, benefitCodes } from './data/cardDetails';
 import { CardItem } from './components/CardItem';
 import { BillReminders } from './components/BillReminders';
 import { CardBillingSettings } from './components/CardBillingSettings';
 import { CardRewardUsage } from './components/CardRewardUsage';
-import { dateInMonth, indiaDate, paymentReminder, statementDay } from './lib/billingDates';
+import { dateInMonth, indiaDate, statementReminder, statementDay } from './lib/billingDates';
 import { recordRewardAllocations, removeRewardLogs } from './lib/rewardRules';
 import { useBillingDay } from './hooks/useBillingDay';
 
@@ -23,7 +24,6 @@ const LoungeTrackerModal = lazy(() => import('./components/LoungeTrackerModal').
 const WalletManagerModal = lazy(() => import('./components/WalletManagerModal').then(module => ({ default: module.WalletManagerModal })));
 const DashboardModal = lazy(() => import('./components/DashboardModal').then(module => ({ default: module.DashboardModal })));
 import { Header } from './components/Header';
-import { VoucherSection } from './components/VoucherSection';
 import { SearchSection } from './components/SearchSection';
 import { cn } from './lib/utils';
 import { db } from './firebase';
@@ -47,15 +47,12 @@ const useDebouncedValue = <T,>(value: T, delay: number): T => {
   return debouncedValue;
 };
 
-const VOUCHER_PORTALS: Record<string, string> = {
-  'Maximize': 'Kotak 811 Infinity Metal',
-  'Amazon': 'SBI Cashback',
-  'Blinkit': 'SBI Cashback',
-  'Cred': 'SBI Cashback',
-  'OneCard': 'IDIB OneCard',
-  'Kiwi': 'YES Kiwi Neon',
-  'Tata Neu': 'HDFC Tata Neu Infinity'
-};
+const WALLET_CARD_ORDER = [
+  'hsbc-live-plus', 'hdfc-swiggy', 'sbi-eternal',
+  'hdfc-tata-neu-infinity', 'sbi-cashback', 'kotak-811-infinity',
+  'icici-amazon-pay', 'kiwi-neon', 'hdfc-imperia',
+  'one-card', 'niyo-dcb', 'axis-myzone'
+];
 
 // Stale exchange rates from 2024 used as a last-resort fallback when the exchange API fails and cache is empty.
 const FALLBACK_EXCHANGE_RATES: Record<string, number> = { 'USD': 0.012, 'EUR': 0.011, 'GBP': 0.0094, 'AED': 0.044 };
@@ -135,7 +132,6 @@ export default function App() {
   const [lastSearchInfo, setLastSearchInfo] = useState<MerchantInfo | null>(null);
   const [history, setHistory] = useState<MerchantInfo[]>([]);
 
-  const [selectedVoucherPortal, setSelectedVoucherPortal] = useState('');
   const [isLoungeOpen, setIsLoungeOpen] = useState(false);
   const [showOffersOverlay, setShowOffersOverlay] = useState(false);
   const [selectedCardForDetails, setSelectedCardForDetails] = useState<{ card: Card, source: string } | null>(null);
@@ -275,9 +271,16 @@ export default function App() {
   }, [isOffline, isDirty, user, isAuthLoading, isDataLoaded, isSyncPaused, isSyncing, exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, cardBillDates, paidBills, openRouterApiKey, kiwiNeonEarnRate, walletCards, cashbackLogs, theme]);
 
   const activeWalletCards = useMemo(() => {
-    return walletCards.length > 0
+    const cards = walletCards.length > 0
       ? CARD_DATA.filter(c => walletCards.includes(c.id) && !c.isDummy)
       : CARD_DATA.filter(c => !c.isDummy);
+    return cards.sort((a, b) => {
+      const rank = (id: string) => {
+        const index = WALLET_CARD_ORDER.indexOf(id);
+        return index === -1 ? WALLET_CARD_ORDER.length : index;
+      };
+      return rank(a.id) - rank(b.id);
+    });
   }, [walletCards]);
 
   const loungeCardCount = useMemo(() => CARD_DATA.filter(c => !c.isDummy && c.benefits.some(b => b.type === 'lounge')).length, []);
@@ -289,14 +292,14 @@ export default function App() {
       for (const cardId of walletCards) {
         const card = CARD_DICT[cardId];
         if (!card || card.isDummy || card.type !== 'Credit') continue;
-        const reminder = paymentReminder(cardId, cardBillDates, paidBills);
+        const reminder = statementReminder(cardId, cardBillDates, paidBills);
         if (reminder?.overdue) {
           hasUnpaidPastDue = true;
           break;
         }
       }
       if (hasUnpaidPastDue) {
-        showToast('You have unpaid credit card bills past their payment due dates.', 'info');
+        showToast('You have credit card statements to review.', 'info');
       }
     }, 2000);
     return () => clearTimeout(timer);
@@ -659,13 +662,6 @@ export default function App() {
               isOffline={isOffline}
             />
 
-            <VoucherSection
-              className="space-y-4 hidden md:block relative z-[100]"
-              selectedVoucherPortal={selectedVoucherPortal}
-              setSelectedVoucherPortal={setSelectedVoucherPortal}
-              voucherPortals={VOUCHER_PORTALS}
-            />
-
           </div>
 
           {/* Right Column - Results */}
@@ -961,14 +957,6 @@ export default function App() {
             </AnimatePresence>
 
             <div className="w-full flex flex-col gap-8 md:gap-6">
-              {/* Vouchers (Mobile) */}
-              <VoucherSection
-                className="space-y-4 md:hidden relative z-[100]"
-                selectedVoucherPortal={selectedVoucherPortal}
-                setSelectedVoucherPortal={setSelectedVoucherPortal}
-                voucherPortals={VOUCHER_PORTALS}
-              />
-
               {/* Lounge Access Tip */}
               <section className="bg-gray-900/95 dark:bg-black/80 backdrop-blur-xl rounded-3xl p-6 py-6 md:py-8 text-white overflow-hidden relative shadow-lg min-h-[140px] flex flex-col sm:flex-row sm:items-center justify-between border border-gray-800 dark:border-gray-700/50 group">
                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-500/20 via-transparent to-transparent pointer-events-none opacity-50 group-hover:opacity-100 transition-opacity duration-500" />
@@ -1102,10 +1090,10 @@ export default function App() {
                 backfaceVisibility: 'hidden',
                 transform: 'translateZ(0)'
               }}
-              className={cn(
-                "rounded-3xl p-6 max-w-md w-full relative flex flex-col text-white max-h-[85vh] overflow-hidden bg-gradient-to-br z-0",
-                selectedCardForDetails.card.gradient || "from-gray-700 to-gray-900"
-              )}
+              role="dialog"
+              aria-modal="true"
+              aria-label={`${selectedCardForDetails.card.name} rewards`}
+              className="rounded-3xl p-6 max-w-md w-full relative flex flex-col text-white max-h-[85dvh] overflow-hidden bg-gray-900 border border-gray-800 z-0"
             >
               <div className="absolute inset-0 rounded-3xl shadow-2xl shadow-black/40 pointer-events-none" />
               <button
@@ -1117,117 +1105,73 @@ export default function App() {
               </button>
 
               <div className="flex flex-col mb-6 relative z-30">
-                <span className="text-xs font-semibold uppercase tracking-widest opacity-80 mb-1">{selectedCardForDetails.card.bank}</span>
+                <span className="text-xs font-semibold uppercase tracking-widest opacity-80 mb-1">{{ YES: 'YES BANK', IDIB: 'INDIAN BANK' }[selectedCardForDetails.card.bank] ?? selectedCardForDetails.card.bank}</span>
                 <h2 className="text-3xl font-black text-white leading-tight pr-10">
                   {selectedCardForDetails.card.name}
                 </h2>
-                <div className="flex items-center gap-2 mt-2">
-                  {selectedCardForDetails.card.image && <img src={selectedCardForDetails.card.image} alt={`${selectedCardForDetails.card.officialName || selectedCardForDetails.card.name} official card artwork`} className="h-12 w-auto rounded-md" />}
-                  <span className="text-sm font-semibold opacity-90">{selectedCardForDetails.card.network}</span>
-                  {selectedCardForDetails.card.tier && (
-                    <span className="text-xs font-bold uppercase tracking-widest bg-white/20 px-2 py-0.5 rounded shadow-sm backdrop-blur-md">
-                      {selectedCardForDetails.card.tier}
-                    </span>
-                  )}
-                  {selectedCardForDetails.card.id === 'sbi-cashback' && (
-                    <div className="relative group ml-auto flex">
-                      <a
-                        href="https://docs.google.com/spreadsheets/d/1LEw12SuubMCJ-6u_4PZtRSD8FI1B5uecbeyCvCApQtk/edit?gid=1950331142#gid=1950331142"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="text-xs font-bold bg-white/20 hover:bg-white/30 text-white px-2 py-0.5 rounded transition-colors shadow-sm backdrop-blur-md flex items-center gap-1"
-                      >
-                        <Store className="w-3 h-3" /> Merchants
-                      </a>
-                      <div className="absolute top-full right-0 mt-2 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity bg-gray-900 border border-gray-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg whitespace-nowrap shadow-xl z-50">
-                        Browse the community-maintained merchant list.
-                      </div>
-                    </div>
-                  )}
-                  {selectedCardForDetails.card.id === 'icici-amazon-pay' && (
-                    <div className="relative group ml-auto flex">
-                      <a
-                        href="https://www.amazon.in/cbcc/market"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="text-xs font-bold bg-white/20 hover:bg-white/30 text-white px-2 py-0.5 rounded transition-colors shadow-sm backdrop-blur-md flex items-center gap-1"
-                      >
-                        <Store className="w-3 h-3" /> Rewards
-                      </a>
-                      <div className="absolute top-full right-0 mt-2 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity bg-gray-900 border border-gray-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg whitespace-nowrap shadow-xl z-50">
-                        View official Amazon Pay ICICI card benefits and partner offers.
-                      </div>
-                    </div>
-                  )}
-                </div>
               </div>
 
               <div className="overflow-y-auto pr-2 space-y-3 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent relative z-10 pb-4">
-                {selectedCardForDetails.card.annualFee && <div className="p-4 border border-white/10 rounded-2xl bg-black/20 text-sm text-white/90">Annual fee: {selectedCardForDetails.card.annualFee}</div>}
-                {selectedCardForDetails.card.sourceUrl && <a href={selectedCardForDetails.card.sourceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex text-xs font-bold text-white underline">Official benefits and terms</a>}
+                {CARD_DETAIL_INFO[selectedCardForDetails.card.id] && (() => {
+                  const info = CARD_DETAIL_INFO[selectedCardForDetails.card.id];
+                  return <section className="rounded-2xl p-4 border border-blue-800/40 bg-gradient-to-br from-blue-950/70 to-gray-800/60">
+                    <div className="text-[10px] uppercase tracking-widest font-bold text-blue-200/70">{info.feeLabel || 'Annual fee'}</div>
+                    <div className="text-2xl font-black tracking-tight text-white mt-1">{info.fee}</div>
+                    <p className="text-xs text-white/65 leading-relaxed mt-2">{info.feeNote}</p>
+                  </section>;
+                })()}
+                {(CARD_DETAIL_INFO[selectedCardForDetails.card.id]?.sourceUrl || selectedCardForDetails.card.sourceUrl) && <a href={CARD_DETAIL_INFO[selectedCardForDetails.card.id]?.sourceUrl || selectedCardForDetails.card.sourceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-xs font-semibold text-blue-300 hover:text-blue-200 py-1">Official benefits and terms <span aria-hidden="true">↗</span></a>}
                 <CardRewardUsage card={selectedCardForDetails.card} dates={cardBillDates} usage={offerUsage} setUsage={setOfferUsage} />
-                {selectedCardForDetails.card.benefits.filter(b => b.type !== 'exclusion' && b.type !== 'lounge' && !b.isHidden).map((b, i) => {
+                {getCardDetailGroups(selectedCardForDetails.card).map((group, groupIndex) => <section key={groupIndex} className={group.title ? 'rounded-2xl border border-blue-400/25 bg-blue-500/5 p-3 space-y-3' : undefined}>
+                  {group.title && <h3 className="px-1 text-xs font-bold text-blue-200/80">{group.title}</h3>}
+                  {group.benefits.map((b, i) => {
                   const isQuarterly = b.description.toLowerCase().includes('quarter') || b.description.toLowerCase().includes('qtr');
+                  const description = b.description.replace(/\s*\([Cc]ode:\s*[A-Z0-9]+\)/g, '');
                   const cycle = isQuarterly ? getQuarterCycle() : getOfferCycleForCard(selectedCardForDetails.card.id, cardBillDates);
-                  const usageKey = `${selectedCardForDetails.card.id}-${b.category}-${b.value}-${cycle}`;
+                  const usageKey = `${selectedCardForDetails.card.id}-${b.trackingCategory}-${b.trackingValue}-${cycle}`;
                   const usedCount = offerUsage[usageKey] || 0;
+                  const detailChips = getBenefitDetailChips(b);
+                  const codes = benefitCodes(selectedCardForDetails.card.benefits.find(original => original.category === b.trackingCategory && original.value === b.trackingValue)?.description || b.description);
                   return (
                     <div key={i} className="p-4 border border-white/10 rounded-2xl bg-black/20 backdrop-blur-sm flex flex-col gap-1">
-                      <div className="font-bold text-white flex items-center justify-between gap-2 min-w-0">
-                        <span className="truncate pr-2">{b.category}</span>
+                      <div className="font-bold text-white flex items-start justify-between gap-2 min-w-0">
+                        <span className="min-w-0 flex-1 leading-snug pr-2">{b.category}</span>
                         <span className="shrink-0 font-bold bg-white/20 border border-white/20 text-white px-2 py-1 rounded-lg text-[13px] shadow-sm relative z-10">
                           {b.value}
                         </span>
                       </div>
                       <div className="text-sm text-white/80 font-medium leading-relaxed mt-1">
-                        {b.description}
+                        {description}
                       </div>
-                      {b.usageLimit && (
-                        <div className="mt-3 flex items-center gap-2 border-t border-white/10 pt-3">
-                          <span className="text-xs font-semibold text-white/80 uppercase tracking-wider">{isQuarterly ? 'Quarterly Usage:' : 'Monthly Usage:'}</span>
-                          <div className="flex gap-1.5">
-                            {Array.from({ length: b.usageLimit }).map((_, index) => (
-                              <button
-                                key={index}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setOfferUsage(prev => {
-                                    const current = prev[usageKey] || 0;
-                                    let next = index + 1;
-                                    if (current === index + 1) next = index;
-                                    return { ...prev, [usageKey]: next };
-                                  });
-                                }}
-                                className={cn(
-                                  "w-6 h-6 rounded-md border flex items-center justify-center transition-all",
-                                  usedCount > index
-                                    ? "bg-green-500 border-green-400 text-white shadow-[0_0_10px_rgba(34,197,94,0.4)]"
-                                    : "bg-white/10 border-white/20 hover:bg-white/20"
-                                )}
-                              >
-                                {usedCount > index && <Check className="w-3.5 h-3.5" />}
-                              </button>
-                            ))}
-                          </div>
-                          <span className="text-xs text-white/60 ml-auto font-medium">
-                            {usedCount}/{b.usageLimit} Used
-                          </span>
-                        </div>
-                      )}
-                      {b.maxSpend && (
-                        <div className="text-[10px] font-black uppercase tracking-widest mt-2 text-white bg-white/20 px-2 py-1 rounded shadow-sm w-fit">
-                          Max Spend: ₹{b.maxSpend.toLocaleString()}
-                        </div>
-                      )}
+                      {(codes.length > 0 || b.extraChips?.length) && <div className="flex flex-wrap gap-2 mt-2">
+                        {b.extraChips?.map(chip => <span key={chip} className="rounded-lg border border-purple-400/30 bg-purple-400/10 px-2.5 py-1 text-[11px] font-semibold text-purple-200">{chip}</span>)}
+                        {codes.map(code => <code key={code} className="rounded-lg border border-blue-400/30 bg-blue-400/10 px-2.5 py-1 text-[11px] font-bold text-blue-200 tracking-wider">{code}</code>)}
+                      </div>}
+                      {b.usageLimit && <div className="flex items-center gap-2 mt-3 pt-3 border-t border-white/10">
+                        <span className="text-[10px] text-white/60 font-semibold mr-1">Used this {isQuarterly ? 'quarter' : 'month'}</span>
+                        {Array.from({ length: b.usageLimit }, (_, index) => <button key={index} type="button" role="checkbox" aria-checked={usedCount > index} aria-label={`${b.category} use ${index + 1}`} onClick={() => setOfferUsage(previous => ({ ...previous, [usageKey]: previous[usageKey] === index + 1 ? index : index + 1 }))} className={cn("w-7 h-7 rounded-lg border flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400", usedCount > index ? "bg-blue-500 border-blue-400 text-white" : "bg-white/5 border-white/20 hover:bg-white/10")}>
+                          {usedCount > index && <Check className="w-4 h-4" />}
+                        </button>)}
+                        <span className="text-[10px] text-white/50 ml-auto">{usedCount}/{b.usageLimit}</span>
+                      </div>}
+                      {detailChips.length > 0 && <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-white/10 text-[10px] font-semibold text-white/65">
+                        {detailChips.map(chip => <span key={chip} className="rounded-lg bg-white/5 px-2 py-1">{chip}</span>)}
+                      </div>}
                     </div>
                   );
-                })}
+                  })}
+                  {group.subtext && <p className="px-1 text-xs text-gray-400">{group.subtext}</p>}
+                  {group.chips && <div className="flex flex-wrap gap-2 px-1 text-[10px] font-semibold text-blue-100/75">{group.chips.map(chip => <span key={chip} className="rounded-lg bg-blue-400/10 px-2 py-1.5">{chip}</span>)}</div>}
+                </section>)}
 
-                {selectedCardForDetails.card.benefits.filter(b => b.type !== 'exclusion' && b.type !== 'lounge' && !b.isHidden).length === 0 && (
+                {getCardDetailBenefits(selectedCardForDetails.card).length === 0 && (
                   <div className="text-white/60 text-sm py-4 text-center font-medium">No quick-view benefits available.</div>
                 )}
+
+                <details className="border-y border-white/10 py-3 text-xs text-white/60">
+                  <summary className="cursor-pointer font-semibold text-xs text-white/70">Excluded spending</summary>
+                  <p className="mt-3 leading-relaxed">{selectedCardForDetails.card.benefits.filter(b => b.type === 'exclusion').map(b => b.description).join(', ') || 'See official terms for excluded spending.'}</p>
+                </details>
 
                 {selectedCardForDetails.card.type === 'Credit' && (
                   <CardBillingSettings cardId={selectedCardForDetails.card.id} dates={cardBillDates} setDates={setCardBillDates} />
@@ -1604,8 +1548,9 @@ export default function App() {
 
       <footer className="text-center py-6 mt-8 text-xs text-gray-400 font-medium px-6 flex flex-col items-center gap-3">
         <div>
-          <p>Crafted by Kiran Saldanha. Coded with Gemini.</p>
-          <p>For non-commercial use only.</p>
+          <p>Crafted by Chief Keefe. Coded with Codex.</p>
+          <p className="mt-2">I built this web app for myself, but feel free to fork it and customize it for your own cards.</p>
+          <a href="https://github.com/schultz911/only-cashbacks" target="_blank" rel="noopener noreferrer" className="inline-flex mt-2 text-blue-400 hover:text-blue-300 underline underline-offset-4">Fork on GitHub ↗</a>
         </div>
       </footer>
 

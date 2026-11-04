@@ -10,7 +10,7 @@ const months = [
   { year: 2026, month: 4, last: 30 }, { year: 2026, month: 12, last: 31 },
   { year: 2027, month: 1, last: 31 },
 ];
-describe.each(['icici-amazon-pay', 'sbi-eternal', 'sbi-eternal-rupay'])('%s payment calendar', cardId => {
+describe.each(['icici-amazon-pay', 'sbi-eternal'])('%s payment calendar', cardId => {
   for (const { year, month, last } of months) {
     it.each([1, 3, 15, 28, 30, 31])(`retains day %i in ${year}-${month}, clamping only the occurrence`, day => {
       const expected = Math.min(day, last);
@@ -64,7 +64,7 @@ it('keeps statement rewards separate from payment deadlines and calendar offers'
   expect(getCycleForCard('icici-amazon-pay', dates)).toBe('2026-10');
   expect(getOfferCycleForCard('sbi-eternal', dates)).toBe('2026-11');
   expect(getOfferCycleForCard('axis-myzone', dates)).toBe('2026-11');
-  for (const cardId of ['icici-amazon-pay', 'sbi-eternal', 'sbi-eternal-rupay', 'axis-myzone', 'kotak-811-infinity']) {
+  for (const cardId of ['icici-amazon-pay', 'sbi-eternal', 'axis-myzone', 'kotak-811-infinity']) {
     expect(getCycleForCard(cardId, dates)).toBe(serverCycle(cardId, dates));
     expect(getOfferCycleForCard(cardId, dates)).toBe(serverOfferCycle(cardId, dates));
   }

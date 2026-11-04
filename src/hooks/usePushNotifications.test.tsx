@@ -20,63 +20,63 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); vi.clearAllTimers(); vi.useRealTimers(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
-describe.each(['icici-amazon-pay', 'sbi-eternal', 'sbi-eternal-rupay'])('%s actual browser notifications', id => {
+describe.each(['icici-amazon-pay', 'sbi-eternal'])('%s actual browser notifications', id => {
   it.each([1, 3, 15, 28, 30, 31])('delivers the notification for configured day %i only on its November occurrence', day => {
     const expected = Math.min(day, 30);
     vi.setSystemTime(new Date(Date.UTC(2026, 10, expected - 1, 6, 30)));
-    renderHook(() => usePushNotifications(true, [id], { [id]: day }, { [id]: '2026-10' }, getCycleForCard));
+    renderHook(() => usePushNotifications(true, [id], { [`${id}:statement`]: day }, { [id]: '2026-10' }, getCycleForCard));
     act(() => vi.advanceTimersByTime(3000));
-    expect(sent.filter(item => /Payment/.test(item.title))).toHaveLength(0);
+    expect(sent.filter(item => /Statement/.test(item.title))).toHaveLength(0);
     vi.setSystemTime(new Date(Date.UTC(2026, 10, expected, 6, 30)));
     act(() => window.dispatchEvent(new Event('focus')));
-    const payment = sent.filter(item => /Payment/.test(item.title));
+    const payment = sent.filter(item => /Statement/.test(item.title));
     expect(payment).toHaveLength(1);
-    expect(payment[0].options.body).toContain(`payment due ${expected} Nov 2026`);
+    expect(payment[0].options.body).toContain(`statement date ${expected} Nov 2026`);
   });
-  it('does not notify a payment due on the 3rd on the 1st; notifies on the due day', () => {
-    const dates = { [id]: 3 };
+  it('does not notify a statement date on the 3rd on the 1st; notifies on the statement day', () => {
+    const dates = { [`${id}:statement`]: 3 };
     renderHook(() => usePushNotifications(true, [id], dates, {}, getCycleForCard));
     act(() => vi.advanceTimersByTime(3000));
-    expect(sent.filter(item => /Payment/.test(item.title))).toHaveLength(0);
+    expect(sent.filter(item => /Statement/.test(item.title))).toHaveLength(0);
     vi.setSystemTime(new Date('2026-11-03T06:30Z'));
     act(() => window.dispatchEvent(new Event('focus')));
-    expect(sent.filter(item => /Payment/.test(item.title))).toHaveLength(1);
-    expect(sent.find(item => /Payment/.test(item.title))!.options.body).toContain('payment due 3 Nov 2026');
+    expect(sent.filter(item => /Statement/.test(item.title))).toHaveLength(1);
+    expect(sent.find(item => /Statement/.test(item.title))!.options.body).toContain('statement date 3 Nov 2026');
     act(() => vi.advanceTimersByTime(60000));
-    expect(sent.filter(item => /Payment/.test(item.title))).toHaveLength(1);
+    expect(sent.filter(item => /Statement/.test(item.title))).toHaveLength(1);
   });
-  it('reschedules edited lead days and due days without conflating the displayed deadline', () => {
+  it('reschedules statement edits and ignores old due-day and lead-day settings', () => {
     const { rerender } = renderHook(({ dates, paid }) => usePushNotifications(true, [id], dates, paid, getCycleForCard), {
-      initialProps: { dates: { [id]: 3 }, paid: {} as Record<string, string> },
+      initialProps: { dates: { [id]: 1, [`${id}:statement`]: 3, [`${id}:reminderDays`]: 2 }, paid: {} as Record<string, string> },
     });
     act(() => vi.advanceTimersByTime(3000));
-    rerender({ dates: { [id]: 3, [`${id}:reminderDays`]: 2 }, paid: {} });
+    expect(sent.filter(item => /Statement/.test(item.title))).toHaveLength(0);
+    rerender({ dates: { [id]: 15, [`${id}:statement`]: 1, [`${id}:reminderDays`]: 5 }, paid: {} });
     act(() => vi.advanceTimersByTime(3000));
-    expect(sent.find(item => /Payment/.test(item.title))!.options.body).toContain('payment due 3 Nov 2026');
-    expect(sent.find(item => /Payment/.test(item.title))!.options.body).toContain('Reminder starts 1 Nov 2026');
+    expect(sent.find(item => /Statement/.test(item.title))!.options.body).toContain('statement date 1 Nov 2026');
     sent = [];
-    rerender({ dates: { [id]: 15, [`${id}:reminderDays`]: 2 }, paid: {} });
+    rerender({ dates: { [id]: 1, [`${id}:statement`]: 15, [`${id}:reminderDays`]: 2 }, paid: {} });
     act(() => vi.advanceTimersByTime(3000));
-    expect(sent.filter(item => /Payment/.test(item.title))).toHaveLength(0);
-    rerender({ dates: { [id]: 3, [`${id}:reminderDays`]: 2 }, paid: { [id]: '2026-11' } });
+    expect(sent.filter(item => /Statement/.test(item.title))).toHaveLength(0);
+    rerender({ dates: { [id]: 15, [`${id}:statement`]: 1, [`${id}:reminderDays`]: 2 }, paid: { [id]: '2026-11' } });
     act(() => vi.advanceTimersByTime(3000));
-    expect(sent.filter(item => /Payment/.test(item.title))).toHaveLength(0);
+    expect(sent.filter(item => /Statement/.test(item.title))).toHaveLength(0);
   });
-  it('notifies at India midnight and clamps a February 31 deadline without missing month-end', () => {
+  it('notifies at India midnight and clamps a February 31 statement date without missing month-end', () => {
     vi.setSystemTime(new Date('2025-02-27T18:29:50Z'));
-    renderHook(() => usePushNotifications(true, [id], { [id]: 31 }, {}, getCycleForCard));
+    renderHook(() => usePushNotifications(true, [id], { [`${id}:statement`]: 31 }, {}, getCycleForCard));
     act(() => vi.advanceTimersByTime(3000));
-    expect(sent.filter(item => /Payment/.test(item.title))).toHaveLength(0);
+    expect(sent.filter(item => /Statement/.test(item.title))).toHaveLength(0);
     vi.setSystemTime(new Date('2025-02-27T18:30:00Z'));
     act(() => document.dispatchEvent(new Event('visibilitychange')));
-    expect(sent.find(item => /Payment/.test(item.title))!.options.body).toContain('payment due 28 Feb 2025');
+    expect(sent.find(item => /Statement/.test(item.title))!.options.body).toContain('statement date 28 Feb 2025');
   });
 });
 
 it('cleans up timers and skips unconfigured, non-credit and unknown cards', () => {
   const { unmount } = renderHook(() => usePushNotifications(true, ['icici-amazon-pay', 'niyo-dcb', 'unknown'], {}, {}, getCycleForCard));
   act(() => vi.advanceTimersByTime(3000));
-  expect(sent.filter(item => /Payment/.test(item.title))).toHaveLength(0);
+  expect(sent.filter(item => /Statement/.test(item.title))).toHaveLength(0);
   unmount();
   expect(vi.getTimerCount()).toBe(0);
 });
@@ -84,8 +84,8 @@ it('cleans up timers and skips unconfigured, non-credit and unknown cards', () =
 it('uses configured cards for the all-selected wallet sentinel, including while the open app is in the background', () => {
   vi.setSystemTime(new Date('2026-11-03T06:30Z'));
   vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
-  renderHook(() => usePushNotifications(true, [], { 'icici-amazon-pay': 3 }, {}, getCycleForCard));
+  renderHook(() => usePushNotifications(true, [], { 'icici-amazon-pay:statement': 3 }, {}, getCycleForCard));
   act(() => vi.advanceTimersByTime(3000));
-  expect(sent.filter(item => /Payment/.test(item.title))).toHaveLength(1);
-  expect(sent[0].options.body).toContain('payment due 3 Nov 2026');
+  expect(sent.filter(item => /Statement/.test(item.title))).toHaveLength(1);
+  expect(sent[0].options.body).toContain('statement date 3 Nov 2026');
 });

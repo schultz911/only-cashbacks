@@ -74,11 +74,16 @@ export function DashboardModal({ isOpen, onClose, logs, setLogs, onRemoveLogs }:
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.95, y: 20 }}
             onClick={(e) => e.stopPropagation()}
-            className="bg-white/90 dark:bg-gray-900/90 oled:bg-black/95 backdrop-blur-xl border border-gray-100 dark:border-gray-800/80 rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl flex flex-col items-center text-center relative overflow-hidden"
+            role="dialog"
+            aria-modal="true"
+            aria-label="My Savings"
+            onKeyDown={(e) => { if (e.key === 'Escape') handleClose(); }}
+            className="bg-[#F5F5F7] dark:bg-gray-900 oled:bg-black/95 backdrop-blur-xl border border-white/60 dark:border-gray-800 rounded-3xl p-6 sm:p-7 max-w-lg w-full shadow-2xl flex flex-col items-center text-center relative max-h-[90dvh] overflow-y-auto"
           >
             <button
               onClick={handleClose}
-              aria-label="Close Savings Dashboard"
+              autoFocus
+                aria-label="Close Savings Dashboard"
               className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-500 dark:text-gray-400 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none z-10"
             >
               <X className="w-4 h-4" />
@@ -90,7 +95,7 @@ export function DashboardModal({ isOpen, onClose, logs, setLogs, onRemoveLogs }:
                 className="w-full flex flex-col items-center py-6"
               >
                 <div className="w-16 h-16 bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400 rounded-full flex items-center justify-center mb-4 shadow-inner">
-                  <AlertTriangle className="w-8 h-8 animate-bounce" />
+                  <AlertTriangle className="w-8 h-8" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Reset Savings?</h3>
                 <p className="text-gray-500 dark:text-gray-400 mb-8 font-medium text-sm">This will permanently delete your savings history. This cannot be undone.</p>
@@ -116,26 +121,41 @@ export function DashboardModal({ isOpen, onClose, logs, setLogs, onRemoveLogs }:
                 exit={{ opacity: 0 }}
                 className="w-full flex flex-col items-center"
               >
-                <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mb-4 shadow-md">
-                  <TrendingUp className="w-8 h-8" />
+                <div className="flex items-center gap-3 w-full text-left mb-6 pr-8">
+                  <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/40 text-emerald-600 dark:text-emerald-400"><TrendingUp className="w-5 h-5" /></div>
+                  <div>
+                    <h2 className="text-2xl font-black tracking-tight text-gray-900 dark:text-white">My Savings</h2>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Every reward adds up.</p>
+                  </div>
                 </div>
-                
-                <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-1">My Savings</h2>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mb-6 font-bold tracking-widest uppercase">Track your total cashbacks</p>
 
-                <div className="bg-gradient-to-br from-emerald-50/50 to-teal-50/20 dark:from-emerald-950/20 dark:to-teal-950/5 border border-emerald-100/60 dark:border-emerald-900/30 w-full rounded-2xl p-6 shadow-sm mb-6 relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-400/10 dark:bg-emerald-500/5 rounded-full blur-2xl pointer-events-none -mr-8 -mt-8" />
-                  <div className="text-[10px] uppercase tracking-widest text-emerald-600 dark:text-emerald-400 font-black mb-2">Earned This Month</div>
-                  <div className="text-4xl font-black text-emerald-600 dark:text-emerald-400">₹{totalThisMonth.toFixed(2)}</div>
+                <div className="w-full rounded-2xl p-6 sm:p-7 mb-5 relative overflow-hidden text-left bg-gradient-to-br from-gray-900 to-blue-950 dark:from-blue-950/80 dark:to-gray-800 border border-gray-800 dark:border-blue-800/40 shadow-lg shadow-blue-950/10">
+                  <div className="absolute -right-10 -top-16 w-56 h-56 bg-blue-400/10 rounded-full pointer-events-none" />
+                  <div className="absolute -right-12 -bottom-24 w-52 h-52 border border-white/10 rounded-full pointer-events-none" />
+                  <div className="relative">
+                    <div className="flex items-center justify-between gap-2 mb-4">
+                      <span className="text-xs text-blue-100/80 font-medium">Earned this month</span>
+                      <span className="text-[10px] font-semibold text-blue-100 rounded-full px-2.5 py-1 bg-white/10 border border-white/10">{today.toLocaleDateString('en-IN', { month: 'short', year: 'numeric', timeZone: 'UTC' })}</span>
+                    </div>
+                    <div className="text-5xl sm:text-6xl font-black tracking-tight text-white tabular-nums break-all">₹{totalThisMonth.toFixed(2)}</div>
+                    <div className="mt-5 pt-4 border-t border-white/10 flex items-center gap-2 text-xs text-blue-100/80"><span className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />{thisMonthLogs.length} {thisMonthLogs.length === 1 ? 'reward' : 'rewards'} recorded this month</div>
+                  </div>
                 </div>
+
+                {logs.length === 0 && (
+                  <div className="w-full rounded-2xl border border-dashed border-gray-200 dark:border-gray-700/70 p-6 mb-5 text-center">
+                    <p className="text-sm font-bold text-gray-800 dark:text-gray-200">Your next purchase could be rewarding</p>
+                    <p className="text-xs leading-relaxed text-gray-500 dark:text-gray-400 mt-2 max-w-xs mx-auto">Record cashback from your card recommendations to see your savings grow here.</p>
+                  </div>
+                )}
 
                 {logs.length > 0 && (
                   <div className="w-full mb-6">
                     <div className="flex justify-between items-center mb-3">
-                       <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 text-left">Top {viewMode === 'category' ? 'Categories' : 'Cards'}</h3>
+                       <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 text-left">Top {viewMode === 'category' ? 'Categories' : 'Cards'} · All time</h3>
                        <div className="flex bg-gray-100 dark:bg-gray-800 p-0.5 rounded-lg">
-                          <button onClick={() => setViewMode('category')} className={`px-2 py-1 text-[10px] font-bold rounded-md uppercase tracking-wider transition-colors ${viewMode === 'category' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Category</button>
-                          <button onClick={() => setViewMode('card')} className={`px-2 py-1 text-[10px] font-bold rounded-md uppercase tracking-wider transition-colors ${viewMode === 'card' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Card</button>
+                          <button aria-pressed={viewMode === 'category'} onClick={() => setViewMode('category')} className={`px-2 py-1 text-[10px] font-bold rounded-md uppercase tracking-wider transition-colors ${viewMode === 'category' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Category</button>
+                          <button aria-pressed={viewMode === 'card'} onClick={() => setViewMode('card')} className={`px-2 py-1 text-[10px] font-bold rounded-md uppercase tracking-wider transition-colors ${viewMode === 'card' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Card</button>
                        </div>
                     </div>
                     
@@ -220,18 +240,18 @@ export function DashboardModal({ isOpen, onClose, logs, setLogs, onRemoveLogs }:
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-3 w-full mb-6">
+                <div className="grid grid-cols-2 gap-3 w-full mb-5">
                   <button 
                     onClick={handleUndo}
                     disabled={logs.length === 0}
-                    className="py-3 px-4 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 disabled:opacity-40 font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 active:scale-98"
+                    className="py-3 px-4 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 disabled:opacity-40 disabled:cursor-not-allowed text-sm font-semibold rounded-xl transition-all border border-gray-200/70 dark:border-gray-700/60 flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                   >
                     <Undo2 className="w-4 h-4" /> Undo Last
                   </button>
                   <button 
                     onClick={() => setShowConfirm(true)}
                     disabled={logs.length === 0}
-                    className="py-3 px-4 bg-red-50 hover:bg-red-100 dark:bg-red-950/20 dark:hover:bg-red-950/40 text-red-600 dark:text-red-400 disabled:opacity-40 font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 active:scale-98"
+                    className="py-3 px-4 bg-red-50 hover:bg-red-100 dark:bg-red-950/20 dark:hover:bg-red-950/40 text-red-600 dark:text-red-400 disabled:opacity-40 disabled:cursor-not-allowed text-sm font-semibold rounded-xl transition-all border border-gray-200/70 dark:border-gray-700/60 flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                   >
                     <RotateCcw className="w-4 h-4" /> Reset
                   </button>
@@ -239,7 +259,7 @@ export function DashboardModal({ isOpen, onClose, logs, setLogs, onRemoveLogs }:
 
                 <button 
                   onClick={handleClose} 
-                  className="w-full py-4 bg-gray-900 hover:bg-black dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100 text-white font-bold rounded-xl transition-all shadow-lg hover:shadow-xl active:scale-[0.99]"
+                  className="w-full py-3.5 bg-gray-900 hover:bg-black dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100 text-white text-sm font-bold rounded-xl transition-colors shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                 >
                   Close
                 </button>

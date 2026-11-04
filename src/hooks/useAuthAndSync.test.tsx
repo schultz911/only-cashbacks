@@ -103,19 +103,28 @@ afterEach(() => {
 });
 
 describe('cloud synchronization provenance', () => {
+  it('tracks a limited-use reward through its original saved usage key', async () => {
+    mount(); await hydrate({ ...cloudWallet(), walletCards: ['sbi-eternal'] });
+    fireEvent.click(screen.getByRole('heading', { name: 'Eternal' }));
+    const checkbox = screen.getByRole('checkbox', { name: 'Movies use 1' });
+    expect(checkbox.getAttribute('aria-checked')).toBe('false');
+    fireEvent.click(checkbox);
+    expect(wallet.offerUsage['sbi-eternal-Movies-District-2026-11']).toBe(1);
+    expect(checkbox.getAttribute('aria-checked')).toBe('true');
+    fireEvent.click(checkbox);
+    expect(wallet.offerUsage['sbi-eternal-Movies-District-2026-11']).toBe(0);
+  });
+
   it('edits and reloads billing dates through the shared card details controls', async () => {
     mount(); await hydrate({ ...cloudWallet(), walletCards: ['sbi-eternal'], cardBillDates: { 'sbi-eternal': 3 } });
     fireEvent.click(screen.getByRole('heading', { name: 'Eternal' }));
-    const due = within(screen.getByRole('group', { name: 'Payment due day' }));
-    expect(due.getByText('3')).toBeTruthy();
-    fireEvent.keyDown(due.getByRole('button', { name: 'Next day' }), { key: 'Enter' });
-    expect(wallet.cardBillDates['sbi-eternal']).toBe(4);
+    expect(screen.queryByRole('group', { name: 'Payment due day' })).toBeNull();
     const statement = within(screen.getByRole('group', { name: 'Statement day' }));
     fireEvent.keyDown(statement.getByRole('button', { name: 'Previous day' }), { key: 'Enter' });
     expect(wallet.cardBillDates['sbi-eternal:statement']).toBe(31);
-    fireEvent.change(screen.getByLabelText('Remind before due date (days)'), { target: { value: '2' } });
+    expect(screen.queryByLabelText('Remind before due date (days)')).toBeNull();
     await advance(2000);
-    expect(state.writes.at(-1).data.cardBillDates).toEqual({ 'sbi-eternal': 4, 'sbi-eternal:statement': 31, 'sbi-eternal:reminderDays': 2 });
+    expect(state.writes.at(-1).data.cardBillDates).toEqual({ 'sbi-eternal': 3, 'sbi-eternal:statement': 31 });
   });
 
   it('logs Eternal savings, persists allocations, and restores usage through the dashboard undo action', async () => {
@@ -172,6 +181,9 @@ describe('cloud synchronization provenance', () => {
     await advance(2000);
     expect(wallet.cardBillDates['sbi-eternal:statement']).toBe(15);
     await act(async () => { wallet.setWalletCards(['icici-amazon-pay', 'sbi-eternal']); wallet.markBillPaid('icici-amazon-pay'); });
+    expect(wallet.paidBills['icici-amazon-pay']).toBeUndefined();
+    await act(async () => { wallet.setCardBillDates(previous => ({ ...previous, 'icici-amazon-pay:statement': 3 })); });
+    await act(async () => { wallet.markBillPaid('icici-amazon-pay'); });
     expect(wallet.paidBills['icici-amazon-pay']).toBe('2026-11');
   });
   it('persists hydrated data locally without writing it back during 60 seconds of inactivity', async () => {
