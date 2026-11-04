@@ -1,0 +1,5 @@
+import { getRecommendations } from '/Users/kiransaldanha/Documents/only-cashbacks/src/lib/recommendation.ts';
+import {performance} from 'node:perf_hooks';
+const cases = [{name:'Swiggy',category:'Food Delivery',isOnline:true,platform:'Swiggy'},{name:'Amazon',category:'E-commerce',isOnline:true,platform:'Amazon'},{name:'District',category:'Movies',isOnline:true,platform:'District'},{name:'Apollo',category:'Health',isOnline:true,platform:'Apollo'}];
+for(let i=0;i<500;i++)getRecommendations(cases[i%4],1000);
+let times=[];for(let sample=0;sample<7;sample++){let start=performance.now();for(let i=0;i<1000;i++)getRecommendations(cases[i%4],1000);times.push((performance.now()-start)/1000);}times.sort((a,b)=>a-b);console.log(JSON.stringify({iterationsPerSample:1000,samples:7,medianMsPerRecommendation:times[3],minMs:times[0],maxMs:times[6]}));

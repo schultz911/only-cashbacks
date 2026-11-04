@@ -5,8 +5,12 @@ import { useAuthSyncContext } from './AuthSyncContext';
 const WalletContext = createContext<ReturnType<typeof useWalletState> | null>(null);
 
 export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { skipSyncRef, markDirty } = useAuthSyncContext();
-  const walletState = useWalletState(skipSyncRef, markDirty);
+  const { user, skipSyncRef, markDirty, pendingEditsRef } = useAuthSyncContext();
+  return <OwnedWalletProvider key={user?.uid ?? "guest"} owner={user?.uid ?? null} skipSyncRef={skipSyncRef} markDirty={markDirty} pendingEditsRef={pendingEditsRef}>{children}</OwnedWalletProvider>;
+};
+
+const OwnedWalletProvider: React.FC<{ children: React.ReactNode; owner: string | null; skipSyncRef: React.MutableRefObject<boolean>; markDirty: () => void; pendingEditsRef: React.MutableRefObject<Record<string, unknown>> }> = ({children, owner, skipSyncRef, markDirty, pendingEditsRef}) => {
+  const walletState = useWalletState(skipSyncRef, markDirty, owner, pendingEditsRef);
 
   return (
     <WalletContext.Provider value={walletState}>

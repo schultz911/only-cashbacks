@@ -45,13 +45,13 @@ export default defineConfig(({ mode }) => {
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
           globIgnores: ['**/vendor-recharts*.js'],
-          navigateFallbackDenylist: [/^\/oauth/, /^\/mcp/, /^\/sse/, /^\/health/, /^\/\.well-known/, /^\/api/, /^\/messages/, /^\/login/],
+          navigateFallbackDenylist: [/^\/(?:oauth|authorize|token|register|mcp|sse|health|\.well-known|api|messages|login|__)(?:\/|\?|$)/],
           runtimeCaching: [
             {
-              urlPattern: ({ url }) => url.pathname.includes('vendor-recharts'),
+              urlPattern: ({ url }) => url.origin === self.location.origin && /^\/assets\/vendor-recharts[^/]*\.js$/.test(url.pathname),
               handler: 'CacheFirst',
               options: {
-                cacheName: 'lazy-scripts-cache',
+                cacheName: 'onlycashbacks-lazy-scripts-v2',
                 expiration: {
                   maxEntries: 10,
                   maxAgeSeconds: 30 * 24 * 60 * 60 // 30 days
@@ -62,10 +62,15 @@ export default defineConfig(({ mode }) => {
               }
             },
             {
-              urlPattern: ({ request, url }) => request.destination === 'worker' || request.destination === 'font' || url.origin.includes('fonts.googleapis.com') || url.origin.includes('fonts.gstatic.com'),
+              urlPattern: ({ request, url }) => {
+                const protectedPath = /^\/(?:oauth|authorize|token|register|mcp|sse|health|\.well-known|api|messages|login|__)(?:\/|$)/.test(url.pathname);
+                const localStatic = url.origin === self.location.origin && !protectedPath;
+                const googleFonts = url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com';
+                return (localStatic && (request.destination === 'worker' || request.destination === 'font')) || googleFonts;
+              },
               handler: 'CacheFirst',
               options: {
-                cacheName: 'static-assets-cache',
+                cacheName: 'onlycashbacks-static-v2',
                 expiration: {
                   maxEntries: 100,
                   maxAgeSeconds: 30 * 24 * 60 * 60 // 30 days
@@ -79,7 +84,7 @@ export default defineConfig(({ mode }) => {
               urlPattern: ({ url }) => url.href.startsWith('https://open.er-api.com/v6/latest'),
               handler: 'StaleWhileRevalidate',
               options: {
-                cacheName: 'api-cache',
+                cacheName: 'onlycashbacks-api-v2',
                 expiration: {
                   maxEntries: 5,
                   maxAgeSeconds: 24 * 60 * 60 // 1 day

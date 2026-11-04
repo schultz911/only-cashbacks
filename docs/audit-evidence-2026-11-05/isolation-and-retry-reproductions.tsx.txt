@@ -1,0 +1,139 @@
+import React from 'react';
+import { render, act, cleanup, fireEvent, screen, within } from '@testing-library/react';
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
+import App from '../App';
+import { AuthSyncProvider, useAuthSyncContext } from '../contexts/AuthSyncContext';
+import { WalletProvider, useWalletContext } from '../contexts/WalletContext';
+import { SearchProvider, useSearchContext } from '../contexts/SearchContext';
+import { getDocFromServer, deleteDoc, setDoc } from 'firebase/firestore';
+
+// State/persistence tests do not wait for exit animations. Real animation and
+// responsive layout are verified separately in the compiled browser app.
+vi.mock('motion/react', async () => {
+  const actual = await vi.importActual<typeof import('motion/react')>('motion/react');
+  return { ...actual, AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</> };
+});
+
+const state = vi.hoisted(() => ({
+  snapshot: null as any, authChanged: null as any, writes: [] as any[],
+  nextWrite: null as Promise<void> | null, queue: [] as any[],
+  nextQueueRead: null as Promise<any[]> | null,
+}));
+vi.mock('virtual:pwa-register/react', () => ({
+  useRegisterSW: () => ({ needRefresh: [false, vi.fn()], updateServiceWorker: vi.fn() }),
+}));
+vi.mock('../firebase', () => ({
+  db: {}, auth: {}, functions: {}, googleProvider: {},
+  OperationType: { WRITE: 'write' }, handleFirestoreError: vi.fn(),
+}));
+vi.mock('firebase/auth', () => ({
+  onAuthStateChanged: (_auth: any, callback: any) => {
+    state.authChanged = callback;
+    callback({ uid: 'sync-test-user' });
+    return vi.fn();
+  },
+  signInWithPopup: vi.fn(), signInWithRedirect: vi.fn(), signOut: vi.fn(),
+}));
+vi.mock('firebase/firestore', () => ({
+  doc: (_db: any, _collection: string, uid: string) => ({ uid }), deleteDoc: vi.fn(),
+  getDocFromServer: vi.fn(),
+  onSnapshot: (_doc: any, callback: any) => { state.snapshot = callback; return vi.fn(); },
+  setDoc: vi.fn(async (doc: any, data: any) => {
+    state.writes.push({ uid: doc.uid, data: structuredClone(data) });
+    const pending = state.nextWrite;
+    const callback = state.snapshot;
+    state.nextWrite = null;
+    if (pending) await pending;
+    if (callback === state.snapshot) callback(snapshot(data));
+  }),
+}));
+vi.mock('idb-keyval', () => ({
+  get: vi.fn(async () => {
+    const pending = state.nextQueueRead;
+    state.nextQueueRead = null;
+    return pending ? await pending : state.queue;
+  }),
+  set: vi.fn(async (_key: string, value: any[]) => { state.queue = value; }),
+  entries: vi.fn(async () => []), del: vi.fn(),
+}));
+
+function snapshot(data: any) {
+  return { metadata: { hasPendingWrites: false }, exists: () => true, data: () => structuredClone(data) };
+}
+const cloudWallet = () => ({
+  walletCards: ['sbi-cashback'], exhaustedCards: {}, offerUsage: {}, cardBillDates: {},
+  paidBills: {}, cashbackLogs: [], loungePassesUsed: {}, loungeMilestonesVerified: {},
+  kiwiNeonEarnRate: 2, theme: 'light',
+});
+let wallet: ReturnType<typeof useWalletContext>;
+let sync: ReturnType<typeof useAuthSyncContext>;
+let search: ReturnType<typeof useSearchContext>;
+function Observe() { wallet = useWalletContext(); sync = useAuthSyncContext(); search = useSearchContext(); return null; }
+function mount() {
+  return render(<AuthSyncProvider><WalletProvider><SearchProvider><App /><Observe /></SearchProvider></WalletProvider></AuthSyncProvider>);
+}
+async function advance(ms: number) {
+  for (let elapsed = 0; elapsed < ms; elapsed += 100) {
+    await act(async () => { await vi.advanceTimersByTimeAsync(Math.min(100, ms - elapsed)); });
+  }
+}
+async function hydrate(data = cloudWallet()) {
+  await act(async () => { state.snapshot(snapshot(data)); });
+}
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>(done => { resolve = done; });
+  return { promise, resolve };
+}
+
+beforeEach(() => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date('2026-11-03T06:30Z'));
+  const values = new Map<string, string>();
+  const storage = { getItem: (key: string) => values.get(key) ?? null,
+    setItem: (key: string, value: string) => values.set(key, value), clear: () => values.clear() };
+  vi.stubGlobal('localStorage', storage);
+  Object.defineProperty(window, 'localStorage', { value: storage, configurable: true });
+  vi.stubGlobal('fetch', vi.fn(async () => ({ json: async () => ({ rates: { USD: 0.012 } }) })));
+  vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(true);
+  state.writes = []; state.queue = []; state.nextWrite = null; state.nextQueueRead = null;
+});
+afterEach(() => {
+  cleanup(); vi.clearAllTimers(); vi.useRealTimers(); vi.restoreAllMocks(); vi.unstubAllGlobals();
+});
+
+
+describe('readiness sweep isolated reproductions', () => {
+  it('checks whether an absent second-account document keeps first-account secrets and logs', async () => {
+    mount();
+    await hydrate({ ...cloudWallet(), openRouterApiKey: 'sk-or-synthetic-account-a', cashbackLogs: [{date: 123, amount: 42, cardId: 'sbi-cashback', cardName: 'A', merchantName: 'private-a', category: 'Other'}] });
+    await advance(1000);
+    await act(async () => { state.authChanged({uid: 'synthetic-account-b'}); });
+    await act(async () => { state.snapshot({metadata:{hasPendingWrites:false},exists:()=>false}); });
+    expect(search.openRouterApiKey).toBe('sk-or-synthetic-account-a');
+    expect(wallet.cashbackLogs[0].merchantName).toBe('private-a');
+    await act(async () => { sync.setTheme('dark'); });
+    await advance(2200);
+    expect(state.writes.at(-1)).toMatchObject({uid:'synthetic-account-b',data:{openRouterApiKey:'sk-or-synthetic-account-a',cashbackLogs:[{merchantName:'private-a'}]}});
+    console.log('AUDIT_CROSS_ACCOUNT', JSON.stringify({secondAccount:state.writes.at(-1)?.uid, inheritedKey:state.writes.at(-1)?.data.openRouterApiKey, inheritedLogs:state.writes.at(-1)?.data.cashbackLogs.length}));
+  });
+  it('checks whether a global offline queue merges first-account logs into a second existing account', async () => {
+    mount(); await hydrate(); await advance(1000);
+    state.queue = [{date:456,amount:99,cardId:'sbi-cashback',cardName:'A',merchantName:'private-account-a',category:'Other'}];
+    await act(async () => {state.authChanged({uid:'synthetic-account-b'});});
+    await hydrate({...cloudWallet(),walletCards:['sbi-eternal']});
+    await advance(2200);
+    expect(state.writes.at(-1)).toMatchObject({uid:'synthetic-account-b',data:{cashbackLogs:[{merchantName:'private-account-a'}]}});
+    console.log('AUDIT_QUEUE_ACCOUNT', JSON.stringify({secondAccount:state.writes.at(-1)?.uid,inheritedLogs:state.writes.at(-1)?.data.cashbackLogs.length}));
+  });
+  it('counts autosave retries after a persistent permission error with no additional edits', async () => {
+    mount(); await hydrate(); await advance(1000);
+    const calls = vi.mocked(setDoc).mock.calls.length;
+    vi.mocked(setDoc).mockImplementation(() => new Promise((_resolve,reject) => setTimeout(() => reject(new Error('permission-denied')),100)));
+    await act(async () => {sync.setTheme('dark');});
+    await advance(12000);
+    const attempted=vi.mocked(setDoc).mock.calls.length-calls;
+    expect(attempted).toBeGreaterThanOrEqual(10);
+    console.log('AUDIT_RETRY_STORM',JSON.stringify({attempts:attempted,simulatedSeconds:12,additionalEdits:0}));
+  });
+});

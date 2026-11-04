@@ -1,0 +1,22 @@
+{
+  "workers": [
+    "http://127.0.0.1:53855/sw.js"
+  ],
+  "pageErrors": [
+    "Failed to fetch",
+    "Failed to fetch"
+  ],
+  "registrations": {
+    "available": true,
+    "registrations": []
+  },
+  "observationSeconds": 6,
+  "mainFrameNavigations": 1,
+  "workerRequests": 0,
+  "navigations": [
+    {
+      "url": "http://127.0.0.1:53855/",
+      "time": 1793831034221
+    }
+  ]
+}

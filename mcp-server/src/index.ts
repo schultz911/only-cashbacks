@@ -600,32 +600,14 @@ export function createRemoteApp() {
 
     const verifyAccessToken = installOAuthRoutes(app, PUBLIC_FIREBASE_CONFIG, verifyIdToken);
 
-    // Service Worker killer to purge any legacy PWA service workers on this domain
-    const swKiller = (_req: express.Request, res: express.Response) => {
+    // Retire only the legacy worker URL. The wallet's /sw.js is served from
+    // the frontend build below; never clear caches belonging to the current worker.
+    app.get('/service-worker.js', (_req, res) => {
       res.setHeader('Content-Type', 'application/javascript');
-      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-      res.send(`
-self.addEventListener('install', () => {
-  self.skipWaiting();
-});
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
-      .then(() => self.registration.unregister())
-      .then(() => self.clients.matchAll({ type: 'window' }))
-      .then((clients) => {
-        clients.forEach((client) => {
-          if (client.url && 'navigate' in client) {
-            client.navigate(client.url);
-          }
-        });
-      })
-  );
-});
-      `.trim());
-    };
-
-    app.get(['/sw.js', '/service-worker.js'], swKiller);
+      res.setHeader('Cache-Control', 'no-store');
+      res.send("self.addEventListener('install', () => self.skipWaiting());\n" +
+        "self.addEventListener('activate', event => event.waitUntil(self.registration.unregister()));");
+    });
 
     // Google Sign-In webpage (Manual Pairing Flow)
     app.get('/login', (req, res) => {
@@ -637,7 +619,6 @@ self.addEventListener('activate', (event) => {
       }
       res.setHeader('Content-Type', 'text/html');
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-      res.setHeader('Clear-Site-Data', '"cache"');
       res.send(getLoginHtml(code, PUBLIC_FIREBASE_CONFIG));
     });
 

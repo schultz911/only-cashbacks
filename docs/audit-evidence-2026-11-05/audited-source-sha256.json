@@ -1,0 +1,14 @@
+{
+  "src/hooks/useAuthAndSync.ts": "000d5dc64758c96647635671cd16b8aa209f3f010daf0c2a8e707ffe8c74d4a5",
+  "src/hooks/useWalletState.ts": "07ff74a7357d4b0d4c7be5ec05e5d9a6f76eb92a94ca81e05dceebe40cd07081",
+  "src/hooks/useSearchAndCurrency.ts": "7d0c4d4042b9e026efcb35e18a78869399268b3178efaa6b021ee789e8912136",
+  "src/App.tsx": "7c27b523c966524ac72b9e3a64f3fcb8d90297a18e23d9a57f6acbd950aa2ed6",
+  "mcp-server/src/index.ts": "c23a5e7ab4bd8548a45f45089272047d00f15e47506204c5bb02c9a879abbdf3",
+  "functions/src/index.ts": "f2500d5cbad0e5d0eea8d473945f79eda255defc1ecc9582d43368fdb38da615",
+  "src/firebase.ts": "d3888b48a7eed6bc14a32edd4b70f4fb7313e4b2a24b9b599fd2979f0887103a",
+  "firestore.rules": "92e512c4832b2bbf76da3491e13170c93d8b7ec9af2f7e17989ef09603db2325",
+  "vite.config.ts": "ca161fd1c8e5b4e416d9eeeba039d2b479b7a60ad9addd6b0dfc3d117fabd711",
+  "package-lock.json": "3d098c9cbe3caef5b4b5baa26742b0011dfdc2a3a70ad531f2463d258044c630",
+  "mcp-server/package-lock.json": "f0f03dc361c5f0f34935c37536364f1467fadc78241dc8f7166da89b0d690671",
+  "functions/package-lock.json": "ffe26507ac0d0f3b7ceca6d9d7ef051a09bb6cb818abae090dba18ea98b7cbb9"
+}

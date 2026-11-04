@@ -2,15 +2,23 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { auth, db, handleFirestoreError, OperationType, googleProvider } from '../firebase';
 import { onAuthStateChanged, User, signInWithPopup, signInWithRedirect, signOut } from 'firebase/auth';
 import { doc, getDocFromServer, setDoc, onSnapshot } from 'firebase/firestore';
-import { getInitialState, safeSetItem } from '../lib/storage';
-import { get, set } from 'idb-keyval';
+import { getInitialState, safeSetItem, getOwnedState, setOwnedState, scopedKey, preserveLegacyStorage, persistOwnedSnapshot } from '../lib/storage';
+import { get, set, update } from 'idb-keyval';
 
-export function useAuthAndSync(latestStateRef: React.MutableRefObject<any>, skipSyncRef: React.MutableRefObject<boolean>) {
+export function useAuthAndSync(latestStateRef: React.MutableRefObject<any>, skipSyncRef: React.MutableRefObject<boolean>, pendingEditsRef: React.MutableRefObject<Record<string, unknown>>) {
   const [user, setUser] = useState<User | null>(null);
+  const activeUidRef = useRef<string | null>(null);
+  const hasAuthResultRef = useRef(false);
+  useState(() => { preserveLegacyStorage(); return true; });
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [retryBlocked, setRetryBlocked] = useState(false);
+  const [retryAt, setRetryAt] = useState<number | null>(null);
+  const retryFailuresRef = useRef(0);
+  const retryBlockedRef = useRef(false);
+  const saveInFlightRef = useRef(false);
   const [isSyncPaused, setIsSyncPaused] = useState(() => getInitialState('oc_isSyncPaused', false));
   const [isDirty, setIsDirtyState] = useState(false);
   const isDirtyRef = useRef(false);
@@ -21,13 +29,18 @@ export function useAuthAndSync(latestStateRef: React.MutableRefObject<any>, skip
   const setIsDirty = useCallback<React.Dispatch<React.SetStateAction<boolean>>>((next) => {
     const dirty = typeof next === 'function' ? next(isDirtyRef.current) : next;
     isDirtyRef.current = dirty;
-    if (!dirty) hydrationCounterRef.current += 1;
+    if (!dirty) {
+      hydrationCounterRef.current += 1;
+      pendingEditsRef.current = {};
+      safeSetItem(scopedKey(activeUidRef.current, 'dirty'), false);
+    }
     setIsDirtyState(dirty);
   }, []);
 
   const markDirty = useCallback(() => {
     if (!skipSyncRef.current) {
       pendingSyncCounterRef.current += 1;
+      safeSetItem(scopedKey(activeUidRef.current, 'dirty'), true);
       setIsDirty(true);
       isDirtyRef.current = true;
     }
@@ -41,8 +54,13 @@ export function useAuthAndSync(latestStateRef: React.MutableRefObject<any>, skip
     }
     return getInitialState('oc_isDarkMode', false) ? 'dark' : 'light';
   });
+  const themeRef = useRef(theme);
+  themeRef.current = theme;
   const setTheme = useCallback<React.Dispatch<React.SetStateAction<typeof theme>>>((next) => {
-    setThemeState(next);
+    const value = typeof next === 'function' ? next(themeRef.current) : next;
+    themeRef.current = value;
+    if (!skipSyncRef.current) pendingEditsRef.current.theme = value;
+    setThemeState(value);
     markDirty();
   }, [markDirty]);
 
@@ -70,17 +88,33 @@ export function useAuthAndSync(latestStateRef: React.MutableRefObject<any>, skip
       if (meta !== metaThemeColor) meta.remove();
     });
 
-    safeSetItem('oc_theme', theme);
+    setOwnedState(activeUidRef.current, 'oc_theme', theme);
   }, [theme]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       authEpochRef.current += 1;
       hydrationCounterRef.current += 1;
+      if (hasAuthResultRef.current && isDirtyRef.current) {
+        persistOwnedSnapshot(activeUidRef.current, { ...latestStateRef.current, ...pendingEditsRef.current }, true);
+      }
+      pendingEditsRef.current = {};
+      const nextUid = currentUser?.uid ?? null;
+      activeUidRef.current = nextUid;
+      safeSetItem('oc_legacy_view_owner', nextUid);
+      hasAuthResultRef.current = true;
+      const pending = getInitialState(scopedKey(nextUid, 'dirty'), false);
       setIsDataLoaded(false);
-      setIsDirty(false);
-      isDirtyRef.current = false;
+      setIsDirty(pending);
+      isDirtyRef.current = pending;
       setIsSyncing(false);
+      saveInFlightRef.current = false;
+      retryFailuresRef.current = 0;
+      retryBlockedRef.current = false;
+      setRetryBlocked(false);
+      setRetryAt(null);
+      setSyncError(null);
+      setThemeState(getOwnedState(nextUid, 'oc_theme', 'light'));
       setUser(currentUser);
       setIsAuthLoading(false);
     });
@@ -118,7 +152,7 @@ export function useAuthAndSync(latestStateRef: React.MutableRefObject<any>, skip
     const revision = pendingSyncCounterRef.current;
     const epoch = authEpochRef.current;
     const localOfflineQueue = data.cashbackLogs
-      ? (await get<any[]>('oc_offlineLogsQueue')) || []
+      ? (await get<any[]>(scopedKey(activeUidRef.current, 'offlineLogsQueue'))) || []
       : [];
 
     // An edit, account change or newer snapshot may arrive while IndexedDB loads.
@@ -145,7 +179,9 @@ export function useAuthAndSync(latestStateRef: React.MutableRefObject<any>, skip
           const uniqueMap = new Map();
           for (const item of data.cashbackLogs) uniqueMap.set(item.date, item);
           for (const item of localOfflineQueue) uniqueMap.set(item.date, item);
-          setFunctions.setCashbackLogs(Array.from(uniqueMap.values()));
+          const mergedLogs = Array.from(uniqueMap.values());
+          setFunctions.setCashbackLogs(mergedLogs);
+          pendingEditsRef.current.cashbackLogs = mergedLogs;
         }
       }
 
@@ -157,7 +193,7 @@ export function useAuthAndSync(latestStateRef: React.MutableRefObject<any>, skip
     if (localOfflineQueue.length > 0) {
       // Merged offline edits still need uploading; cloud hydration alone does not.
       markDirty();
-      await set('oc_offlineLogsQueue', []);
+      // The queue remains durable until its merged data is acknowledged by Firestore.
     }
   };
 
@@ -165,30 +201,6 @@ export function useAuthAndSync(latestStateRef: React.MutableRefObject<any>, skip
   const useSyncEffect = (setFunctions: any) => {
     useEffect(() => {
       if (!user) {
-        const wasSkipping = skipSyncRef.current;
-        skipSyncRef.current = true;
-        try {
-          setFunctions.setExhaustedCards(getInitialState('oc_exhaustedCards', {}));
-          setFunctions.setLoungePassesUsed(getInitialState('oc_loungePassesUsed', {}));
-          setFunctions.setLoungeMilestonesVerified(getInitialState('oc_loungeMilestonesVerified', {}));
-          setFunctions.setOfferUsage(getInitialState('oc_offerUsage', {}));
-          setFunctions.setOpenRouterApiKey(getInitialState('oc_openRouterApiKey', ''));
-          setFunctions.setKiwiNeonEarnRate(getInitialState('oc_kiwiNeonEarnRate', 2));
-          setFunctions.setCardBillDates(getInitialState('oc_cardBillDates', {}));
-          setFunctions.setPaidBills(getInitialState('oc_paidBills', {}));
-          setFunctions.setWalletCards(getInitialState('oc_walletCards', []));
-          setFunctions.setCashbackLogs(getInitialState('oc_cashbackLogs', []));
-        
-          const savedTheme = getInitialState('oc_theme', null);
-          if (savedTheme) {
-            setTheme(savedTheme as any);
-          } else {
-            setTheme('light');
-          }
-
-        } finally {
-          skipSyncRef.current = wasSkipping;
-        }
         setIsDataLoaded(true);
         return;
       }
@@ -200,7 +212,7 @@ export function useAuthAndSync(latestStateRef: React.MutableRefObject<any>, skip
           setLocalStateFromData(docSnap.data(), setFunctions);
         }
         setIsDataLoaded(true);
-        setSyncError(null);
+        if (!retryBlockedRef.current && retryFailuresRef.current === 0) setSyncError(null);
       }, (error: any) => {
         setSyncError(error.message || 'Failed to sync with cloud');
         setIsDataLoaded(true);
@@ -236,8 +248,9 @@ export function useAuthAndSync(latestStateRef: React.MutableRefObject<any>, skip
     }, [user]);
   };
 
-  const saveData = async () => {
-    if (!user) return;
+  const performSave = async () => {
+    if (!user || saveInFlightRef.current) return;
+    saveInFlightRef.current = true;
     setIsSyncing(true);
     
     const syncCounterAtStart = pendingSyncCounterRef.current;
@@ -250,10 +263,18 @@ export function useAuthAndSync(latestStateRef: React.MutableRefObject<any>, skip
          throw new Error("Offline");
       }
 
+      const queueKey = scopedKey(user.uid, 'offlineLogsQueue');
+      let queuedAtStart: any[] = [];
+      try { queuedAtStart = (await get<any[]>(queueKey)) || []; }
+      catch (error) { console.warn('Could not read offline queue before saving', error); }
+      if (epoch !== authEpochRef.current) return;
+      const logs = new Map((dataToSave.cashbackLogs || []).map((item: any) => [item.date, item]));
+      for (const item of queuedAtStart) logs.set(item.date, item);
       const docRef = doc(db, 'users', user.uid);
       await setDoc(docRef, {
         userId: user.uid,
         ...dataToSave,
+        ...(queuedAtStart.length ? { cashbackLogs: Array.from(logs.values()) } : {}),
         theme: theme, // Theme explicitly relies on backend for logged in users
         isDarkMode: theme !== 'light',
         updatedAt: Date.now()
@@ -261,22 +282,52 @@ export function useAuthAndSync(latestStateRef: React.MutableRefObject<any>, skip
       
       if (epoch !== authEpochRef.current) return;
       setSyncError(null);
+      retryFailuresRef.current = 0;
+      retryBlockedRef.current = false;
+      setRetryBlocked(false);
+      setRetryAt(null);
       if (pendingSyncCounterRef.current === syncCounterAtStart) {
         setIsDirty(false);
         isDirtyRef.current = false;
+        pendingEditsRef.current = {};
+        safeSetItem(scopedKey(user.uid, 'dirty'), false);
+        if (queuedAtStart.length) {
+          const uploaded = new Set(queuedAtStart.map(item => JSON.stringify(item)));
+          let hasUnsent = false;
+          try {
+            await update(queueKey, (current: any[] | undefined) => {
+              const remaining = (current || []).filter(item => !uploaded.has(JSON.stringify(item)));
+              hasUnsent = remaining.length > 0;
+              return remaining;
+            });
+            if (hasUnsent && epoch === authEpochRef.current) markDirty();
+          } catch (error) {
+            console.warn('Could not clear acknowledged offline entries', error);
+            if (epoch === authEpochRef.current) markDirty();
+          }
+        }
       }
     } catch (error: any) {
       if (epoch !== authEpochRef.current) return;
+      const code = typeof error?.code === 'string' ? error.code.replace(/^firestore\//, '') : '';
+      const transient = error?.message === 'Offline' || error instanceof TypeError ||
+        ['unavailable', 'deadline-exceeded', 'resource-exhausted', 'aborted', 'internal', 'cancelled'].includes(code);
+      retryFailuresRef.current += 1;
+      retryBlockedRef.current = !transient;
+      setRetryBlocked(!transient);
+      setRetryAt(transient ? Date.now() + Math.min(60000, 2000 * 2 ** Math.min(retryFailuresRef.current - 1, 5)) : null);
       if (error.message === "Offline" || error.code === 'unavailable') {
          // Queue offline data locally
-         const localOfflineQueue = (await get<any[]>('oc_offlineLogsQueue')) || [];
-         // If there are new cashback logs, we queue them
-         if (dataToSave.cashbackLogs && dataToSave.cashbackLogs.length > 0) {
-            // Robust strategy: append all current logs to the offline queue. 
-            // The merge logic in setLocalStateFromData handles deduplication via the uniqueMap.
-            await set('oc_offlineLogsQueue', [...localOfflineQueue, ...dataToSave.cashbackLogs]);
+         try {
+           const localOfflineQueue = (await get<any[]>(scopedKey(user.uid, 'offlineLogsQueue'))) || [];
+           if (dataToSave.cashbackLogs && dataToSave.cashbackLogs.length > 0) {
+             await set(scopedKey(user.uid, 'offlineLogsQueue'), [...localOfflineQueue, ...dataToSave.cashbackLogs]);
+           }
+           if (epoch === authEpochRef.current) setSyncError('Offline: Changes queued locally.');
+         } catch (queueError) {
+           console.warn('Could not update the offline queue', queueError);
+           if (epoch === authEpochRef.current) setSyncError('Offline: Could not update the local queue. Changes remain pending.');
          }
-         setSyncError('Offline: Changes queued locally.');
       } else {
         setSyncError(error.message || 'Failed to save to cloud');
         try {
@@ -286,8 +337,21 @@ export function useAuthAndSync(latestStateRef: React.MutableRefObject<any>, skip
         }
       }
     } finally {
-      if (epoch === authEpochRef.current) setIsSyncing(false);
+      if (epoch === authEpochRef.current) { saveInFlightRef.current = false; setIsSyncing(false); }
     }
+  };
+
+  const saveData = async () => {
+    if (saveInFlightRef.current) return;
+    retryFailuresRef.current = 0;
+    retryBlockedRef.current = false;
+    setRetryBlocked(false);
+    setRetryAt(null);
+    await performSave();
+  };
+  const saveDataAutomatically = () => {
+    if (retryBlockedRef.current) return;
+    return performSave();
   };
 
   useEffect(() => {
@@ -300,6 +364,6 @@ export function useAuthAndSync(latestStateRef: React.MutableRefObject<any>, skip
     isDirty, setIsDirty, isDirtyRef, markDirty,
     theme, setTheme,
     handleLogin, handleLogout,
-    saveData, useSyncEffect
+    saveData, saveDataAutomatically, retryBlocked, retryAt, useSyncEffect
   };
 }

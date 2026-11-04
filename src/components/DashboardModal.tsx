@@ -1,8 +1,20 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, TrendingUp, Undo2, RotateCcw, AlertTriangle } from 'lucide-react';
 import { CashbackLog } from '../types';
-import { Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
+const SavingsChart = lazy(() => import('./SavingsChart'));
+
+class ChartLoadBoundary extends React.Component<React.PropsWithChildren, { unavailable: boolean }> {
+  state = { unavailable: false };
+  static getDerivedStateFromError() { return { unavailable: true }; }
+  render() {
+    if (this.state.unavailable) {
+      return <span className="text-xs text-gray-500 text-center" role="status">Chart unavailable. Reconnect and reload to view it.</span>;
+    }
+    return this.props.children;
+  }
+}
+
 import { indiaDate } from '../lib/billingDates';
 
 interface Props {
@@ -165,36 +177,7 @@ export function DashboardModal({ isOpen, onClose, logs, setLogs, onRemoveLogs }:
 
                       {/* Donut Chart with Centered Dynamic Metric */}
                       <div className="w-full sm:w-1/2 h-36 flex items-center justify-center relative select-none">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <PieChart>
-                            <Pie
-                              data={chartData}
-                              cx="50%"
-                              cy="50%"
-                              innerRadius={50}
-                              outerRadius={67}
-                              paddingAngle={4}
-                              dataKey="value"
-                              isAnimationActive={false}
-                            >
-                              {chartData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                              ))}
-                            </Pie>
-                            <Tooltip 
-                              formatter={(value: number) => `₹${value.toFixed(2)}`}
-                              contentStyle={{
-                                backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                                borderRadius: '12px',
-                                border: '1px solid rgba(0, 0, 0, 0.05)',
-                                boxShadow: '0 8px 16px -4px rgba(0, 0, 0, 0.1)',
-                                fontWeight: 'bold',
-                                fontSize: '11px',
-                                color: '#1f2937'
-                              }}
-                            />
-                          </PieChart>
-                        </ResponsiveContainer>
+                        <ChartLoadBoundary><Suspense fallback={null}><SavingsChart chartData={chartData} colors={COLORS} /></Suspense></ChartLoadBoundary>
                         <div className="absolute flex flex-col items-center justify-center pointer-events-none">
                           <span className="text-[9px] font-black tracking-widest text-gray-400 dark:text-gray-500 uppercase leading-none">Top</span>
                           <span className="text-sm font-black text-gray-800 dark:text-gray-200 truncate max-w-[70px] mt-0.5 leading-none">{chartData[0]?.name || ''}</span>

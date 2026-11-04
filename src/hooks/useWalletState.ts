@@ -1,33 +1,38 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
-import { getInitialState, safeSetItem } from '../lib/storage';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { getOwnedState, setOwnedState } from '../lib/storage';
 import { CARD_DATA } from '../data/cards';
 import { getCycleForCard } from '../lib/recommendation';
 import { CashbackLog } from '../types';
 import { statementReminder } from '../lib/billingDates';
 import { useBillingDay } from './useBillingDay';
 
-export function useWalletState(skipSyncRef: React.MutableRefObject<boolean>, setIsDirty: (dirty: boolean) => void) {
+export function useWalletState(skipSyncRef: React.MutableRefObject<boolean>, setIsDirty: (dirty: boolean) => void, owner?: string | null, pendingEditsRef?: React.MutableRefObject<Record<string, unknown>>) {
   const billingDay = useBillingDay();
   // Record edits when setters are called, before any save can acknowledge them.
   // Cloud hydration suppresses tracking only around its synchronous setters.
-  function useWalletValue<T>(initialValue: () => T) {
+  function useWalletValue<T>(initialValue: () => T, field: string) {
     const [value, setValue] = useState(initialValue);
+    const valueRef = useRef(value);
+    valueRef.current = value;
     const setTrackedValue = useCallback<React.Dispatch<React.SetStateAction<T>>>((next) => {
-      setValue(next);
+      const value = typeof next === 'function' ? (next as (previous: T) => T)(valueRef.current) : next;
+      valueRef.current = value;
+      if (!skipSyncRef.current && pendingEditsRef) pendingEditsRef.current[field] = value;
+      setValue(value);
       if (!skipSyncRef.current) setIsDirty(true);
     }, [skipSyncRef, setIsDirty]);
     return [value, setTrackedValue] as const;
   }
 
-  const [exhaustedCards, setExhaustedCards] = useWalletValue<Record<string, any>>(() => getInitialState('oc_exhaustedCards', {}));
-  const [cardBillDates, setCardBillDates] = useWalletValue<Record<string, number>>(() => getInitialState('oc_cardBillDates', {}));
-  const [paidBills, setPaidBills] = useWalletValue<Record<string, string>>(() => getInitialState('oc_paidBills', {}));
-  const [loungePassesUsed, setLoungePassesUsed] = useWalletValue<Record<string, number>>(() => getInitialState('oc_loungePassesUsed', {}));
-  const [loungeMilestonesVerified, setLoungeMilestonesVerified] = useWalletValue<Record<string, boolean>>(() => getInitialState('oc_loungeMilestonesVerified', {}));
-  const [offerUsage, setOfferUsage] = useWalletValue<Record<string, number>>(() => getInitialState('oc_offerUsage', {}));
-  const [walletCards, setWalletCards] = useWalletValue<string[]>(() => getInitialState('oc_walletCards', []));
-  const [cashbackLogs, setCashbackLogs] = useWalletValue<CashbackLog[]>(() => getInitialState('oc_cashbackLogs', []));
-  const [kiwiNeonEarnRate, setKiwiNeonEarnRate] = useWalletValue(() => getInitialState('oc_kiwiNeonEarnRate', 2));
+  const [exhaustedCards, setExhaustedCards] = useWalletValue<Record<string, any>>(() => getOwnedState(owner, 'oc_exhaustedCards', {}), 'exhaustedCards');
+  const [cardBillDates, setCardBillDates] = useWalletValue<Record<string, number>>(() => getOwnedState(owner, 'oc_cardBillDates', {}), 'cardBillDates');
+  const [paidBills, setPaidBills] = useWalletValue<Record<string, string>>(() => getOwnedState(owner, 'oc_paidBills', {}), 'paidBills');
+  const [loungePassesUsed, setLoungePassesUsed] = useWalletValue<Record<string, number>>(() => getOwnedState(owner, 'oc_loungePassesUsed', {}), 'loungePassesUsed');
+  const [loungeMilestonesVerified, setLoungeMilestonesVerified] = useWalletValue<Record<string, boolean>>(() => getOwnedState(owner, 'oc_loungeMilestonesVerified', {}), 'loungeMilestonesVerified');
+  const [offerUsage, setOfferUsage] = useWalletValue<Record<string, number>>(() => getOwnedState(owner, 'oc_offerUsage', {}), 'offerUsage');
+  const [walletCards, setWalletCards] = useWalletValue<string[]>(() => getOwnedState(owner, 'oc_walletCards', []), 'walletCards');
+  const [cashbackLogs, setCashbackLogs] = useWalletValue<CashbackLog[]>(() => getOwnedState(owner, 'oc_cashbackLogs', []), 'cashbackLogs');
+  const [kiwiNeonEarnRate, setKiwiNeonEarnRate] = useWalletValue(() => getOwnedState(owner, 'oc_kiwiNeonEarnRate', 2), 'kiwiNeonEarnRate');
 
   const normalizedExhaustedCards = useMemo(() => {
     const result: Record<string, boolean> = {};
@@ -47,15 +52,15 @@ export function useWalletState(skipSyncRef: React.MutableRefObject<boolean>, set
 
   useEffect(() => {
     const persist = () => {
-      safeSetItem('oc_exhaustedCards', exhaustedCards);
-      safeSetItem('oc_cardBillDates', cardBillDates);
-      safeSetItem('oc_paidBills', paidBills);
-      safeSetItem('oc_loungePassesUsed', loungePassesUsed);
-      safeSetItem('oc_loungeMilestonesVerified', loungeMilestonesVerified);
-      safeSetItem('oc_offerUsage', offerUsage);
-      safeSetItem('oc_kiwiNeonEarnRate', kiwiNeonEarnRate);
-      safeSetItem('oc_walletCards', walletCards);
-      safeSetItem('oc_cashbackLogs', cashbackLogs);
+      setOwnedState(owner, 'oc_exhaustedCards', exhaustedCards);
+      setOwnedState(owner, 'oc_cardBillDates', cardBillDates);
+      setOwnedState(owner, 'oc_paidBills', paidBills);
+      setOwnedState(owner, 'oc_loungePassesUsed', loungePassesUsed);
+      setOwnedState(owner, 'oc_loungeMilestonesVerified', loungeMilestonesVerified);
+      setOwnedState(owner, 'oc_offerUsage', offerUsage);
+      setOwnedState(owner, 'oc_kiwiNeonEarnRate', kiwiNeonEarnRate);
+      setOwnedState(owner, 'oc_walletCards', walletCards);
+      setOwnedState(owner, 'oc_cashbackLogs', cashbackLogs);
 
     };
     const timer = setTimeout(persist, 500);
@@ -68,7 +73,7 @@ export function useWalletState(skipSyncRef: React.MutableRefObject<boolean>, set
       window.removeEventListener('pagehide', persist);
       document.removeEventListener('visibilitychange', persistWhenHidden);
     };
-  }, [exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, cardBillDates, paidBills, kiwiNeonEarnRate, walletCards, cashbackLogs]);
+  }, [exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, cardBillDates, paidBills, kiwiNeonEarnRate, walletCards, cashbackLogs, owner]);
 
   return {
     exhaustedCards, setExhaustedCards, normalizedExhaustedCards,

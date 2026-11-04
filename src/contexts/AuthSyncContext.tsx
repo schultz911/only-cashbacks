@@ -1,16 +1,17 @@
 import React, { createContext, useContext, useRef } from 'react';
 import { useAuthAndSync } from '../hooks/useAuthAndSync';
 
-const AuthSyncContext = createContext<ReturnType<typeof useAuthAndSync> & { skipSyncRef: React.MutableRefObject<boolean>, latestStateRef: React.MutableRefObject<any> } | null>(null);
+const AuthSyncContext = createContext<ReturnType<typeof useAuthAndSync> & { skipSyncRef: React.MutableRefObject<boolean>, latestStateRef: React.MutableRefObject<any>, pendingEditsRef: React.MutableRefObject<Record<string, unknown>> } | null>(null);
 
 export const AuthSyncProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const skipSyncRef = useRef(false);
   const latestStateRef = useRef<any>({});
+  const pendingEditsRef = useRef<Record<string, unknown>>({});
   
-  const authSyncState = useAuthAndSync(latestStateRef, skipSyncRef);
+  const authSyncState = useAuthAndSync(latestStateRef, skipSyncRef, pendingEditsRef);
 
   return (
-    <AuthSyncContext.Provider value={{ ...authSyncState, skipSyncRef, latestStateRef }}>
+    <AuthSyncContext.Provider value={{ ...authSyncState, skipSyncRef, latestStateRef, pendingEditsRef }}>
       {children}
     </AuthSyncContext.Provider>
   );

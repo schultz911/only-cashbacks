@@ -1,0 +1,16 @@
+[
+  {
+    "legacyWorker": "http://127.0.0.1:59116/service-worker.js",
+    "upgradedWorker": "http://127.0.0.1:59116/sw.js",
+    "authorizationTitle": "Connect your wallet | OnlyCashbacks",
+    "obsoleteRuntimeCacheRemoved": true,
+    "unrelatedCachePreserved": true
+  },
+  {
+    "legacyWorker": "http://127.0.0.1:59116/sw.js",
+    "upgradedWorker": "http://127.0.0.1:59116/sw.js",
+    "authorizationTitle": "Connect your wallet | OnlyCashbacks",
+    "obsoleteRuntimeCacheRemoved": true,
+    "unrelatedCachePreserved": true
+  }
+]

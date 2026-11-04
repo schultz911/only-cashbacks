@@ -34,6 +34,8 @@ import { KNOWN_MERCHANTS } from './data/merchants';
 import { usePushNotifications } from './hooks/usePushNotifications';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 
+import { persistOwnedSnapshot, scopedKey } from './lib/storage';
+import { set as setIndexedValue } from 'idb-keyval';
 import { useAuthSyncContext } from './contexts/AuthSyncContext';
 import { useWalletContext } from './contexts/WalletContext';
 import { useSearchContext } from './contexts/SearchContext';
@@ -83,7 +85,7 @@ export default function App() {
     isDirty, setIsDirty, isDirtyRef, markDirty,
     theme, setTheme,
     handleLogin, handleLogout,
-    saveData, useSyncEffect, skipSyncRef, latestStateRef
+    saveData, saveDataAutomatically, retryBlocked, retryAt, useSyncEffect, skipSyncRef, latestStateRef, pendingEditsRef
   } = useAuthSyncContext();
 
   const {
@@ -126,6 +128,16 @@ export default function App() {
       exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, cardBillDates, paidBills, openRouterApiKey, kiwiNeonEarnRate, walletCards, cashbackLogs, theme
     };
   }, [exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, cardBillDates, paidBills, openRouterApiKey, kiwiNeonEarnRate, walletCards, cashbackLogs, theme]);
+
+  useEffect(() => {
+    const flushPending = () => {
+      if (isDirtyRef.current) persistOwnedSnapshot(user?.uid ?? null, { ...latestStateRef.current, ...pendingEditsRef.current }, true);
+    };
+    const onVisibility = () => { if (document.visibilityState === 'hidden') flushPending(); };
+    window.addEventListener('pagehide', flushPending);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => { window.removeEventListener('pagehide', flushPending); document.removeEventListener('visibilitychange', onVisibility); };
+  }, [user, isDirtyRef, latestStateRef, pendingEditsRef]);
 
   const [loading, setLoading] = useState(false);
   const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
@@ -263,12 +275,13 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!user || isAuthLoading || !isDataLoaded || skipSyncRef.current || !isDirty || isSyncing || isSyncPaused || isOffline) return;
+    if (!user || isAuthLoading || !isDataLoaded || skipSyncRef.current || !isDirty || isSyncing || isSyncPaused || isOffline || retryBlocked) return;
+    const delay = retryAt === null ? 1000 : Math.max(1000, retryAt - Date.now());
     const timer = setTimeout(() => {
-      saveData();
-    }, 1000);
+      saveDataAutomatically();
+    }, delay);
     return () => clearTimeout(timer);
-  }, [isOffline, isDirty, user, isAuthLoading, isDataLoaded, isSyncPaused, isSyncing, exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, cardBillDates, paidBills, openRouterApiKey, kiwiNeonEarnRate, walletCards, cashbackLogs, theme]);
+  }, [isOffline, isDirty, user, isAuthLoading, isDataLoaded, isSyncPaused, isSyncing, retryBlocked, retryAt, exhaustedCards, loungePassesUsed, loungeMilestonesVerified, offerUsage, cardBillDates, paidBills, openRouterApiKey, kiwiNeonEarnRate, walletCards, cashbackLogs, theme]);
 
   const activeWalletCards = useMemo(() => {
     const cards = walletCards.length > 0
@@ -314,7 +327,7 @@ export default function App() {
       const todayKey = `${today.getUTCFullYear()}-${today.getUTCMonth() + 1}-${todayDate}`;
       let lastResetDates: Record<string, string> = {};
       try {
-        const stored = localStorage.getItem('oc_lastOfferResetDates');
+        const stored = localStorage.getItem(scopedKey(user?.uid ?? null, 'oc_lastOfferResetDates'));
         if (stored) lastResetDates = JSON.parse(stored);
       } catch (error) {
         console.warn('Failed to parse oc_lastOfferResetDates from localStorage:', error);
@@ -427,7 +440,7 @@ export default function App() {
 
       if (offerUsageDirty) setOfferUsage(newOfferUsage);
       if (exhaustedDirty) setExhaustedCards(newExhaustedCards);
-      localStorage.setItem('oc_lastOfferResetDates', JSON.stringify(lastResetDates));
+      localStorage.setItem(scopedKey(user?.uid ?? null, 'oc_lastOfferResetDates'), JSON.stringify(lastResetDates));
     }, 100);
 
     return () => clearTimeout(timeoutId);
@@ -438,6 +451,7 @@ export default function App() {
     try {
       const docRef = doc(db, 'users', user.uid);
       await deleteDoc(docRef);
+      await setIndexedValue(scopedKey(user.uid, 'offlineLogsQueue'), []);
       skipSyncRef.current = true;
       setExhaustedCards({});
       setLoungePassesUsed({});

@@ -1,0 +1,64 @@
+[
+  {
+    "label": "baseline",
+    "initial": [
+      "index-DE7552Bp.js",
+      "vendor-core-C0Cxu7bV.js",
+      "vendor-firebase-CNf7Fzuq.js",
+      "vendor-motion-BPSX-Xi-.js",
+      "LoungeTrackerModal-BgeBljwY.js",
+      "WalletManagerModal-DJZNdx6h.js",
+      "DashboardModal-BIy8_K2i.js",
+      "vendor-recharts-B4SoQEtm.js"
+    ],
+    "totalBytes": {
+      "raw": 1495707,
+      "gzip": 416177
+    },
+    "afterDashboardOpen": [
+      "index-DE7552Bp.js",
+      "vendor-core-C0Cxu7bV.js",
+      "vendor-firebase-CNf7Fzuq.js",
+      "vendor-motion-BPSX-Xi-.js",
+      "LoungeTrackerModal-BgeBljwY.js",
+      "WalletManagerModal-DJZNdx6h.js",
+      "DashboardModal-BIy8_K2i.js",
+      "vendor-recharts-B4SoQEtm.js"
+    ],
+    "errors": [
+      "Failed to fetch",
+      "Failed to fetch"
+    ]
+  },
+  {
+    "label": "chartOnlyVariant",
+    "initial": [
+      "index-CCFjUs_4.js",
+      "vendor-core-C0Cxu7bV.js",
+      "vendor-firebase-CNf7Fzuq.js",
+      "vendor-motion-BPSX-Xi-.js",
+      "LoungeTrackerModal-BftcHH6T.js",
+      "WalletManagerModal-BgeQh_rY.js",
+      "DashboardModal-CLBr9oBT.js"
+    ],
+    "totalBytes": {
+      "raw": 1249137,
+      "gzip": 345612
+    },
+    "afterDashboardOpen": [
+      "index-CCFjUs_4.js",
+      "vendor-core-C0Cxu7bV.js",
+      "vendor-firebase-CNf7Fzuq.js",
+      "vendor-motion-BPSX-Xi-.js",
+      "LoungeTrackerModal-BftcHH6T.js",
+      "WalletManagerModal-BgeQh_rY.js",
+      "DashboardModal-CLBr9oBT.js",
+      "SavingsChart-DWIKGZ9M.js",
+      "vendor-recharts-B4SoQEtm.js"
+    ],
+    "errors": [
+      "Failed to fetch",
+      "Failed to fetch"
+    ]
+  }
+]

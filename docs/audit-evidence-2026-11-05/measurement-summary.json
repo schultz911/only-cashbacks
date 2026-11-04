@@ -1,0 +1,43 @@
+{
+  "baselineTests": {
+    "passed": 226,
+    "files": 16
+  },
+  "chartOnlyPrototypeTests": {
+    "passed": 226,
+    "files": 16
+  },
+  "isolatedReproductions": {
+    "passed": 3,
+    "newAccountInheritedSyntheticKey": true,
+    "newAccountInheritedSavingsRecords": 1,
+    "existingAccountInheritedForeignQueuedRecords": 1,
+    "persistentFailureAttempts": 11,
+    "persistentFailureSimulatedSeconds": 12,
+    "persistentFailureAdditionalEdits": 0
+  },
+  "recommendationCpu": {
+    "samples": 7,
+    "iterationsPerSample": 1000,
+    "medianMsPerRecommendation": 0.038065917
+  },
+  "chartOnlyInitialJs": {
+    "baselineGzipBytes": 416177,
+    "prototypeGzipBytes": 345612,
+    "savedGzipBytes": 70565,
+    "savedPercent": 16.955526134313043,
+    "baselineRawBytes": 1495707,
+    "prototypeRawBytes": 1249137,
+    "jsRequestsBeforeDashboard": {
+      "baseline": 8,
+      "prototype": 7
+    }
+  },
+  "limitations": [
+    "Local fixtures; no real-account reads or writes",
+    "Browser contexts blocked external services; two expected Failed to fetch errors in both builds",
+    "Browser byte comparison blocks service workers; raw local responses recompressed with Node gzip for comparison, not measured production wire bytes",
+    "No field FCP/INP/heap or production deployment measurements",
+    "The initial broad modal-gating prototype failed one existing first-open test and was discarded; only the chart-only prototype passed the entire suite"
+  ]
+}

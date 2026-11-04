@@ -1,0 +1,20 @@
+{
+  "freshWorker": "http://127.0.0.1:58874/sw.js",
+  "offlineTitle": "OnlyCashbacks",
+  "offlineReady": true,
+  "offlineRecommendation": true,
+  "chartCacheSurvivesLogin": true,
+  "offlineSavings": {
+    "dialog": 1,
+    "crashed": 0,
+    "has42": 1,
+    "surface": 1,
+    "undo": 1
+  },
+  "authorizeStatus": 200,
+  "authorizeCacheControl": "no-store",
+  "workerStillRegisteredAfterLogin": true,
+  "precacheEntries": 40,
+  "sensitiveCacheEntries": [],
+  "offlineProtectedRoutesServedAppShell": []
+}

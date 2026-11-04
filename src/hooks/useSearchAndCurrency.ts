@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { safeSetItem } from '../lib/storage';
+import { safeSetItem, getOwnedState, setOwnedState } from '../lib/storage';
 
-export function useSearchAndCurrency() {
+export function useSearchAndCurrency(owner?: string | null) {
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -18,19 +18,11 @@ export function useSearchAndCurrency() {
   const [isOnline, setIsOnline] = useState(true);
   const [isScanToPay, setIsScanToPay] = useState(false);
 
-  const [openRouterApiKey, setOpenRouterApiKey] = useState(() => {
-    try {
-      const stored = localStorage.getItem('oc_openRouterApiKey');
-      if (stored) return JSON.parse(stored);
-    } catch (e) {
-      console.warn("Could not load cached OpenRouter API key", e);
-    }
-    return '';
-  });
+  const [openRouterApiKey, setOpenRouterApiKey] = useState(() => getOwnedState(owner, 'oc_openRouterApiKey', ''));
 
   useEffect(() => {
-    safeSetItem('oc_openRouterApiKey', openRouterApiKey);
-  }, [openRouterApiKey]);
+    setOwnedState(owner, 'oc_openRouterApiKey', openRouterApiKey);
+  }, [openRouterApiKey, owner]);
 
   useEffect(() => {
     let hasLoadedFresh = false;

@@ -24,20 +24,6 @@ export function getLoginHtml(code: string, firebaseConfig: Record<string, string
       const theme = ['light', 'dark', 'oled'].includes(savedTheme) ? savedTheme : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
       document.documentElement.dataset.theme = theme;
     } catch (_) {}
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(function(regs) {
-        for (var i = 0; i < regs.length; i++) {
-          regs[i].unregister();
-        }
-      });
-      if ('caches' in window) {
-        caches.keys().then(function(names) {
-          for (var i = 0; i < names.length; i++) {
-            caches.delete(names[i]);
-          }
-        });
-      }
-    }
   </script>
   <style>
     :root { color-scheme: light; --page: #F5F5F7; --surface: #ffffff; --text: #1D1D1F; --muted: #6b7280; --line: #e5e7eb; --soft: #f3f4f6; --accent: #0095f6; --button: #111827; --button-text: #fff; }

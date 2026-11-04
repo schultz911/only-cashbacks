@@ -54,6 +54,7 @@ vi.mock('idb-keyval', () => ({
     return pending ? await pending : state.queue;
   }),
   set: vi.fn(async (_key: string, value: any[]) => { state.queue = value; }),
+  update: vi.fn(async (_key: string, fn: (value: any[]) => any[]) => { state.queue = fn(state.queue); }),
   entries: vi.fn(async () => []), del: vi.fn(),
 }));
 

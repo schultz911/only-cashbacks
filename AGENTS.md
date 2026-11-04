@@ -8,6 +8,13 @@
 
 ## Discovered Optimizations
 
+- (2026-11-05 PWA restoration) Workbox navigation exclusions must match query strings to prevent OAuth aliases from receiving the app shell; uncached chart imports also required a local failure boundary to keep savings controls available offline.
+
+- (2026-11-05 readiness sweep) Account switching can carry a previous user’s cached BYOK key and savings into a new account; the global offline queue can also merge records across accounts. Both paths reproduced with synthetic users.
+- (2026-11-05 readiness sweep) Persistent asynchronous save failure caused 11 attempts in 12 simulated seconds without new edits.
+- (2026-11-05 readiness sweep) The savings chart loads on initial render even when the dashboard is closed; a chart-only prototype reduced initial JavaScript by 16.96% gzip-equivalent.
+- (2026-11-05 readiness sweep, separate product decision) The Railway service-worker removal route unregisters the worker, preventing retained offline PWA caching in the local reproduction.
+
 - (2026-10-25 sweep, Phase 1) Cloud hydration clears its suppression flag after 100 ms, but the 500 ms wallet persistence timer marks that cloud data dirty again; controlled reproduction: 8 writes in 12 seconds without user edits. Distinct from the already-implemented Phase 6 storage debounce.
 - (2026-10-25 sweep, Phase 2) Streamable HTTP MCP sessions remain referenced without idle expiry after clients abandon them; 1,000 local sessions retained 72.7 MB, with explicit cleanup reclaiming 70.4 MB.
 
@@ -55,6 +62,11 @@
 - Dead code in firebase.ts identified.
 
 ## Previously Suggested
+
+- (2026-11-05 readiness plan, awaiting phase approval) Isolate account-local wallet/settings and queued edits by owner, retaining unowned legacy data for explicit recovery.
+- (2026-11-05 readiness plan, awaiting phase approval) Stop automatic retries for permanent save errors and back off transient failures, retaining dirty edits and manual retry.
+- (2026-11-05 readiness plan, awaiting phase approval) Defer the savings chart until displayed, preserving the dashboard shell and existing behavior.
+- (2026-11-05 readiness plan, separately considered) Restore offline PWA launch only after explicit approval and OAuth/cache regression checks.
 
 - (2026-10-25 sweep, Phase 1) Track local wallet/settings revisions at setter time; suppress tracking only during synchronous hydration, preserve edits across acknowledgements and account changes, and retain the 500 ms local persistence debounce.
 - (2026-10-25 sweep, Phase 2) Reclaim abandoned MCP sessions with a configurable 60-minute idle timeout, protect active requests/streams, close associated resources and preserve reconnection/account isolation. User approved the timeout policy, then explicitly approved all phases, push and deployment.
@@ -105,6 +117,14 @@
 
 ## Approved and Implemented
 
+- (2026-11-05 readiness sweep, separately approved PWA enhancement) Restored generated service worker delivery and retained caches through sign-in; excluded protected paths including OAuth aliases and query strings from navigation fallback/runtime caching, migrated old named runtime caches, and contained unavailable-chart failures. Local Chromium tests stopped the server and verified offline launch, a local Swiggy recommendation, savings with both cached and uncached charts, protected-route exclusions, and app-first migration from two synthetic legacy workers. 244 tests, root/MCP TypeScript checks, frontend/PWA and standalone server builds passed. No real Google sign-in, real-account write, deployment, iOS test or arbitrary direct-to-sign-in legacy migration was performed. Existing users with a stale worker should open the wallet app online once before reconnecting.
+
+- (2026-11-05 readiness sweep, Phase 3) Deferred only the savings chart until the dashboard displays it; retained existing totals, controls, chart behavior and PWA policy. Fresh local browser comparison against Phase 2: initial JS gzip-equivalent 417,593 to 347,035 bytes (16.90% reduction); chart loaded and rendered on opening. Validated 241 tests, root and MCP TypeScript checks and production frontend/PWA build. No deployment or real-account test performed.
+
+- (2026-11-05 readiness sweep, Phase 2) Implemented permanent-error retry blocking and bounded exponential backoff for transient save failures (2, 4, 8, 16, 32, then 60 seconds), preserving dirty edits, manual retry, paused sync and account isolation. Controlled permanent-error test: one attempt in 12 simulated seconds instead of 11 (90.9% fewer). Validated 241 tests (5 new recovery cases), root and MCP TypeScript checks, and a production frontend/PWA build. No real-account write or deployment performed.
+
+- (2026-11-05 readiness sweep, Phase 1; supersedes earlier pending status) Implemented account-scoped wallet/settings and offline queues, preserved unowned legacy local data for manual recovery, protected pending edits on account switches and reloads, and cleared only acknowledged queue entries. Validated 236 tests (10 new ownership/race regressions), root and MCP TypeScript checks, and a production frontend/PWA build. Firebase Functions and cloud schema unchanged. No real-account write, deployment or real-device test performed. Legacy unowned backup has no in-app recovery control.
+
 - (2026-10-25 sweep, Phase 3 release) Pushed implementation commits 26c15e0 and 3410da3 to origin/main. Railway deployed code revision 3410da354b5a539816b5665c41c71de782b2c68e successfully: primary deployment 31677918-0772-43e8-b8ec-abb00bd70ece (secondary source deployment df8498d1-dbc6-4114-8573-4a0bd4e2230c also completed). Verified primary health/discovery HTTP 200, exact frontend bundle SHA-256 match to the tested build, MCP initialize/tools-list HTTP 200 with all four tools, invalid-token HTTP 401 with challenge, and session DELETE HTTP 200. 51 tests and all compilation/build checks passed. No real-account writes, one-hour production soak or new penetration test were performed; controlled tests establish the optimization results. Pre-existing local dist/index.html and dist/sw.js edits were excluded from commits.
 
 - (2026-10-25 sweep, Phase 2) Added configurable MCP_SESSION_IDLE_TIMEOUT_MINUTES (default 60), one shared unref cleanup timer, request/stream activity protection, protocol/server/pairing-code cleanup, and HTTP/process shutdown disposal. Preserved SDK close-handler chaining and existing OAuth/account isolation. Validation: 51 tests passed (7 new session tests plus 13 Phase 1 regressions); controlled 1,000-session idle-expiry probe reclaimed 77,771,960 of 79,959,448 bytes (97.3%); expired sessions return 404 and fresh initialization works. Timing used a controlled clock, not a production one-hour soak.
@@ -135,6 +155,8 @@
 - Phase 1: Migrated gemini.ts to use Firebase Functions (httpsCallable(functions, 'categorize')) instead of local Express fetch API. (User pivoted from deletion).
 
 ## Denied or Not Implemented
+
+- (2026-11-05 readiness sweep, Phase 1) Account isolation explicitly approved; implementation and validation remain pending. No application code has been changed.
 
 - (2026-10-25 sweep, final implementation status) User explicitly approved all phases, pushing code and deployment, superseding the earlier per-phase approval wait. Both scoped optimizations are implemented and locally validated; no scoped optimization was rejected. The earlier pending Phase 2 note below records its prior status. Production deployment verification will be recorded after release.
 
