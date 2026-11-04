@@ -71,7 +71,7 @@ export const CardItem: React.FC<CardItemProps> = ({ card, className, isRecommend
         backgroundImage: showLimitStatus ? 'none' : undefined
       }}
       className={cn(
-        "relative overflow-hidden rounded-2xl p-6 shadow-xl flex flex-col justify-between min-h-[200px] group bg-gradient-to-br",
+        "relative overflow-hidden rounded-2xl p-6 shadow-xl flex flex-col justify-between min-h-[200px] min-w-[310px] group bg-gradient-to-br",
         card.gradient || "from-gray-700 to-gray-900",
         isRecommendation ? "scale-105" : "scale-100",
         onClick && "cursor-pointer",

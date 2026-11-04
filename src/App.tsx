@@ -1016,11 +1016,11 @@ export default function App() {
           <div className="relative z-30 isolate" style={{ WebkitTransform: 'translate3d(0,0,0)', transform: 'translate3d(0,0,0)' }}>
             <motion.div 
               layoutScroll
-              className="flex sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 overflow-x-auto pt-8 pb-4 px-1 snap-x scrollbar-hide relative z-40 isolate render-optimized"
+              className="flex sm:grid sm:grid-cols-[repeat(auto-fit,minmax(310px,1fr))] gap-4 overflow-x-auto pt-8 pb-4 px-1 snap-x scrollbar-hide relative z-40 isolate render-optimized"
               style={{ paddingBottom: '2rem', WebkitTransform: 'translateZ(0)', transform: 'translateZ(0)' }} // ensure enough overflow room
             >
               {activeWalletCards.map((card) => (
-                <div key={card.id} className={cn("snap-start shrink-0 w-72 sm:w-auto", selectedCardForDetails?.card.id === card.id ? "opacity-0 pointer-events-none" : "opacity-100")}>
+                <div key={card.id} className={cn("snap-start shrink-0 w-[310px] sm:w-auto", selectedCardForDetails?.card.id === card.id ? "opacity-0 pointer-events-none" : "opacity-100")}>
                   <CardItem layoutId={`card-list-${card.id}`} card={card} onClick={() => setSelectedCardForDetails({ card, source: 'list' })} className="h-full shadow-sm hover:shadow-md transition-shadow cursor-pointer" isExhausted={normalizedExhaustedCards[card.id]} />
                 </div>
               ))}
