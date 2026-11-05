@@ -245,25 +245,6 @@ export default function App() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const profileMenuRef = useRef<HTMLDivElement>(null);
-  const offersScrollRef = useRef<HTMLDivElement>(null);
-  const [carouselConstraint, setCarouselConstraint] = useState(0);
-
-  useEffect(() => {
-    const updateConstraint = () => {
-      if (offersScrollRef.current) {
-        setCarouselConstraint(
-          Math.min(0, offersScrollRef.current.offsetWidth - offersScrollRef.current.scrollWidth)
-        );
-      }
-    };
-    const timeout = setTimeout(updateConstraint, 50);
-    window.addEventListener('resize', updateConstraint);
-    return () => {
-      clearTimeout(timeout);
-      window.removeEventListener('resize', updateConstraint);
-    };
-  }, [recommendation?.availableOffers?.length, showOffersOverlay]);
-
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
@@ -642,7 +623,7 @@ export default function App() {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="bg-amber-500 text-white font-bold text-xs uppercase tracking-widest text-center py-2.5 px-4 flex items-center justify-center gap-2 shadow-inner"
+            className="bg-amber-50 dark:bg-gray-800 text-amber-900 dark:text-gray-200 border-b border-amber-200 dark:border-gray-700 text-sm font-medium text-center py-2 px-4 flex items-center justify-center gap-2"
           >
             <CloudOff className="w-4 h-4 shrink-0" />
             <span>Offline Mode: Changes will be saved locally and synced when online.</span>
@@ -761,13 +742,12 @@ export default function App() {
                       )}
                     </div>
 
-                    <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200/60 dark:border-gray-800 rounded-3xl p-6 shadow-sm space-y-5 flex flex-col justify-between relative overflow-hidden group">
-                      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-transparent rounded-bl-full pointer-events-none" />
+                    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 space-y-5 flex flex-col justify-between">
                       <div className="space-y-4 relative z-10">
-                        <div className="flex bg-blue-50/50 dark:bg-blue-900/20 backdrop-blur-sm rounded-2xl p-4 items-center justify-between border border-blue-100/50 dark:border-blue-800/30 shadow-inner relative">
+                        <div className="flex bg-gray-50 dark:bg-gray-800 rounded-xl p-4 items-center justify-between border border-gray-200 dark:border-gray-700 relative">
                           <div className="flex flex-col">
-                            <span className="text-[10px] uppercase font-black tracking-widest text-blue-500 dark:text-blue-400 mb-1">Net Value</span>
-                            <span className="text-3xl font-black text-blue-900 dark:text-blue-100 drop-shadow-sm">
+                            <span className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Net Value</span>
+                            <span className="text-3xl font-semibold text-gray-900 dark:text-white tabular-nums">
                               {recommendation.netValue < 0 ? '-' : ''}₹{Math.abs(recommendation.netValue).toFixed(2)}
                             </span>
                           </div>
@@ -790,42 +770,16 @@ export default function App() {
                           </div>
                         )}
 
-                        <p className="text-sm font-medium text-gray-700 leading-relaxed whitespace-pre-line">{recommendation.reason}</p>
+                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">{recommendation.reason}</p>
 
                         {recommendation.availableOffers && recommendation.availableOffers.length > 0 && (
-                          <motion.button
-                            initial={{ scale: 1 }}
-                            animate={{ scale: [1, 1.02, 1] }}
-                            transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-                            whileHover={{ scale: 1.04 }}
-                            whileTap={{ scale: 0.98 }}
+                          <button
                             onClick={() => setShowOffersOverlay(true)}
-                            className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-100 rounded-xl group relative overflow-hidden shadow-sm"
+                            className="w-full flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                           >
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-amber-500/20">
-                                <Ticket className="w-5 h-5 animate-pulse" />
-                              </div>
-                              <div className="text-left">
-                                <div className="text-sm font-bold text-amber-900">Offers Available</div>
-                                <div className="text-xs text-amber-700 font-medium">{recommendation.availableOffers.length} exclusive deals found</div>
-                              </div>
-                            </div>
-                            <motion.div
-                              animate={{
-                                opacity: [1, 0.4, 1],
-                                scale: [1, 1.2, 1],
-                                rotate: [0, 15, -15, 0]
-                              }}
-                              transition={{
-                                repeat: Infinity,
-                                duration: 1.5,
-                                ease: "easeInOut"
-                              }}
-                            >
-                              <Sparkles className="w-5 h-5 text-amber-400 group-hover:rotate-12 transition-transform" />
-                            </motion.div>
-                          </motion.button>
+                            <Ticket className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0" />
+                            <span><span className="block text-sm font-semibold text-gray-900 dark:text-white">Offers available</span><span className="block text-xs text-gray-500 dark:text-gray-400">{recommendation.availableOffers.length} exclusive deals found</span></span>
+                          </button>
                         )}
 
                         <div className="pt-2 relative">
@@ -866,11 +820,10 @@ export default function App() {
                             className={cn(
                               "w-full h-12 relative overflow-hidden group text-white font-bold rounded-2xl transition-all duration-300 flex items-center justify-center gap-2",
                               isLogged
-                                ? "bg-gradient-to-r from-emerald-500 to-emerald-600"
-                                : "bg-gradient-to-r from-blue-600 to-indigo-600"
+                                ? "bg-emerald-600"
+                                : "bg-blue-600 hover:bg-blue-700"
                             )}
                           >
-                            <span className="absolute inset-0 w-full h-full -ml-[100%] bg-gradient-to-r from-transparent via-white/20 to-transparent group-hover:left-[200%] transition-all duration-700 ease-in-out" />
                             <div className="flex items-center justify-center relative z-10 w-full h-full">
                               <motion.div
                                 animate={{
@@ -942,17 +895,13 @@ export default function App() {
                   </div>
 
                   {recommendation.alternatives.length > 0 && (
-                    <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200/60 dark:border-gray-800 rounded-3xl p-6 shadow-sm mt-6 relative overflow-hidden group/alts">
-                      <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-indigo-500/5 to-transparent rounded-bl-full pointer-events-none" />
-                      <h4 className="text-[10px] uppercase font-black text-gray-400 dark:text-gray-500 mb-4 tracking-widest relative z-10">Top Alternatives</h4>
-                      <div className="grid grid-cols-1 landscape:grid-cols-2 md:grid-cols-3 gap-4 relative z-10">
+                    <div className="mt-6">
+                      <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Top alternatives</h4>
+                      <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700 overflow-hidden">
                         {recommendation.alternatives.map((alt) => (
-                          <div key={alt.card.id} className="p-4 bg-gray-50/80 dark:bg-gray-800/80 rounded-2xl border border-gray-200 dark:border-gray-700/50 hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/20 transition-all duration-300 group/alt cursor-default shadow-sm hover:shadow-md dark:shadow-none dark:hover:shadow-none">
-                            <div className="font-bold text-gray-900 dark:text-gray-100 mb-1.5 truncate group-hover/alt:text-indigo-700 dark:group-hover/alt:text-indigo-300 transition-colors">{alt.card.name}</div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400 mb-3 line-clamp-2 md:min-h-[2rem] leading-relaxed">{alt.benefit}</div>
-                            <div className="text-xs tracking-wide text-indigo-700 dark:text-indigo-300 font-bold bg-indigo-100/60 dark:bg-indigo-900/40 inline-flex items-center px-3 py-1.5 rounded-xl border border-indigo-200/50 dark:border-indigo-800/50 shadow-inner">
-                              <span className="opacity-70 mr-1 uppercase text-[10px]">Net:</span> ₹{alt.netValue.toFixed(0)}
-                            </div>
+                          <div key={alt.card.id} className="flex items-center justify-between gap-4 p-4">
+                            <div className="min-w-0"><div className="font-semibold text-gray-900 dark:text-gray-100">{alt.card.name}</div><div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{alt.benefit}</div></div>
+                            <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 tabular-nums whitespace-nowrap">₹{alt.netValue.toFixed(0)}</div>
                           </div>
                         ))}
                       </div>
@@ -965,10 +914,10 @@ export default function App() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="flex items-center justify-center border-2 border-dashed border-gray-200 rounded-3xl min-h-[300px]"
+                  className="flex items-center justify-center border border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-900/50 rounded-2xl min-h-[160px]"
                 >
                   <div className="text-center space-y-3">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto text-gray-400">
+                    <div className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto text-gray-400">
                       <Search className="w-6 h-6" />
                     </div>
                     <p className="text-gray-500 font-medium">Start a search to find the best card.</p>
@@ -1316,87 +1265,20 @@ export default function App() {
               exit={{ scale: 0.9, y: 40, opacity: 0 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-lg bg-white/90 dark:bg-gray-900/90 backdrop-blur-2xl rounded-[3rem] overflow-hidden shadow-[0_32px_64px_-12px_rgba(0,0,0,0.3)] dark:shadow-none border border-white/20 dark:border-gray-800 relative flex flex-col max-h-[85vh]"
+              className="w-full max-w-lg bg-white dark:bg-gray-900 rounded-2xl overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-800 relative flex flex-col max-h-[85vh]"
             >
-              {/* Glossy Header */}
-              <div className="p-8 pb-6 flex items-center justify-between sticky top-0 z-10">
-                <div className="space-y-1">
-                  <h3 className="text-3xl font-black text-gray-900 dark:text-white leading-none tracking-tight">Card Offers</h3>
-                  <div className="flex items-center gap-2">
-                    <div className="flex gap-0.5">
-                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-bounce" />
-                      <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce [animation-delay:0.2s]" />
-                      <div className="w-1.5 h-1.5 rounded-full bg-blue-300 animate-bounce [animation-delay:0.4s]" />
-                    </div>
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.25em] pl-1">Drag or Swipe across</p>
-                  </div>
-                </div>
-                <button
-                  aria-label="Close offers overlay"
-                  onClick={() => setShowOffersOverlay(false)}
-                  className="w-12 h-12 bg-gray-100/80 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-all active:scale-90 border border-gray-200/50"
-                >
-                  <X className="w-6 h-6" />
-                </button>
+              <div className="p-6 flex items-center justify-between gap-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 className="text-2xl font-semibold text-gray-900 dark:text-white">Card Offers</h3>
+                <button aria-label="Close offers overlay" onClick={() => setShowOffersOverlay(false)} className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"><X className="w-5 h-5" /></button>
               </div>
-
-              <div ref={offersScrollRef} className="flex-1 overflow-hidden cursor-grab active:cursor-grabbing px-8 pb-12 pt-2">
-                <motion.div
-                  drag="x"
-                  dragConstraints={{ right: 0, left: carouselConstraint }}
-                  dragElastic={0.1}
-                  className="flex gap-6 h-full w-max"
-                >
-                  {recommendation.availableOffers.map((offer) => (
-                    <motion.div
-                      key={offer.id}
-                      whileHover={{ y: -8 }}
-                      className="min-w-[85vw] md:min-w-[320px] max-w-[85vw] md:max-w-[320px] min-h-[340px] bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-[2.5rem] p-8 shadow-xl shadow-gray-200/40 dark:shadow-none snap-center flex flex-col justify-between relative overflow-hidden group border-b-8 border-b-blue-600/10 dark:border-b-blue-900/30 select-none"
-                    >
-                      <div className="absolute -top-4 -right-4 w-32 h-32 bg-blue-50/50 rounded-full blur-3xl group-hover:bg-blue-100/50 transition-colors" />
-                      <div className="absolute top-6 right-6 text-6xl opacity-20 group-hover:opacity-40 group-hover:scale-110 group-hover:-rotate-12 transition-all duration-500 pointer-events-none select-none">
-                        {offer.icon}
-                      </div>
-                      <div className="space-y-6 relative z-10">
-                        <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-700 rounded-[1.5rem] flex items-center justify-center text-white shadow-2xl shadow-blue-600/40 transform -rotate-3 group-hover:rotate-0 transition-transform">
-                          <Tag className="w-8 h-8" />
-                        </div>
-                        <div className="space-y-2">
-                          <div className="inline-flex items-center px-3 py-1 bg-blue-50 rounded-full">
-                            <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">{offer.category}</span>
-                          </div>
-                          <h4 className="text-2xl font-black text-gray-900 leading-tight tracking-tight group-hover:text-blue-600 transition-colors">
-                            {offer.title}
-                          </h4>
-                        </div>
-                        <p className="text-base text-gray-500 font-medium leading-relaxed pr-8">
-                          {offer.description}
-                        </p>
-                      </div>
-                      <div className="mt-12 pt-6 border-t border-dashed border-gray-200 flex items-center justify-between">
-                        <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-100">
-                          <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
-                          <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Verified</span>
-                        </div>
-                        <button
-                          onClick={() => {
-                            if (offer.cardId) {
-                              const card = CARD_DICT[offer.cardId];
-                              if (card) {
-                                setShowOffersOverlay(false);
-                                setSelectedCardForDetails({ card, source: 'offer' });
-                              }
-                            }
-                          }}
-                          className="flex items-center gap-2 text-blue-600 font-black text-xs uppercase tracking-tighter hover:text-blue-700 transition-colors group/btn"
-                        >
-                          Details
-                          <ChevronDown className="w-4 h-4 -rotate-90 group-hover/btn:translate-x-1 transition-transform" />
-                        </button>
-                      </div>
-                    </motion.div>
-                  ))}
-                </motion.div>
+              <div className="overflow-y-auto p-6 space-y-3">
+                {recommendation.availableOffers.map((offer) => (
+                  <div key={offer.id} className="flex items-center gap-4 p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                    <Tag className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0" />
+                    <div className="min-w-0 flex-1"><div className="text-xs text-gray-500 dark:text-gray-400">{offer.category}</div><h4 className="font-semibold text-gray-900 dark:text-white">{offer.title}</h4><p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{offer.description}</p></div>
+                    <button onClick={() => { if (offer.cardId) { const card = CARD_DICT[offer.cardId]; if (card) { setShowOffersOverlay(false); setSelectedCardForDetails({ card, source: 'offer' }); } } }} className="text-sm font-semibold text-blue-700 dark:text-blue-400 hover:underline shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">Details</button>
+                  </div>
+                ))}
               </div>
             </motion.div>
           </motion.div>

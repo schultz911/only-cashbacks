@@ -141,21 +141,19 @@ export function DashboardModal({ isOpen, onClose, logs, setLogs, onRemoveLogs }:
                   </div>
                 </div>
 
-                <div className="w-full rounded-2xl p-6 sm:p-7 mb-5 relative overflow-hidden text-left bg-gradient-to-br from-gray-900 to-blue-950 dark:from-blue-950/80 dark:to-gray-800 border border-gray-800 dark:border-blue-800/40 shadow-lg shadow-blue-950/10">
-                  <div className="absolute -right-10 -top-16 w-56 h-56 bg-blue-400/10 rounded-full pointer-events-none" />
-                  <div className="absolute -right-12 -bottom-24 w-52 h-52 border border-white/10 rounded-full pointer-events-none" />
+                <div className="w-full rounded-2xl p-6 sm:p-7 mb-5 text-left bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
                   <div className="relative">
                     <div className="flex items-center justify-between gap-2 mb-4">
-                      <span className="text-xs text-blue-100/80 font-medium">Earned this month</span>
-                      <span className="text-[10px] font-semibold text-blue-100 rounded-full px-2.5 py-1 bg-white/10 border border-white/10">{today.toLocaleDateString('en-IN', { month: 'short', year: 'numeric', timeZone: 'UTC' })}</span>
+                      <span className="text-xs text-gray-600 dark:text-gray-300 font-medium">Earned this month</span>
+                      <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{today.toLocaleDateString('en-IN', { month: 'short', year: 'numeric', timeZone: 'UTC' })}</span>
                     </div>
-                    <div className="text-5xl sm:text-6xl font-black tracking-tight text-white tabular-nums break-all">₹{totalThisMonth.toFixed(2)}</div>
-                    <div className="mt-5 pt-4 border-t border-white/10 flex items-center gap-2 text-xs text-blue-100/80"><span className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />{thisMonthLogs.length} {thisMonthLogs.length === 1 ? 'reward' : 'rewards'} recorded this month</div>
+                    <div className="text-5xl sm:text-6xl font-semibold tracking-tight text-gray-900 dark:text-white tabular-nums break-all">₹{totalThisMonth.toFixed(2)}</div>
+                    <div className="mt-5 pt-4 border-t border-gray-200 dark:border-gray-700 flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300"><span className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />{thisMonthLogs.length} {thisMonthLogs.length === 1 ? 'reward' : 'rewards'} recorded this month</div>
                   </div>
                 </div>
 
                 {logs.length === 0 && (
-                  <div className="w-full rounded-2xl border border-dashed border-gray-200 dark:border-gray-700/70 p-6 mb-5 text-center">
+                  <div className="w-full p-4 mb-5 text-center">
                     <p className="text-sm font-bold text-gray-800 dark:text-gray-200">Your next purchase could be rewarding</p>
                     <p className="text-xs leading-relaxed text-gray-500 dark:text-gray-400 mt-2 max-w-xs mx-auto">Record cashback from your card recommendations to see your savings grow here.</p>
                   </div>
