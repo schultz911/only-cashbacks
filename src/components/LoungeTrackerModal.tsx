@@ -73,6 +73,16 @@ export function LoungeTrackerModal({
   loungeMilestonesVerified, setLoungeMilestonesVerified,
   kiwiNeonEarnRate
 }: LoungeTrackerModalProps) {
+  const openDialog = React.useCallback((dialog: HTMLDialogElement | null) => {
+    if (!dialog) return;
+    const previousFocus = document.activeElement as HTMLElement | null;
+    dialog.showModal();
+    return () => {
+      dialog.close();
+      previousFocus?.focus();
+    };
+  }, []);
+
   const renderedCards = React.useMemo(() => {
     return CARD_DATA.reduce((acc, card: any) => {
       if (card.isDummy) return acc;
@@ -124,12 +134,20 @@ export function LoungeTrackerModal({
             onClick={onClose}
           />
           {/* Sidebar */}
-          <motion.div
+          <motion.dialog
+            ref={openDialog}
+            aria-labelledby="lounge-tracker-title"
+            onCancel={(event) => { event.preventDefault(); onClose(); }}
+            onClick={(event) => {
+              if (event.target !== event.currentTarget) return;
+              const bounds = event.currentTarget.getBoundingClientRect();
+              if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) onClose();
+            }}
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: "spring", damping: 30, stiffness: 300 }}
-            className="fixed inset-y-0 right-0 z-[401] w-full md:w-[28rem] bg-[#f5f5f7] dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 shadow-2xl flex flex-col"
+            className="fixed inset-y-0 right-0 left-auto m-0 p-0 h-dvh max-h-none max-w-none border-0 backdrop:bg-transparent z-[401] w-full md:w-[28rem] bg-[#f5f5f7] dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 shadow-2xl flex flex-col"
           >
             <div className="flex items-center justify-between p-6 pr-4 border-b border-gray-200/50 dark:border-gray-800">
               <div className="flex items-center gap-3">
@@ -137,14 +155,14 @@ export function LoungeTrackerModal({
                   <Plane className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-black text-gray-900 dark:text-white leading-tight">Lounge Tracker</h2>
+                  <h2 id="lounge-tracker-title" className="text-xl font-black text-gray-900 dark:text-white leading-tight">Lounge Tracker</h2>
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Your ticket to a premium flying experience</p>
                 </div>
               </div>
               <button
                 aria-label="Close lounge tracker"
                 onClick={onClose}
-                className="p-2 bg-gray-200/50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-full hover:bg-gray-300/50 dark:hover:bg-gray-700 transition-colors"
+                className="p-2 bg-gray-200/50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-full hover:bg-gray-300/50 dark:hover:bg-gray-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -183,7 +201,7 @@ export function LoungeTrackerModal({
                 )}
               </div>
             </div>
-          </motion.div>
+          </motion.dialog>
         </>
       )}
     </AnimatePresence>

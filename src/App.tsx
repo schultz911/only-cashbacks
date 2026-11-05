@@ -1033,7 +1033,7 @@ export default function App() {
                 ].map((item, i) => (
                   <li key={i} className="flex justify-between items-center bg-gray-50/50 hover:bg-gray-100/50 dark:bg-gray-800/50 dark:hover:bg-gray-800 transition-colors p-3 rounded-xl border border-gray-100 dark:border-gray-800">
                     <span className="font-bold text-sm text-gray-700 dark:text-gray-300">{item.name}</span>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-pink-600/80 dark:text-pink-400 bg-pink-50 dark:bg-pink-900/30 px-2 py-1 rounded-md">{item.type}</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-pink-700 dark:text-pink-400 bg-pink-50 dark:bg-pink-900/30 px-2 py-1 rounded-md">{item.type}</span>
                   </li>
                 ))}
               </ul>

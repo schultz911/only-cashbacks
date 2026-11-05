@@ -199,7 +199,7 @@ export const Header: React.FC<HeaderProps> = React.memo(({
           <div className="flex items-center gap-4">
             <div className="hidden sm:flex flex-col items-end">
               <span className="text-sm font-bold text-gray-900 dark:text-gray-100">Guest</span>
-              <div className="flex items-center gap-1 text-[10px] uppercase font-bold tracking-widest text-gray-400">
+              <div className="flex items-center gap-1 text-[10px] uppercase font-bold tracking-widest text-gray-600 dark:text-gray-400">
                 <div className="w-1.5 h-1.5 rounded-full bg-gray-400" />
                 Local
               </div>

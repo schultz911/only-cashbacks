@@ -68,7 +68,7 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
     <section className="space-y-4">
       <div className="space-y-1">
         <h2 className="text-2xl font-bold tracking-tight dark:text-white">Where are you spending?</h2>
-        <p className="text-gray-500 dark:text-gray-400 text-sm">Enter a merchant, category, or item.</p>
+        <p className="text-gray-600 dark:text-gray-400 text-sm">Enter a merchant, category, or item.</p>
       </div>
 
       <form onSubmit={(e) => handleSearch(e)} className="space-y-4 relative z-[120]">
@@ -207,7 +207,7 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
                 "flex items-center gap-1.5 md:gap-1 px-3 md:px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0",
                 isOnline
                   ? "bg-blue-600 text-white"
-                  : "bg-gray-50 dark:bg-white/5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/30 dark:hover:border-white/60 dark:hover:text-white hover:scale-[1.03] active:scale-95 transition-all duration-200"
+                  : "bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/30 dark:hover:border-white/60 dark:hover:text-white hover:scale-[1.03] active:scale-95 transition-all duration-200"
               )}
             >
               <Globe className="w-4 h-4 shrink-0" />
@@ -224,7 +224,7 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
                 "flex items-center gap-1.5 md:gap-1 px-3 md:px-3 py-2 -ml-1 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0",
                 isIntl
                   ? "bg-indigo-600 text-white"
-                  : "bg-gray-50 dark:bg-white/5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/30 dark:hover:border-white/60 dark:hover:text-white hover:scale-[1.03] active:scale-95 transition-all duration-200"
+                  : "bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/30 dark:hover:border-white/60 dark:hover:text-white hover:scale-[1.03] active:scale-95 transition-all duration-200"
               )}
             >
               <Plane className="w-4 h-4 shrink-0" />
@@ -245,7 +245,7 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
                 "flex items-center justify-center lg:ml-auto gap-2 px-3 md:px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0 md:portrait:w-full lg:w-auto",
                 isScanToPay
                   ? "bg-emerald-600 text-white"
-                  : "bg-gray-50 dark:bg-white/5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/30 dark:hover:border-white/60 dark:hover:text-white hover:scale-[1.03] active:scale-95 transition-all duration-200"
+                  : "bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/30 dark:hover:border-white/60 dark:hover:text-white hover:scale-[1.03] active:scale-95 transition-all duration-200"
               )}
             >
               <QrCode className="w-4 h-4 shrink-0" />
@@ -264,7 +264,7 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
                 "flex items-center justify-center lg:ml-auto gap-2 px-3 md:px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0 md:portrait:w-full lg:w-auto",
                 !isOnline && !isScanToPay && !isIntl
                   ? "bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-900"
-                  : "bg-gray-50 dark:bg-white/5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/30 dark:hover:border-white/60 dark:hover:text-white hover:scale-[1.03] active:scale-95 transition-all duration-200"
+                  : "bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/30 dark:hover:border-white/60 dark:hover:text-white hover:scale-[1.03] active:scale-95 transition-all duration-200"
               )}
             >
               <Store className="w-4 h-4 shrink-0" />

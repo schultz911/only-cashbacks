@@ -71,8 +71,8 @@ export function BillReminders({ walletCards, cardBillDates, paidBills, markBillP
         </div>
         <div className="flex flex-col items-center justify-center p-6 text-center h-full min-h-[120px] relative z-10">
           <Calendar className="w-8 h-8 text-gray-300 dark:text-gray-700/50 mb-2" />
-          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">All caught up!</p>
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Set each card's statement day in card details.</p>
+          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">All caught up!</p>
+          <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Set each card's statement day in card details.</p>
         </div>
       </section>
     );
