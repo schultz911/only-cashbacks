@@ -72,9 +72,11 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
       </div>
 
       <form onSubmit={(e) => handleSearch(e)} className="space-y-4 relative z-[120]">
+        <label htmlFor="merchant-search" className="block text-sm font-semibold text-gray-700 dark:text-gray-200">Merchant or category</label>
         <div className="relative group z-[110]" ref={suggestionRef}>
           <input
             type="text"
+            id="merchant-search"
             aria-label="Search merchant, category, or item"
             value={query}
             onChange={(e) => {
@@ -99,7 +101,7 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
                 }
               }
             }}
-            placeholder="e.g. Swiggy, Groceries, iPhone..."
+            placeholder="e.g. Swiggy or groceries"
             className="w-full bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-white border border-gray-200 rounded-2xl py-4 pl-12 pr-12 shadow-sm focus:ring-2 ring-blue-500 transition-all outline-none text-lg font-medium"
             autoComplete="off"
           />
@@ -148,6 +150,7 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
           </AnimatePresence>
         </div>
 
+        <label htmlFor="spend-amount" className="block text-sm font-semibold text-gray-700 dark:text-gray-200">Amount</label>
         <div className="flex gap-2 relative z-[100]">
           {isIntl && (
             <div className="absolute left-1 top-1/2 -translate-y-1/2 flex items-center pr-3 border-r border-gray-200 dark:border-gray-700 border-dashed z-50">
@@ -163,6 +166,7 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
           {!isIntl && <span className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-bold">₹</span>}
           <input
             type="text"
+            id="spend-amount"
             aria-label="Amount"
             inputMode="decimal"
             value={formatAmountStr(isIntl ? foreignAmount : amount)}
@@ -180,7 +184,7 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
             disabled={loading}
             className={cn(
               "absolute right-2 top-1/2 -translate-y-1/2 text-white rounded-xl px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-50 shadow flex items-center gap-1.5",
-              isOffline ? "bg-amber-500 hover:bg-amber-600" : "bg-[#0095f6] hover:bg-blue-600"
+              isOffline ? "bg-amber-800 hover:bg-amber-900" : "bg-[#006bb3] hover:bg-blue-800"
             )}
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : isOffline ? <><CloudOff className="w-4 h-4" /> Check</> : 'Check'}
@@ -197,6 +201,7 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
           <div className="flex items-center gap-2 md:gap-3 shrink-0">
             <button
               type="button"
+              aria-pressed={isOnline}
               onClick={() => { setIsOnline(!isOnline); setIsScanToPay(false); }}
               className={cn(
                 "flex items-center gap-1.5 md:gap-1 px-3 md:px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0",
@@ -210,6 +215,7 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
             </button>
             <button
               type="button"
+              aria-pressed={isIntl}
               onClick={() => {
                 setIsIntl(!isIntl);
                 if (!isIntl) { setIsScanToPay(false); }
@@ -232,6 +238,8 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
+              aria-label="Scan & Pay"
+              aria-pressed={isScanToPay}
               onClick={() => { setIsScanToPay(!isScanToPay); setIsOnline(false); }}
               className={cn(
                 "flex items-center justify-center lg:ml-auto gap-2 px-3 md:px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0 md:portrait:w-full lg:w-auto",
@@ -241,7 +249,7 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
               )}
             >
               <QrCode className="w-4 h-4 shrink-0" />
-              <span className="hidden max-md:landscape:inline md:portrait:inline xl:inline whitespace-nowrap">Scan & Pay</span>
+              <span className="whitespace-nowrap">Scan & Pay</span>
             </motion.button>
           )}
           {isOnline && !isIntl && (
@@ -250,6 +258,7 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
+              aria-label="In-Store"
               onClick={() => { setIsOnline(false); setIsScanToPay(false); }}
               className={cn(
                 "flex items-center justify-center lg:ml-auto gap-2 px-3 md:px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0 md:portrait:w-full lg:w-auto",
@@ -259,7 +268,7 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
               )}
             >
               <Store className="w-4 h-4 shrink-0" />
-              <span className="hidden max-md:landscape:inline md:portrait:inline xl:inline whitespace-nowrap">In-Store</span>
+              <span className="whitespace-nowrap">In-Store</span>
             </motion.button>
           )}
         </div>

@@ -106,7 +106,7 @@ export const CardItem: React.FC<CardItemProps> = ({ card, className, isRecommend
               <span className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-emerald-500/20 border border-emerald-500/30 whitespace-nowrap">Forex+</span>
             )}
             {hasBogo && (
-              <span className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border border-orange-400/40 bg-orange-400/15 whitespace-nowrap" style={{ color: lightFace ? '#9a3412' : '#fed7aa' }}>BOGO</span>
+              <span className="px-1.5 py-0.5 rounded text-xs font-black uppercase tracking-widest border border-orange-400/40 bg-orange-400/15 whitespace-nowrap" style={{ color: lightFace ? '#9a3412' : '#fed7aa' }}>BOGO</span>
             )}
           </div>
           <div className="relative w-full overflow-hidden">

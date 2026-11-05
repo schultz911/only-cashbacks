@@ -920,7 +920,8 @@ export default function App() {
                     <div className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto text-gray-400">
                       <Search className="w-6 h-6" />
                     </div>
-                    <p className="text-gray-500 font-medium">Start a search to find the best card.</p>
+                    <p className="font-bold dark:text-white">Find your best card</p>
+                    <p className="text-gray-600 dark:text-gray-300 text-sm">Enter a merchant and amount to see your recommendation.</p>
                   </div>
                 </motion.div>
               )}
@@ -1453,11 +1454,11 @@ export default function App() {
         />
       </Suspense>
 
-      <footer className="text-center py-6 mt-8 text-xs text-gray-400 font-medium px-6 flex flex-col items-center gap-3">
+      <footer className="text-center py-6 mt-8 text-xs text-gray-600 dark:text-gray-300 font-medium px-6 flex flex-col items-center gap-3">
         <div>
           <p>Crafted by Chief Keefe. Coded with Codex.</p>
           <p className="mt-2">I built this web app for myself, but feel free to fork it and customize it for your own cards.</p>
-          <a href="https://github.com/schultz911/only-cashbacks" target="_blank" rel="noopener noreferrer" className="inline-flex mt-2 text-blue-400 hover:text-blue-300 underline underline-offset-4">Fork on GitHub ↗</a>
+          <a href="https://github.com/schultz911/only-cashbacks" target="_blank" rel="noopener noreferrer" className="inline-flex mt-2 text-blue-700 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-200 underline underline-offset-4">Fork on GitHub ↗</a>
         </div>
       </footer>
 

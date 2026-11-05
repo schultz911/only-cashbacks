@@ -64,7 +64,7 @@ export const Header: React.FC<HeaderProps> = React.memo(({
             <h1 className="text-lg sm:text-xl md:text-2xl font-black tracking-tight text-gray-900 dark:text-white leading-none pb-1">
               OnlyCashbacks
             </h1>
-            <p className="text-[10px] sm:text-[10px] md:text-xs font-bold tracking-widest text-[#0095f6] uppercase leading-tight">
+            <p className="text-[10px] sm:text-[10px] md:text-xs font-bold tracking-widest text-[#006bb3] dark:text-blue-300 uppercase leading-tight">
               Make Your Credit Cards Pay
             </p>
           </div>
