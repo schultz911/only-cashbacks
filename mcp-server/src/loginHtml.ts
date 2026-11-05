@@ -56,6 +56,7 @@ export function getLoginHtml(code: string, firebaseConfig: Record<string, string
     .benefits small { display: block; color: var(--muted); font-size: 11px; line-height: 1.6; margin-top: 2px; }
     .code-badge { background: var(--soft); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px; color: var(--muted); font-size: 11px; }
     .code-value { color: var(--text); font-family: ui-monospace, monospace; font-size: 12px; font-weight: 700; overflow-wrap: anywhere; }
+    #oauth-recipient { color: var(--muted); font-size: 11px; line-height: 1.6; margin: 0 0 20px; overflow-wrap: anywhere; }
     .google-btn { width: 100%; border: 0; border-radius: 16px; min-height: 54px; padding: 16px; background: var(--button); color: var(--button-text); font: 700 14px 'Plus Jakarta Sans', sans-serif; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px; transition: transform .15s, opacity .15s; }
     .google-btn[hidden] { display: none; }
     .google-btn:hover:not(:disabled) { transform: translateY(-1px); opacity: .9; }
@@ -182,6 +183,7 @@ export function getLoginHtml(code: string, firebaseConfig: Record<string, string
       const statusMsg = document.getElementById('status-msg');
       if (oauthRequestId) {
         const consent = document.getElementById('oauth-consent');
+        document.getElementById('login-btn').hidden = true;
         consent.hidden = false;
         statusMsg.textContent = 'Review the recipient above before granting access.';
         consent.onclick = async () => {

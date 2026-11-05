@@ -76,9 +76,20 @@ describe('standalone plugin login', () => {
     page.fetch.mockResolvedValueOnce({ ok: false, json: async () => ({ error: 'Authorization request expired' }) });
     await page.click();
     expect(page.fetch).not.toHaveBeenCalled();
+    expect(page.element('login-btn').hidden).toBe(true);
+    expect(page.element('oauth-consent').hidden).toBe(false);
     await page.element('oauth-consent').onclick();
     expect(page.element('status-msg').textContent).toBe('Authorization request expired');
     expect(page.auth.signInWithRedirect).not.toHaveBeenCalled();
+  });
+
+  it('hides Google sign-in when redirect recovery reaches consent', async () => {
+    const page = loginPage();
+    page.auth.getRedirectResult.mockResolvedValueOnce({ user: { getIdToken: async () => 'test-identity' } } as any);
+    page.finishAttestation({ token: 'test-attestation' });
+    await page.flush();
+    expect(page.element('login-btn').hidden).toBe(true);
+    expect(page.element('oauth-consent').hidden).toBe(false);
   });
 
   it('uses redirect fallback only for an unavailable popup and shows redirect recovery errors', async () => {
