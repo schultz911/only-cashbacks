@@ -109,11 +109,11 @@ const EXHAUSTIVE_MERCHANT_MAPPINGS = [
   // Home Services & Utility
   { pattern: /urban company|housejoy|hometriangle|timesaverz|helpr|bro4u|quikreasy|snabbit|pronto|zimmber|urban|\bservice\b|cleaning|pest control|repair|plumber|electrician|appliance|handyman/i, category: "Services", isOnline: true, isP2P: false },
   { pattern: /fastag|nhai|toll|highway/i, category: "Utilities", isOnline: true, isP2P: false },
-  { pattern: /act|act fibernet|jio fiber|airtel xstream|broadband|fiber|internet|wifi/i, category: "Utilities", isOnline: true, isP2P: false },
+  { pattern: /\bact\b|jio fiber|airtel xstream|broadband|fiber|internet|wifi/i, category: "Utilities", isOnline: true, isP2P: false },
   { pattern: /bescom|bwssb|mahavitaran|mseb|adani electricity|tata power|cesc|electricity|power|jio|airtel|\bvi\b|vodafone|bsnl|mtnl|recharge|bill pay|telecom|dth|sun direct|tata play|tata sky|dish tv|\bwater\b|water bill|utility|\bbill\b|\bbills\b/i, category: "Utilities", isOnline: true, isP2P: false },
 
   // Fintech & Payments
-  { pattern: /cred|cred\.club|\brent\b|\btax\b|phonepe|finance|fintech|emi|loan|etmoney|mutual fund|\bstocks\b|\bstock\b|crypto|cryptocurrency|coinbase|binance|wazirx|coinjar|kraken|paypal|paytm|bajaj finserv|money view|airtel thanks|monefy|scripbox|kuvera|groww|siply|goodbudget/i, category: "Finance", isOnline: true, isP2P: false },
+  { pattern: /cred|cred\.club|phonepe|finance|fintech|emi|loan|etmoney|mutual fund|\bstocks\b|\bstock\b|crypto|cryptocurrency|coinbase|binance|wazirx|coinjar|kraken|paypal|paytm|bajaj finserv|money view|airtel thanks|monefy|scripbox|kuvera|groww|siply|goodbudget/i, category: "Finance", isOnline: true, isP2P: false },
 
   // Rent & Housing
   { pattern: /\brent\b|housing|society|maintenance|proptech|nobroker|magicbricks|99acres/i, category: "Rent", isOnline: true, isP2P: false },

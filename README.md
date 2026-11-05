@@ -126,9 +126,9 @@ Add to your client configuration (e.g. `claude_desktop_config.json`, Antigravity
 
 You should never have to sacrifice privacy or disclose personal financial details to maximize your card rewards.
 
-- **🛡️ Zero Analytics & Zero Trackers**: No Google Analytics, no Meta Pixel, no Mixpanel, and no telemetry scripts.
+- **📊 Monitoring**: The app initializes Firebase Analytics and Performance Monitoring where supported. It may report application errors to Firebase Analytics and, for signed-in users, Firestore.
 - **🔒 True Client-Side Storage**: In local mode, your wallet settings, offer statuses, and history live solely in your browser's `localStorage` and `IndexedDB`.
-- **🔑 BYOK (Bring Your Own Key)**: If you choose to enable AI-powered classification for unmapped merchants, supply your own OpenRouter or Gemini API key. Keys are saved locally and never sent to our servers.
+- **🔑 BYOK (Bring Your Own Key)**: Optional AI classification uses your OpenRouter API key. The key is stored in your browser and, when signed in, synced to your Firestore wallet. For classification, it is sent to a Firebase function, which forwards it to OpenRouter.
 - **🛡️ Hardened Security Posture**:
   - Strict Content Security Policy (CSP), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`.
   - Firebase App Check with reCAPTCHA Enterprise enforcement to protect database backends.

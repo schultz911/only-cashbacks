@@ -361,6 +361,7 @@ export function useAuthAndSync(latestStateRef: React.MutableRefObject<any>, skip
           cloudConflictRef.current = true;
           throw new Error('The cloud wallet changed. Use manual sync to reload it.');
         }
+        data.updatedAt = Math.max(Date.now(), (current.exists() && typeof current.data().updatedAt === 'number' ? current.data().updatedAt : 0) + 1);
         transaction.set(docRef, data, { merge: true });
       });
       if (epoch === authEpochRef.current) {

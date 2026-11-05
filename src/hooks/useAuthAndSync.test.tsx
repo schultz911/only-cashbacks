@@ -122,6 +122,24 @@ afterEach(() => {
 });
 
 describe('cloud synchronization provenance', () => {
+  it('keeps an older device from overwriting a newer wallet even when clocks match', async () => {
+    const time = Date.now();
+    mount(); await act(async () => { state.snapshot(snapshot({ ...cloudWallet(), updatedAt: time })); });
+    await act(async () => { wallet.setOfferUsage({ local: 1 }); });
+    state.cloudDocuments.set('sync-test-user', { ...cloudWallet(), updatedAt: time + 1, offerUsage: { remote: 2 } });
+    await advance(2000);
+    expect(state.writes).toHaveLength(0);
+    expect(sync.isDirty).toBe(true);
+    expect(sync.retryBlocked).toBe(true);
+    expect(state.cloudDocuments.get('sync-test-user').offerUsage).toEqual({ remote: 2 });
+  });
+
+  it('advances the wallet version when a save shares the previous timestamp', async () => {
+    const time = Date.now();
+    mount(); await act(async () => { state.snapshot(snapshot({ ...cloudWallet(), updatedAt: time })); });
+    await act(async () => { wallet.setOfferUsage({ local: 1 }); await sync.saveData(); });
+    expect(state.writes[0].data.updatedAt).toBeGreaterThan(time);
+  });
   it('tracks a limited-use reward through its original saved usage key', async () => {
     mount(); await hydrate({ ...cloudWallet(), walletCards: ['sbi-eternal'] });
     fireEvent.click(screen.getByRole('heading', { name: 'Eternal' }));

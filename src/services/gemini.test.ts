@@ -16,3 +16,9 @@ it.each(['District', 'Bistro', 'Zomato'])('recognizes %s locally and connects it
   const result = getRecommendations(merchant, 1000, true, false, false, {}, {}, 2, ['sbi-eternal']);
   expect(result!.cashbackEarned).toBe(100);
 });
+
+it.each([['rent', 'Rent'], ['tax', 'Government'], ['ACT Fibernet', 'Utilities'], ['factory', 'Other']])('classifies %s as %s', async (name, category) => {
+  vi.useFakeTimers();
+  vi.mocked(httpsCallable).mockReturnValue(vi.fn(async () => ({ data: {} })) as any);
+  expect((await categorizeMerchant(name)).category).toBe(category);
+});
