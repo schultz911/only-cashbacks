@@ -74,7 +74,7 @@ function ensureInitialized() {
  */
 export async function verifyIdToken(idToken: string): Promise<any> {
   ensureInitialized();
-  return getAuth().verifyIdToken(idToken);
+  return getAuth().verifyIdToken(idToken, true);
 }
 
 /**
@@ -106,5 +106,39 @@ export async function getUserByEmail(email: string): Promise<UserRecord | null> 
     return await getAuth().getUserByEmail(email);
   } catch {
     return null;
+  }
+}
+
+
+const walletIdentityChecks = new Map<string, { expiresAt: number; result: Promise<UserRecord>; pending: boolean }>();
+
+export async function checkWalletIdentity(identity: { uid: string; auth_time: number }, fresh = false) {
+  ensureInitialized();
+  const now = Date.now();
+  let check = walletIdentityChecks.get(identity.uid);
+  if (!check || (!check.pending && (check.expiresAt <= now || fresh))) {
+    if (walletIdentityChecks.size >= 2048) {
+      const oldest = walletIdentityChecks.keys().next().value;
+      if (oldest !== undefined) walletIdentityChecks.delete(oldest);
+    }
+    const newCheck = { expiresAt: now + 15_000, pending: true, result: getAuth().getUser(identity.uid) };
+    void newCheck.result.then(
+      () => { newCheck.pending = false; },
+      () => { newCheck.pending = false; },
+    );
+    check = newCheck;
+    walletIdentityChecks.set(identity.uid, check);
+  }
+  let user: UserRecord;
+  try {
+    user = await check.result;
+  } catch (error) {
+    if (walletIdentityChecks.get(identity.uid) === check) walletIdentityChecks.delete(identity.uid);
+    throw error;
+  }
+  const validAfter = user.tokensValidAfterTime ? Date.parse(user.tokensValidAfterTime) : 0;
+  if (!Number.isFinite(identity.auth_time) || !Number.isFinite(validAfter) ||
+      user.disabled || identity.auth_time * 1000 < validAfter) {
+    throw new Error('Wallet authorization revoked');
   }
 }

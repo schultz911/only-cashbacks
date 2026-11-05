@@ -5,12 +5,12 @@ import { useAuthSyncContext } from './AuthSyncContext';
 const WalletContext = createContext<ReturnType<typeof useWalletState> | null>(null);
 
 export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, skipSyncRef, markDirty, pendingEditsRef } = useAuthSyncContext();
-  return <OwnedWalletProvider key={user?.uid ?? "guest"} owner={user?.uid ?? null} skipSyncRef={skipSyncRef} markDirty={markDirty} pendingEditsRef={pendingEditsRef}>{children}</OwnedWalletProvider>;
+  const { user, skipSyncRef, markDirty, pendingEditsRef, authEpochRef } = useAuthSyncContext();
+  return <OwnedWalletProvider key={`${user?.uid ?? 'guest'}:${authEpochRef?.current ?? 0}`} owner={user?.uid ?? null} skipSyncRef={skipSyncRef} markDirty={markDirty} pendingEditsRef={pendingEditsRef} authEpochRef={authEpochRef}>{children}</OwnedWalletProvider>;
 };
 
-const OwnedWalletProvider: React.FC<{ children: React.ReactNode; owner: string | null; skipSyncRef: React.MutableRefObject<boolean>; markDirty: () => void; pendingEditsRef: React.MutableRefObject<Record<string, unknown>> }> = ({children, owner, skipSyncRef, markDirty, pendingEditsRef}) => {
-  const walletState = useWalletState(skipSyncRef, markDirty, owner, pendingEditsRef);
+const OwnedWalletProvider: React.FC<{ children: React.ReactNode; owner: string | null; skipSyncRef: React.MutableRefObject<boolean>; markDirty: () => void; pendingEditsRef: React.MutableRefObject<Record<string, unknown>>; authEpochRef?: React.MutableRefObject<number> }> = ({children, owner, skipSyncRef, markDirty, pendingEditsRef, authEpochRef}) => {
+  const walletState = useWalletState(skipSyncRef, markDirty, owner, pendingEditsRef, authEpochRef);
 
   return (
     <WalletContext.Provider value={walletState}>

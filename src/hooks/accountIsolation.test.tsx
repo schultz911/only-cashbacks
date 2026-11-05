@@ -15,7 +15,7 @@ vi.mock('motion/react', async () => {
 });
 
 const state = vi.hoisted(() => ({
-  snapshot: null as any, authChanged: null as any, writes: [] as any[],
+  cloudDocuments: new Map<string, any>(), snapshot: null as any, authChanged: null as any, writes: [] as any[],
   nextWrite: null as Promise<void> | null, queue: [] as any[],
   nextQueueRead: null as Promise<any[]> | null, queues: new Map<string, any[]>(),
 }));
@@ -37,8 +37,25 @@ vi.mock('firebase/auth', () => ({
 vi.mock('firebase/firestore', () => ({
   doc: (_db: any, _collection: string, uid: string) => ({ uid }), deleteDoc: vi.fn(),
   getDocFromServer: vi.fn(),
-  onSnapshot: (_doc: any, callback: any) => { state.snapshot = callback; return vi.fn(); },
-  setDoc: vi.fn(async (doc: any, data: any) => {
+  onSnapshot: (document: any, _options: any, callback: any) => {
+    state.snapshot = (value: any) => {
+      if (value.exists()) state.cloudDocuments.set(document.uid, value.data());
+      else state.cloudDocuments.delete(document.uid);
+      callback(value);
+    };
+    return vi.fn();
+  },
+  runTransaction: vi.fn(async (_db: unknown, operation: any) => {
+    let write: [any, any] | undefined;
+    await operation({
+      get: async (document: any) => ({
+        exists: () => state.cloudDocuments.has(document.uid),
+        data: () => state.cloudDocuments.get(document.uid),
+      }),
+      set: (document: any, data: any) => { write = [document, data]; },
+    });
+    if (!write) return;
+    const [doc, data] = write;
     state.writes.push({ uid: doc.uid, data: structuredClone(data) });
     const pending = state.nextWrite;
     const callback = state.snapshot;
@@ -88,11 +105,12 @@ beforeEach(() => {
   vi.setSystemTime(new Date('2026-11-03T06:30Z'));
   const values = new Map<string, string>();
   const storage = { getItem: (key: string) => values.get(key) ?? null,
-    setItem: (key: string, value: string) => values.set(key, value), clear: () => values.clear() };
+    setItem: (key: string, value: string) => values.set(key, value), removeItem: (key: string) => values.delete(key), clear: () => values.clear() };
   vi.stubGlobal('localStorage', storage);
   Object.defineProperty(window, 'localStorage', { value: storage, configurable: true });
   vi.stubGlobal('fetch', vi.fn(async () => ({ json: async () => ({ rates: { USD: 0.012 } }) })));
   vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(true);
+  state.cloudDocuments.clear();
   state.writes = []; state.queue = []; state.queues.clear(); state.nextWrite = null; state.nextQueueRead = null;
 });
 afterEach(() => {
@@ -111,6 +129,23 @@ describe('account ownership isolation', () => {
     await act(async()=>sync.setTheme('dark')); await advance(2500);
     expect(state.writes.at(-1)).toMatchObject({uid:'second',data:{openRouterApiKey:'',cashbackLogs:[]}});
   });
+  it('rejects a stale save after cloud deletion before the listener sees it', async () => {
+    mount(); await hydrate({ ...cloudWallet(), cashbackLogs: [log] });
+    state.cloudDocuments.delete('sync-test-user');
+    await act(async () => { await sync.saveData(); });
+    expect(state.writes).toHaveLength(0);
+    await act(async () => state.snapshot({ metadata: { hasPendingWrites: false }, exists: () => false }));
+    expect(wallet.cashbackLogs).toEqual([]);
+  });
+
+  it('does not replay removed savings from an older offline queue', async () => {
+    mount(); await hydrate({ ...cloudWallet(), cashbackLogs: [log] });
+    localStorage.setItem('oc_owner:user:sync-test-user:removedSavingsDates', JSON.stringify([log.date]));
+    state.queues.set(qkey('sync-test-user'), [log]);
+    await act(async () => { await sync.saveData(); });
+    expect(state.writes.at(-1).data.cashbackLogs).toEqual([]);
+  });
+
   it('keeps the old account queue out of an existing second account', async () => {
     state.queues.set(qkey('sync-test-user'),[log]);
     mount(); await hydrate(); await advance(2500);
@@ -137,7 +172,7 @@ describe('account ownership isolation', () => {
     localStorage.setItem('oc_cashbackLogs',JSON.stringify([log]));
     mount(); await hydrate(); await advance(700);
     expect(search.openRouterApiKey).toBe(''); expect(wallet.cashbackLogs).toEqual([]);
-    expect(JSON.parse(localStorage.getItem('oc_legacy_unowned_backup')!)).toMatchObject({oc_openRouterApiKey:JSON.stringify('legacy-key'),oc_cashbackLogs:JSON.stringify([log])});
+    expect(JSON.parse(localStorage.getItem('oc_legacy_unowned_backup')!)).toEqual({oc_cashbackLogs:JSON.stringify([log])});
   });
   it('retains an edit made immediately before switching accounts', async () => {
     mount(); await hydrate();

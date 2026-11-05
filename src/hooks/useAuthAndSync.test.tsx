@@ -15,7 +15,7 @@ vi.mock('motion/react', async () => {
 });
 
 const state = vi.hoisted(() => ({
-  snapshot: null as any, authChanged: null as any, writes: [] as any[],
+  cloudDocuments: new Map<string, any>(), snapshot: null as any, authChanged: null as any, writes: [] as any[],
   nextWrite: null as Promise<void> | null, queue: [] as any[],
   nextQueueRead: null as Promise<any[]> | null,
 }));
@@ -37,8 +37,25 @@ vi.mock('firebase/auth', () => ({
 vi.mock('firebase/firestore', () => ({
   doc: (_db: any, _collection: string, uid: string) => ({ uid }), deleteDoc: vi.fn(),
   getDocFromServer: vi.fn(),
-  onSnapshot: (_doc: any, callback: any) => { state.snapshot = callback; return vi.fn(); },
-  setDoc: vi.fn(async (doc: any, data: any) => {
+  onSnapshot: (document: any, _options: any, callback: any) => {
+    state.snapshot = (value: any) => {
+      if (value.exists()) state.cloudDocuments.set(document.uid, value.data());
+      else state.cloudDocuments.delete(document.uid);
+      callback(value);
+    };
+    return vi.fn();
+  },
+  runTransaction: vi.fn(async (_db: unknown, operation: any) => {
+    let write: [any, any] | undefined;
+    await operation({
+      get: async (document: any) => ({
+        exists: () => state.cloudDocuments.has(document.uid),
+        data: () => state.cloudDocuments.get(document.uid),
+      }),
+      set: (document: any, data: any) => { write = [document, data]; },
+    });
+    if (!write) return;
+    const [doc, data] = write;
     state.writes.push({ uid: doc.uid, data: structuredClone(data) });
     const pending = state.nextWrite;
     const callback = state.snapshot;
@@ -92,11 +109,12 @@ beforeEach(() => {
   vi.setSystemTime(new Date('2026-11-03T06:30Z'));
   const values = new Map<string, string>();
   const storage = { getItem: (key: string) => values.get(key) ?? null,
-    setItem: (key: string, value: string) => values.set(key, value), clear: () => values.clear() };
+    setItem: (key: string, value: string) => values.set(key, value), removeItem: (key: string) => values.delete(key), clear: () => values.clear() };
   vi.stubGlobal('localStorage', storage);
   Object.defineProperty(window, 'localStorage', { value: storage, configurable: true });
   vi.stubGlobal('fetch', vi.fn(async () => ({ json: async () => ({ rates: { USD: 0.012 } }) })));
   vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(true);
+  state.cloudDocuments.clear();
   state.writes = []; state.queue = []; state.nextWrite = null; state.nextQueueRead = null;
 });
 afterEach(() => {

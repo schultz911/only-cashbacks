@@ -1,9 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { auth, db, handleFirestoreError, OperationType, googleProvider } from '../firebase';
 import { onAuthStateChanged, User, signInWithPopup, signInWithRedirect, signOut } from 'firebase/auth';
-import { doc, getDocFromServer, setDoc, onSnapshot } from 'firebase/firestore';
-import { getInitialState, safeSetItem, getOwnedState, setOwnedState, scopedKey, preserveLegacyStorage, persistOwnedSnapshot } from '../lib/storage';
+import { doc, getDocFromServer, runTransaction, onSnapshot } from 'firebase/firestore';
+import { excludeRemovedLogs, getInitialState, safeSetItem, getOwnedState, setOwnedState, scopedKey, preserveLegacyStorage, persistOwnedSnapshot } from '../lib/storage';
 import { get, set, update } from 'idb-keyval';
+
+function walletVersion(data: any): string {
+  return typeof data.updatedAt === 'number' ? 'updated:' + data.updatedAt : 'legacy';
+}
 
 export function useAuthAndSync(latestStateRef: React.MutableRefObject<any>, skipSyncRef: React.MutableRefObject<boolean>, pendingEditsRef: React.MutableRefObject<Record<string, unknown>>) {
   const [user, setUser] = useState<User | null>(null);
@@ -18,12 +22,16 @@ export function useAuthAndSync(latestStateRef: React.MutableRefObject<any>, skip
   const [retryAt, setRetryAt] = useState<number | null>(null);
   const retryFailuresRef = useRef(0);
   const retryBlockedRef = useRef(false);
+  const cloudConflictRef = useRef(false);
+  const reloadCloudWalletRef = useRef<(() => Promise<void>) | null>(null);
   const saveInFlightRef = useRef(false);
   const [isSyncPaused, setIsSyncPaused] = useState(() => getInitialState('oc_isSyncPaused', false));
   const [isDirty, setIsDirtyState] = useState(false);
   const isDirtyRef = useRef(false);
   const pendingSyncCounterRef = useRef(0);
   const authEpochRef = useRef(0);
+  const ownerEpochRef = useRef(0);
+  const cloudVersionRef = useRef<{ uid: string; version: string } | null>(null);
   const hydrationCounterRef = useRef(0);
 
   const setIsDirty = useCallback<React.Dispatch<React.SetStateAction<boolean>>>((next) => {
@@ -100,7 +108,11 @@ export function useAuthAndSync(latestStateRef: React.MutableRefObject<any>, skip
       }
       pendingEditsRef.current = {};
       const nextUid = currentUser?.uid ?? null;
+      if (nextUid !== activeUidRef.current) ownerEpochRef.current += 1;
       activeUidRef.current = nextUid;
+      const priorVersion = nextUid ? getInitialState<string | null>(scopedKey(nextUid, 'cloudWalletVersion'), null) : null;
+      cloudConflictRef.current = false;
+      cloudVersionRef.current = nextUid && priorVersion ? { uid: nextUid, version: priorVersion } : null;
       safeSetItem('oc_legacy_view_owner', nextUid);
       hasAuthResultRef.current = true;
       const pending = getInitialState(scopedKey(nextUid, 'dirty'), false);
@@ -174,11 +186,11 @@ export function useAuthAndSync(latestStateRef: React.MutableRefObject<any>, skip
 
       if (data.cashbackLogs) {
         if (localOfflineQueue.length === 0) {
-          setFunctions.setCashbackLogs(data.cashbackLogs);
+          setFunctions.setCashbackLogs(excludeRemovedLogs(activeUidRef.current, data.cashbackLogs));
         } else {
           const uniqueMap = new Map();
-          for (const item of data.cashbackLogs) uniqueMap.set(item.date, item);
-          for (const item of localOfflineQueue) uniqueMap.set(item.date, item);
+          for (const item of excludeRemovedLogs(activeUidRef.current, data.cashbackLogs)) uniqueMap.set(item.date, item);
+          for (const item of excludeRemovedLogs(activeUidRef.current, localOfflineQueue)) uniqueMap.set(item.date, item);
           const mergedLogs = Array.from(uniqueMap.values());
           setFunctions.setCashbackLogs(mergedLogs);
           pendingEditsRef.current.cashbackLogs = mergedLogs;
@@ -197,6 +209,52 @@ export function useAuthAndSync(latestStateRef: React.MutableRefObject<any>, skip
     }
   };
 
+  const observeCloudWallet = (uid: string, snapshot: { exists: () => boolean; data: () => any }, setFunctions: any) => {
+    if (activeUidRef.current !== uid) return;
+    const seenKey = scopedKey(uid, 'cloudWalletSeen');
+    const version = snapshot.exists() ? walletVersion(snapshot.data()) : 'missing';
+    const prior = cloudVersionRef.current;
+    const legacyWallet = !prior && (
+      getOwnedState(uid, 'oc_cashbackLogs', []).length > 0 ||
+      getOwnedState(uid, 'oc_walletCards', []).length > 0 ||
+      getOwnedState(uid, 'oc_openRouterApiKey', '') !== ''
+    );
+    if (version === 'missing' && (legacyWallet || (prior ? prior.version !== 'missing' : getInitialState(seenKey, false)))) {
+      // An authoritative deletion invalidates pending saves, hydration and cached data.
+      authEpochRef.current += 1;
+      saveInFlightRef.current = false;
+      setIsSyncing(false);
+      cloudConflictRef.current = false;
+      setIsDirty(false);
+      const empty = {
+        exhaustedCards: {}, cardBillDates: {}, paidBills: {}, loungePassesUsed: {},
+        loungeMilestonesVerified: {}, offerUsage: {}, openRouterApiKey: '',
+        kiwiNeonEarnRate: 2, walletCards: [], cashbackLogs: [], theme: 'light',
+      };
+      latestStateRef.current = empty;
+      persistOwnedSnapshot(uid, empty, false);
+      safeSetItem(seenKey, false);
+      void set(scopedKey(uid, 'offlineLogsQueue'), []).catch(console.error);
+      // Apply empty state directly. The IndexedDB queue can still contain deleted history.
+      const wasSkipping = skipSyncRef.current;
+      skipSyncRef.current = true;
+      try {
+        for (const [field, value] of Object.entries(empty)) {
+          if (field === 'theme') setTheme(value as 'light');
+          else setFunctions['set' + field[0].toUpperCase() + field.slice(1)](value);
+        }
+      } finally { skipSyncRef.current = wasSkipping; }
+    }
+    if (!isDirtyRef.current || cloudVersionRef.current === null) {
+      cloudVersionRef.current = { uid, version };
+      safeSetItem(scopedKey(uid, 'cloudWalletVersion'), version);
+    }
+    if (snapshot.exists()) {
+      safeSetItem(seenKey, true);
+      void setLocalStateFromData(snapshot.data(), setFunctions);
+    }
+  };
+
   // We expose a setup effect hook generator to inject setFunctions cleanly
   const useSyncEffect = (setFunctions: any) => {
     useEffect(() => {
@@ -206,11 +264,23 @@ export function useAuthAndSync(latestStateRef: React.MutableRefObject<any>, skip
       }
 
       const docRef = doc(db, 'users', user.uid);
-      const unsubscribe = onSnapshot(docRef, (docSnap) => {
+      reloadCloudWalletRef.current = async () => {
+        const epoch = authEpochRef.current;
+        const snapshot = await getDocFromServer(docRef);
+        if (epoch !== authEpochRef.current || activeUidRef.current !== user.uid) return;
+        await set(scopedKey(user.uid, 'offlineLogsQueue'), []);
+        if (epoch !== authEpochRef.current || activeUidRef.current !== user.uid) return;
+        setIsDirty(false);
+        cloudConflictRef.current = false;
+        retryBlockedRef.current = false;
+        setRetryBlocked(false);
+        setSyncError(null);
+        observeCloudWallet(user.uid, snapshot, setFunctions);
+      };
+      const unsubscribe = onSnapshot(docRef, { includeMetadataChanges: true }, (docSnap) => {
         if (docSnap.metadata.hasPendingWrites) return;
-        if (docSnap.exists()) {
-          setLocalStateFromData(docSnap.data(), setFunctions);
-        }
+        if (!docSnap.metadata.fromCache) observeCloudWallet(user.uid, docSnap, setFunctions);
+        else if (docSnap.exists()) void setLocalStateFromData(docSnap.data(), setFunctions);
         setIsDataLoaded(true);
         if (!retryBlockedRef.current && retryFailuresRef.current === 0) setSyncError(null);
       }, (error: any) => {
@@ -219,6 +289,7 @@ export function useAuthAndSync(latestStateRef: React.MutableRefObject<any>, skip
       });
 
       return () => {
+        reloadCloudWalletRef.current = null;
         hydrationCounterRef.current += 1;
         unsubscribe();
       };
@@ -231,8 +302,8 @@ export function useAuthAndSync(latestStateRef: React.MutableRefObject<any>, skip
           try {
             const docRef = doc(db, 'users', user.uid);
             const docSnap = await getDocFromServer(docRef);
-            if (epoch === authEpochRef.current && docSnap.exists() && !isDirtyRef.current) {
-              await setLocalStateFromData(docSnap.data(), setFunctions);
+            if (epoch === authEpochRef.current) {
+              observeCloudWallet(user.uid, docSnap, setFunctions);
             }
           } catch (e) {
             console.error("Failed to persistently refresh data on visibility change", e);
@@ -268,17 +339,35 @@ export function useAuthAndSync(latestStateRef: React.MutableRefObject<any>, skip
       try { queuedAtStart = (await get<any[]>(queueKey)) || []; }
       catch (error) { console.warn('Could not read offline queue before saving', error); }
       if (epoch !== authEpochRef.current) return;
-      const logs = new Map((dataToSave.cashbackLogs || []).map((item: any) => [item.date, item]));
-      for (const item of queuedAtStart) logs.set(item.date, item);
+      const logs = new Map(excludeRemovedLogs(user.uid, dataToSave.cashbackLogs || []).map((item: any) => [item.date, item]));
+      for (const item of excludeRemovedLogs(user.uid, queuedAtStart)) logs.set(item.date, item);
       const docRef = doc(db, 'users', user.uid);
-      await setDoc(docRef, {
+      const baseline = cloudVersionRef.current;
+      if (!baseline || baseline.uid !== user.uid) throw new Error("Wallet has not loaded from the server");
+      const savedLogs = excludeRemovedLogs<any>(user.uid, dataToSave.cashbackLogs || []);
+      const data = {
         userId: user.uid,
         ...dataToSave,
-        ...(queuedAtStart.length ? { cashbackLogs: Array.from(logs.values()) } : {}),
+        cashbackLogs: queuedAtStart.length ? Array.from(logs.values()) : savedLogs,
         theme: theme, // Theme explicitly relies on backend for logged in users
         isDarkMode: theme !== 'light',
         updatedAt: Date.now()
-      }, { merge: true });
+      };
+      await runTransaction(db, async transaction => {
+        const current = await transaction.get(docRef);
+        const version = current.exists() ? walletVersion(current.data()) : 'missing';
+        if (epoch !== authEpochRef.current) throw new Error('The signed-in account changed');
+        if (version !== baseline.version) {
+          cloudConflictRef.current = true;
+          throw new Error('The cloud wallet changed. Use manual sync to reload it.');
+        }
+        transaction.set(docRef, data, { merge: true });
+      });
+      if (epoch === authEpochRef.current) {
+        cloudVersionRef.current = { uid: user.uid, version: walletVersion(data) };
+        safeSetItem(scopedKey(user.uid, 'cloudWalletVersion'), walletVersion(data));
+        safeSetItem(scopedKey(user.uid, 'cloudWalletSeen'), true);
+      }
       
       if (epoch !== authEpochRef.current) return;
       setSyncError(null);
@@ -319,9 +408,12 @@ export function useAuthAndSync(latestStateRef: React.MutableRefObject<any>, skip
       if (error.message === "Offline" || error.code === 'unavailable') {
          // Queue offline data locally
          try {
-           const localOfflineQueue = (await get<any[]>(scopedKey(user.uid, 'offlineLogsQueue'))) || [];
-           if (dataToSave.cashbackLogs && dataToSave.cashbackLogs.length > 0) {
-             await set(scopedKey(user.uid, 'offlineLogsQueue'), [...localOfflineQueue, ...dataToSave.cashbackLogs]);
+           if (dataToSave.cashbackLogs?.length) {
+             await update(scopedKey(user.uid, 'offlineLogsQueue'), (current: any[] | undefined) => {
+               if (epoch !== authEpochRef.current) return current || [];
+               const logs = [...(current || []), ...dataToSave.cashbackLogs];
+               return excludeRemovedLogs(user.uid, logs);
+             });
            }
            if (epoch === authEpochRef.current) setSyncError('Offline: Changes queued locally.');
          } catch (queueError) {
@@ -343,6 +435,13 @@ export function useAuthAndSync(latestStateRef: React.MutableRefObject<any>, skip
 
   const saveData = async () => {
     if (saveInFlightRef.current) return;
+    if (cloudConflictRef.current) {
+      if (window.confirm('Reload the cloud wallet and discard unsynced changes on this device?')) {
+        try { await reloadCloudWalletRef.current?.(); }
+        catch { setSyncError('Could not reload the cloud wallet. Your unsynced changes are still on this device.'); }
+      }
+      return;
+    }
     retryFailuresRef.current = 0;
     retryBlockedRef.current = false;
     setRetryBlocked(false);
@@ -361,7 +460,7 @@ export function useAuthAndSync(latestStateRef: React.MutableRefObject<any>, skip
   return {
     user, isAuthLoading, isDataLoaded,
     syncError, isSyncing, isSyncPaused, setIsSyncPaused,
-    isDirty, setIsDirty, isDirtyRef, markDirty,
+    isDirty, setIsDirty, isDirtyRef, markDirty, authEpochRef: ownerEpochRef,
     theme, setTheme,
     handleLogin, handleLogout,
     saveData, saveDataAutomatically, retryBlocked, retryAt, useSyncEffect

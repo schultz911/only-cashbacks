@@ -25,9 +25,19 @@ export const scopedKey = (uid: string | null, key: string) =>
   `oc_owner:${uid === null ? 'guest' : `user:${encodeURIComponent(uid)}`}:${key}`;
 export function preserveLegacyStorage() {
   try {
-    if (localStorage.getItem('oc_legacy_unowned_backup') !== null) return;
+    localStorage.removeItem?.('oc_openRouterApiKey');
+    const existing = localStorage.getItem('oc_legacy_unowned_backup');
+    if (existing !== null) {
+      const backup = JSON.parse(existing);
+      if (Object.hasOwn(backup, 'oc_openRouterApiKey')) {
+        delete backup.oc_openRouterApiKey;
+        localStorage.setItem('oc_legacy_unowned_backup', JSON.stringify(backup));
+      }
+      return;
+    }
     const backup: Record<string, string> = {};
     for (const field of ACCOUNT_FIELDS) {
+      if (field === 'openRouterApiKey') continue;
       const key = `oc_${field}`;
       const value = localStorage.getItem(key);
       if (value !== null) backup[key] = value;
@@ -43,7 +53,7 @@ export function setOwnedState(uid: string | null | undefined, key: string, value
   safeSetItem(scopedKey(uid, key), value);
   // Retain the legacy view for existing integrations, but never read it as an
   // account source. The owner is recorded so it cannot be mistaken for guest data.
-  if (uid !== null) {
+  if (uid !== null && key !== 'oc_openRouterApiKey') {
     safeSetItem(key, value);
   }
 }
@@ -52,4 +62,19 @@ export function persistOwnedSnapshot(uid: string | null, data: Record<string, un
     if (data[field] !== undefined) safeSetItem(scopedKey(uid, `oc_${field}`), data[field]);
   }
   safeSetItem(scopedKey(uid, 'dirty'), dirty);
+}
+
+export function clearLegacyWalletHistory() {
+  const key = 'oc_legacy_unowned_backup';
+  const backup = getInitialState<Record<string, string>>(key, {});
+  delete backup.oc_openRouterApiKey;
+  delete backup.oc_cashbackLogs;
+  safeSetItem(key, backup);
+  localStorage.removeItem('oc_openRouterApiKey');
+  localStorage.removeItem('oc_cashbackLogs');
+}
+
+export function excludeRemovedLogs<T extends { date: number }>(uid: string | null, logs: T[]): T[] {
+  const removed = new Set(getInitialState<number[]>(scopedKey(uid, 'removedSavingsDates'), []));
+  return logs.filter(log => !removed.has(log.date));
 }

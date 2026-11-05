@@ -31,21 +31,16 @@ export function createOAuthClientRegistry(
       clients.set(id, [...redirects]);
     }
   }
+  const key = signingKey ?? crypto.randomBytes(32);
   const hash = (value: string) => crypto.createHash('sha256').update(value).digest('base64url');
-  const sign = (payload: string) => crypto.createHmac('sha256', signingKey!).update(`oc_client_v1.${payload}`).digest();
+  const sign = (payload: string) => crypto.createHmac('sha256', key).update(`oc_client_v1.${payload}`).digest();
   return {
     register(redirects: string[]) {
-      if (!signingKey) {
-        const id = crypto.randomBytes(32).toString('base64url');
-        clients.set(id, [...redirects]);
-        return id;
-      }
       const payload = Buffer.from(JSON.stringify({ nonce: crypto.randomBytes(32).toString('base64url'), redirects: redirects.map(hash) })).toString('base64url');
       return `oc_client_v1.${payload}.${sign(payload).toString('base64url')}`;
     },
     allows(id: string, redirect: string) {
       if (clients.get(id)?.includes(redirect)) return true;
-      if (!signingKey) return false;
       const [prefix, payload, signature, extra] = id.split('.');
       if (prefix !== 'oc_client_v1' || !payload || !signature || extra !== undefined || !/^[A-Za-z0-9_-]+$/.test(payload) || !/^[A-Za-z0-9_-]{43}$/.test(signature)) return false;
       const expected = sign(payload);

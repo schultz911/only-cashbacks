@@ -1,7 +1,7 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { db, auth, analytics } from '../firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { logEvent } from 'firebase/analytics';
 
 interface Props {
@@ -41,14 +41,14 @@ export class ErrorBoundary extends Component<Props, State> {
     if (auth.currentUser && this.errorCount < 5) {
       this.errorCount++;
       try {
-        addDoc(collection(db, 'clientErrors'), {
+        setDoc(doc(db, 'clientErrors', auth.currentUser.uid), {
           userId: auth.currentUser.uid,
-          error: error.message,
-          stack: error.stack,
-          componentStack: errorInfo.componentStack,
-          timestamp: Date.now(),
-          url: window.location.href,
-          userAgent: navigator.userAgent
+          error: error.message.slice(0, 1024),
+          stack: (error.stack ?? '').slice(0, 4096),
+          componentStack: (errorInfo.componentStack ?? '').slice(0, 4096),
+          timestamp: serverTimestamp(),
+          url: window.location.pathname.slice(0, 512),
+          userAgent: navigator.userAgent.slice(0, 512)
         }).catch(console.error); // Fire and forget
       } catch (e) {
         console.error("Failed to log error to Firestore:", e);

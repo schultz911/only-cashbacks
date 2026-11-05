@@ -7,8 +7,22 @@ service cloud.firestore {
     
     // Crashlytics style client error logging
     match /clientErrors/{errorId} {
-      allow create: if request.auth != null;
-      allow read, update, delete: if false;
+      function validReport() {
+        let data = request.resource.data;
+        return request.auth != null && errorId == request.auth.uid &&
+          data.keys().hasOnly(['userId', 'error', 'stack', 'componentStack', 'timestamp', 'url', 'userAgent']) &&
+          data.userId == request.auth.uid &&
+          data.error is string && data.error.size() <= 1024 &&
+          data.stack is string && data.stack.size() <= 4096 &&
+          data.componentStack is string && data.componentStack.size() <= 4096 &&
+          data.url is string && data.url.size() <= 512 &&
+          data.userAgent is string && data.userAgent.size() <= 512 &&
+          data.timestamp == request.time;
+      }
+      allow create: if validReport();
+      allow update: if validReport() &&
+        request.time >= resource.data.timestamp + duration.value(1, 'm');
+      allow read, delete: if false;
     }
   }
 }

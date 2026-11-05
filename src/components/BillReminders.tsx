@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Calendar, CheckCircle2 } from 'lucide-react';
 import { Card } from '../types';
@@ -18,6 +18,10 @@ const DEFAULT_EFFECTIVE_CARDS = CARD_DATA.filter(c => !c.isDummy).map(c => c.id)
 
 export function BillReminders({ walletCards, cardBillDates, paidBills, markBillPaid }: BillRemindersProps) {
   const [animatingCardId, setAnimatingCardId] = useState<string | null>(null);
+  const paymentTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  useEffect(() => () => {
+    paymentTimers.current.forEach(clearTimeout);
+  }, []);
   const billingDay = useBillingDay();
 
   const bills = useMemo(() => {
@@ -44,10 +48,12 @@ export function BillReminders({ walletCards, cardBillDates, paidBills, markBillP
 
   const handlePay = (cardId: string) => {
     setAnimatingCardId(cardId);
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       markBillPaid(cardId);
       setAnimatingCardId(null);
+      paymentTimers.current = paymentTimers.current.filter(item => item !== timer);
     }, 1300);
+    paymentTimers.current.push(timer);
   };
 
   if (bills.length === 0) {

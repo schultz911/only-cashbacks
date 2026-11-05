@@ -29,7 +29,7 @@ import crypto from 'crypto';
 
 import { CARD_DATA, CARD_DICT } from './data/cards.js';
 import { getCycleForCard, getRecommendations } from './lib/recommendation.js';
-import { verifyIdToken, getUserData } from './firebase.js';
+import { verifyIdToken, getUserData, checkWalletIdentity } from './firebase.js';
 import type { MerchantInfo, UserData } from './types.js';
 import { getLoginHtml } from './loginHtml.js';
 
@@ -102,7 +102,7 @@ function getBaseUrl(): string {
 // ─── MCP Server Factory (Per-Connection Isolation) ────────────────
 export function createOnlyCashbacksServer(
   getSessionUid: () => string | null,
-  setSessionUid: (uid: string) => void
+  setSessionUid?: (uid: string) => void
 ): McpServer {
   const pairingOwner = crypto.randomUUID();
   const server = new McpServer({
@@ -114,13 +114,19 @@ export function createOnlyCashbacksServer(
   // ─── Tool: authenticate ────────────────────────────────────────────
   server.tool(
     'authenticate',
-    'Sign in with your OnlyCashbacks account to personalize recommendations to your wallet. Calling with no arguments returns a one-click Google sign-in link. Once you sign in via Google in your browser, your wallet is automatically linked.',
+    setSessionUid ? 'Connect your local OnlyCashbacks wallet using a verified Firebase identity.' : 'Show the wallet connected through OnlyCashbacks OAuth.',
     {
       code: z.string().optional().describe('Pairing code (e.g. "OC-1234") to verify or check sign-in status after signing in in your browser.'),
       idToken: z.string().optional().describe('Optional raw Firebase ID token if authenticating programmatically.'),
     },
     { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
     async ({ code, idToken }) => {
+      if (!setSessionUid) {
+        const uid = getSessionUid();
+        if (!uid) return { isError: true, content: [{ type: 'text', text: 'Connect this client using OnlyCashbacks OAuth to access your wallet.' }] };
+        const wallet = await getUserData(uid);
+        return wallet ? signedInStatus(uid, wallet, 'Wallet connected through OAuth.') : walletUnavailable();
+      }
       // 1. Direct ID token passed
       if (idToken) {
         try {
@@ -564,6 +570,7 @@ function formatCardDetails(card: typeof CARD_DATA[0]) {
 export function createRemoteApp() {
     // SSE transport for remote hosting (Railway, etc.)
     const app = express();
+    if (process.env.RAILWAY_ENVIRONMENT_ID) app.set('trust proxy', 1);
     const idleTimeoutMinutes = Number(process.env.MCP_SESSION_IDLE_TIMEOUT_MINUTES || 60);
     const idleTimeoutMs = idleTimeoutMinutes * 60 * 1000;
     if (!Number.isFinite(idleTimeoutMs) || idleTimeoutMinutes <= 0) {
@@ -598,7 +605,7 @@ export function createRemoteApp() {
       recaptchaSiteKey: process.env.VITE_RECAPTCHA_SITE_KEY || '6LdvmgotAAAAAL2cVPtKL1HIwAds1d7eB5MgxVPu',
     };
 
-    const verifyAccessToken = installOAuthRoutes(app, PUBLIC_FIREBASE_CONFIG, verifyIdToken);
+    const verifyAccessToken = installOAuthRoutes(app, PUBLIC_FIREBASE_CONFIG, verifyIdToken, checkWalletIdentity);
 
     // Retire only the legacy worker URL. The wallet's /sw.js is served from
     // the frontend build below; never clear caches belonging to the current worker.
@@ -625,13 +632,13 @@ export function createRemoteApp() {
     // Browser POST completion after Google Sign-In (Manual Pairing)
     app.post('/api/auth/complete', jsonParser, async (req, res) => {
       const { code, idToken } = req.body || {};
-      if (!code || !idToken) {
+      if (typeof code !== 'string' || !code || typeof idToken !== 'string' || !idToken) {
         res.status(400).json({ success: false, error: 'Missing code or idToken' });
         return;
       }
 
       cleanExpiredCodes();
-      const normCode = String(code).trim().toUpperCase();
+      const normCode = code.trim().toUpperCase();
       const pending = pendingAuthCodes.get(normCode);
       if (!pending || pending.status !== 'pending') {
         res.status(400).json({ success: false, error: 'Invalid or expired pairing code' });
@@ -671,7 +678,7 @@ export function createRemoteApp() {
     // Status check for pairing code
     app.get('/api/auth/status', (req, res) => {
       cleanExpiredCodes();
-      const code = (req.query.code as string)?.trim().toUpperCase();
+      const code = typeof req.query.code === 'string' ? req.query.code.trim().toUpperCase() : '';
       if (!code || !pendingAuthCodes.has(code)) {
         res.status(404).json({ status: 'not_found' });
         return;
@@ -731,6 +738,7 @@ export function createRemoteApp() {
       server: McpServer;
       sessionUid: string | null;
       bearerUid: string | null;
+      callerIp: string;
       lastActiveAt: number;
       activeRequests: number;
     }
@@ -759,7 +767,30 @@ export function createRemoteApp() {
       sessionCleanupTimer.unref();
     };
 
+    const sessionLimit = 256;
+    const openingSessions = new Map<string, number>();
+    const sessionKey = (uid: string | null, ip: string) => uid ? 'uid:' + uid : 'ip:' + ip;
+    const sessionsFull = (uid: string | null, ip: string, allocating = true) => {
+      const key = sessionKey(uid, ip);
+      let anonymous = 0;
+      let caller = openingSessions.get(key) ?? 0;
+      let opening = 0;
+      for (const [identity, count] of openingSessions) {
+        opening += count;
+        if (identity.startsWith('ip:')) anonymous += count;
+      }
+      if (allocating && streamableSessions.size + activeSessions.size + opening >= sessionLimit) return true;
+      for (const sessions of [streamableSessions, activeSessions]) {
+        for (const session of sessions.values()) {
+          if (!session.bearerUid) anonymous += 1;
+          if (sessionKey(session.bearerUid, session.callerIp) === key) caller += 1;
+        }
+      }
+      return caller >= (uid ? 16 : 8) || (!uid && anonymous >= 64);
+    };
+
     app.all('/mcp', jsonParser, async (req, res) => {
+      let openingKey: string | undefined;
       try {
       // 1. Check for Bearer token if provided by the client
       let verifiedUid: string | null = null;
@@ -783,6 +814,14 @@ export function createRemoteApp() {
         }
       }
 
+      const call = req.body;
+      if (!verifiedUid && call?.method === 'tools/call' &&
+          ['authenticate', 'find_best_card'].includes(call.params?.name)) {
+        res.setHeader('WWW-Authenticate', AUTH_CHALLENGE);
+        res.status(401).json({ error: 'authorization_required' });
+        return;
+      }
+
       // A session ID is a transport identifier, never an account credential.
       const reqSessionId = req.headers['mcp-session-id'] as string | undefined;
       let session = reqSessionId ? streamableSessions.get(reqSessionId) : undefined;
@@ -800,6 +839,10 @@ export function createRemoteApp() {
           res.status(400).json({ error: 'Initialize an MCP connection first.' });
           return;
         }
+        const ip = req.ip ?? 'unknown';
+        if (sessionsFull(verifiedUid, ip)) { res.status(429).json({ error: 'Session capacity reached' }); return; }
+        openingKey = sessionKey(verifiedUid, ip);
+        openingSessions.set(openingKey, (openingSessions.get(openingKey) ?? 0) + 1);
         const transport = new StreamableHTTPServerTransport({
           sessionIdGenerator: () => crypto.randomUUID(),
           onsessioninitialized: (id) => {
@@ -808,13 +851,10 @@ export function createRemoteApp() {
           },
         });
         const state: StreamableSession = {
-          transport, server: null as any, sessionUid: verifiedUid, bearerUid: verifiedUid,
+          transport, server: null as any, sessionUid: verifiedUid, bearerUid: verifiedUid, callerIp: ip,
           lastActiveAt: Date.now(), activeRequests: 0,
         };
-        state.server = createOnlyCashbacksServer(
-          () => state.sessionUid,
-          (uid: string) => { state.sessionUid = uid; }
-        );
+        state.server = createOnlyCashbacksServer(() => state.sessionUid);
         session = state;
         // Install before connect so the SDK chains its own protocol cleanup.
         transport.onclose = () => {
@@ -824,6 +864,10 @@ export function createRemoteApp() {
       } else if (verifiedUid) {
         if (session.sessionUid && session.sessionUid !== verifiedUid) {
           res.status(403).json({ error: 'Session belongs to a different account' });
+          return;
+        }
+        if (!session.bearerUid && sessionsFull(verifiedUid, session.callerIp, false)) {
+          res.status(429).json({ error: 'Account session capacity reached' });
           return;
         }
         session.bearerUid = verifiedUid;
@@ -848,6 +892,12 @@ export function createRemoteApp() {
       } catch (error) {
         console.error('[MCP] Request failed:', error);
         if (!res.headersSent) res.status(500).json({ error: 'MCP request failed' });
+      } finally {
+        if (openingKey) {
+          const count = (openingSessions.get(openingKey) ?? 1) - 1;
+          if (count) openingSessions.set(openingKey, count);
+          else openingSessions.delete(openingKey);
+        }
       }
     });
 
@@ -857,6 +907,7 @@ export function createRemoteApp() {
       server: McpServer;
       sessionUid: string | null;
       bearerUid: string | null;
+      callerIp: string;
     }
     const activeSessions = new Map<string, ActiveSession>();
 
@@ -883,6 +934,7 @@ export function createRemoteApp() {
         return;
       }
 
+      if (sessionsFull(authResult?.uid ?? null, req.ip ?? 'unknown')) { res.status(429).json({ error: 'Session capacity reached' }); return; }
       const sseTransport = new SSEServerTransport('/messages', res);
       const sessionId = sseTransport.sessionId;
 
@@ -892,13 +944,11 @@ export function createRemoteApp() {
         server: null as any,
         sessionUid: authResult ? authResult.uid : null,
         bearerUid: authResult ? authResult.uid : null,
+        callerIp: req.ip ?? 'unknown',
       };
 
       // Dedicated McpServer instance scoped to this session
-      const sessionServer = createOnlyCashbacksServer(
-        () => sessionState.sessionUid,
-        (uid: string) => { sessionState.sessionUid = uid; }
-      );
+      const sessionServer = createOnlyCashbacksServer(() => sessionState.sessionUid);
       sessionState.server = sessionServer;
 
       activeSessions.set(sessionId, sessionState);
@@ -908,7 +958,14 @@ export function createRemoteApp() {
         sessionServer.close().catch(() => {});
       });
 
-      await sessionServer.connect(sseTransport);
+      try {
+        await sessionServer.connect(sseTransport);
+      } catch {
+        activeSessions.delete(sessionId);
+        await sessionServer.close().catch(() => {});
+        if (!res.headersSent) res.sendStatus(500);
+        else res.end();
+      }
     });
 
     // NOTE: This route receives the raw request stream directly, without body-parser
@@ -932,6 +989,10 @@ export function createRemoteApp() {
             res.status(403).json({ error: 'Session belongs to a different account' });
             return;
           }
+          if (!session.bearerUid && sessionsFull(authResult.uid, session.callerIp, false)) {
+            res.status(429).json({ error: 'Account session capacity reached' });
+            return;
+          }
           session.sessionUid = authResult.uid;
           session.bearerUid = authResult.uid;
         }
@@ -942,7 +1003,13 @@ export function createRemoteApp() {
         res.status(401).json({ error: 'invalid_token' });
         return;
       }
-      await session.transport.handlePostMessage(req, res);
+      if (activeSessions.get(sessionId) !== session) { res.sendStatus(404); return; }
+      try {
+        await session.transport.handlePostMessage(req, res);
+      } catch {
+        if (!res.headersSent) res.sendStatus(400);
+        else res.end();
+      }
     });
 
     if (distPath) {

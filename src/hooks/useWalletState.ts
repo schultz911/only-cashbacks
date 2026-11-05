@@ -6,8 +6,9 @@ import { CashbackLog } from '../types';
 import { statementReminder } from '../lib/billingDates';
 import { useBillingDay } from './useBillingDay';
 
-export function useWalletState(skipSyncRef: React.MutableRefObject<boolean>, setIsDirty: (dirty: boolean) => void, owner?: string | null, pendingEditsRef?: React.MutableRefObject<Record<string, unknown>>) {
+export function useWalletState(skipSyncRef: React.MutableRefObject<boolean>, setIsDirty: (dirty: boolean) => void, owner?: string | null, pendingEditsRef?: React.MutableRefObject<Record<string, unknown>>, authEpochRef?: React.MutableRefObject<number>) {
   const billingDay = useBillingDay();
+  const mountedAuthEpoch = useRef(authEpochRef?.current);
   // Record edits when setters are called, before any save can acknowledge them.
   // Cloud hydration suppresses tracking only around its synchronous setters.
   function useWalletValue<T>(initialValue: () => T, field: string) {
@@ -15,6 +16,7 @@ export function useWalletState(skipSyncRef: React.MutableRefObject<boolean>, set
     const valueRef = useRef(value);
     valueRef.current = value;
     const setTrackedValue = useCallback<React.Dispatch<React.SetStateAction<T>>>((next) => {
+      if (authEpochRef && authEpochRef.current !== mountedAuthEpoch.current) return;
       const value = typeof next === 'function' ? (next as (previous: T) => T)(valueRef.current) : next;
       valueRef.current = value;
       if (!skipSyncRef.current && pendingEditsRef) pendingEditsRef.current[field] = value;

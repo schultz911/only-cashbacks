@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 import type { Server } from 'node:http';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import { checkWalletIdentity } from '../src/firebase.js';
 import { createRemoteApp } from '../src/index.js';
 import { MCP_RESOURCE, PUBLIC_ORIGIN } from '../src/oauth.js';
 import { getCycleForCard, getRecommendations } from '../src/lib/recommendation.js';
@@ -11,6 +12,7 @@ import { calendarCycle } from '../src/lib/billingDates.js';
 
 const identity = vi.hoisted(() => ({ wallet: { walletCards: ['sbi-cashback'] } as any, otherWallet: null as any }));
 vi.mock('../src/firebase.js', () => ({
+  checkWalletIdentity: vi.fn(async () => {}),
   verifyIdToken: vi.fn(async (token: string) => {
     if (token === 'test-other-identity') return { uid: 'other-user', name: 'Other User' };
     if (token !== 'test-identity') throw new Error('Invalid signature');
@@ -59,7 +61,9 @@ async function authorization(idToken = 'test-identity') {
   });
   const page = await (await fetch(origin + '/oauth/authorize?' + params)).text();
   const requestId = JSON.parse(page.match(/const oauthRequestId = ("[^"]+");/)![1]);
-  const approved = await (await post('/oauth/approve', { requestId, idToken })).json();
+  expect(page).toContain('https://chatgpt.com');
+  expect((await post('/oauth/approve', { requestId, idToken })).status).toBe(400);
+  const approved = await (await post('/oauth/approve', { requestId, idToken, consent: true })).json();
   const redirect = new URL(approved.redirectUrl);
   expect(redirect.searchParams.get('state')).toBe('state-to-preserve');
   return { client_id: registration.client_id, redirect_uri: registration.redirect_uris[0], code: redirect.searchParams.get('code'), code_verifier: verifier, resource: MCP_RESOURCE, grant_type: 'authorization_code' };
@@ -140,28 +144,33 @@ describe('OnlyCashbacks plugin connection', () => {
     await expect(client.callTool({ name: 'list_cards', arguments: {} })).rejects.toThrow();
   });
 
-  it('pairs only the requesting session, consumes the code, and reloads changed wallet data', async () => {
+  it('denies bearer access and refresh after Firebase revokes the identity', async () => {
+    const grant = await authorization();
+    const tokens = await (await post('/oauth/token', grant)).json();
+    vi.mocked(checkWalletIdentity).mockRejectedValueOnce(new Error('revoked'));
+    expect((await fetch(origin + '/mcp', { headers: { Authorization: 'Bearer ' + tokens.access_token } })).status).toBe(401);
+    vi.mocked(checkWalletIdentity).mockRejectedValueOnce(new Error('revoked'));
+    expect((await post('/oauth/token', { grant_type: 'refresh_token', client_id: grant.client_id, refresh_token: tokens.refresh_token })).status).toBe(400);
+  });
+
+  it('caps anonymous connections without preventing OAuth admission', async () => {
+    for (let i = 0; i < 8; i++) await connect();
+    await expect(connect()).rejects.toThrow();
+    const tokens = await (await post('/oauth/token', await authorization())).json();
+    const { client } = await connect(tokens.access_token);
+    expect((await client.callTool({ name: 'list_cards', arguments: {} })).structuredContent).toMatchObject({ uid: 'test-user' });
+  });
+
+  it('rejects bearerless remote pairing and raw ID token binding', async () => {
     const { client } = await connect();
-    const other = await connect();
-    const login = text(await client.callTool({ name: 'authenticate', arguments: {} }));
-    const code = login.match(/OC-[A-F0-9]{32}/)![0];
-    expect((await post('/api/auth/complete', { code, idToken: 'test-identity' })).status).toBe(200);
-    const status = await (await fetch(origin + '/api/auth/status?code=' + code)).json();
-    expect(status).toEqual({ status: 'completed' });
-    expect((await other.client.callTool({ name: 'authenticate', arguments: { code } })).isError).toBe(true);
-    expect(text(await client.callTool({ name: 'authenticate', arguments: { code } }))).toContain('Successfully authenticated');
-    expect((await client.callTool({ name: 'authenticate', arguments: { code } })).isError).toBe(true);
-    const rec = await client.callTool({ name: 'find_best_card', arguments: { merchant: 'Amazon', amount: 1000 } });
-    expect(rec.structuredContent).toMatchObject({ recommendation: { bestCard: { id: 'sbi-cashback' } } });
-    identity.wallet = { walletCards: [] };
-    expect(text(await client.callTool({ name: 'find_best_card', arguments: { merchant: 'Amazon', amount: 1000 } }))).toContain('saved setting selects all');
-    identity.wallet = null;
-    expect((await client.callTool({ name: 'list_cards', arguments: {} })).isError).toBe(true);
-    expect((await client.callTool({ name: 'find_best_card', arguments: { merchant: 'Amazon', amount: 1000 } })).isError).toBe(true);
+    for (const args of [{}, { code: 'OC-example' }, { idToken: 'test-identity' }]) {
+      await expect(client.callTool({ name: 'authenticate', arguments: args })).rejects.toThrow();
+    }
   });
 
   it('matches the app all-cards sentinel, preserves saved settings, and does not expose BYOK credentials', async () => {
-    const { client } = await connect();
+    const token = await (await post('/oauth/token', await authorization())).json();
+    const { client } = await connect(token.access_token);
     identity.wallet = {
       walletCards: [], kiwiNeonEarnRate: 4, cardBillDates: { 'kiwi-neon': 15 },
       exhaustedCards: {}, offerUsage: { 'axis-myzone-Food-Swiggy-2026-10': 2 },
@@ -186,13 +195,18 @@ describe('OnlyCashbacks plugin connection', () => {
   it('rejects unknown sessions, unsolicited pairing, and unregistered callbacks', async () => {
     expect((await fetch(origin + '/mcp', { headers: { 'Mcp-Session-Id': 'unknown' } })).status).toBe(404);
     expect((await post('/api/auth/complete', { code: 'OC-arbitrary', idToken: 'test-identity' })).status).toBe(400);
+    expect((await post('/api/auth/complete', { code: { toString: null }, idToken: 'test-identity' })).status).toBe(400);
+    expect((await post('/api/auth/complete', { code: ['OC-test'], idToken: 'test-identity' })).status).toBe(400);
+    expect((await fetch(origin + '/api/auth/status?code=one&code=two')).status).toBe(404);
+    expect((await fetch(origin + '/health')).status).toBe(200);
     expect((await fetch(origin + '/login?code=%3Cscript%3E')).status).toBe(400);
     expect((await fetch(origin + '/oauth/authorize?redirect_uri=https://other.example')).status).toBe(400);
     expect((await post('/oauth/register', { redirect_uris: ['javascript:alert(1)'] })).status).toBe(400);
   });
 
   it('matches the app billing-cycle handling for saved exhausted-card markers', async () => {
-    const { client } = await connect();
+    const token = await (await post('/oauth/token', await authorization())).json();
+    const { client } = await connect(token.access_token);
     const billDates = { 'sbi-cashback': 4 };
     identity.wallet = { walletCards: ['sbi-cashback'], exhaustedCards: { 'sbi-cashback': '2000-1' }, cardBillDates: billDates };
     await client.callTool({ name: 'authenticate', arguments: { idToken: 'test-identity' } });

@@ -34,7 +34,7 @@ import { KNOWN_MERCHANTS } from './data/merchants';
 import { usePushNotifications } from './hooks/usePushNotifications';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 
-import { persistOwnedSnapshot, scopedKey } from './lib/storage';
+import { clearLegacyWalletHistory, getInitialState, persistOwnedSnapshot, safeSetItem, scopedKey } from './lib/storage';
 import { set as setIndexedValue } from 'idb-keyval';
 import { useAuthSyncContext } from './contexts/AuthSyncContext';
 import { useWalletContext } from './contexts/WalletContext';
@@ -85,7 +85,7 @@ export default function App() {
     isDirty, setIsDirty, isDirtyRef, markDirty,
     theme, setTheme,
     handleLogin, handleLogout,
-    saveData, saveDataAutomatically, retryBlocked, retryAt, useSyncEffect, skipSyncRef, latestStateRef, pendingEditsRef
+    saveData, saveDataAutomatically, retryBlocked, retryAt, useSyncEffect, skipSyncRef, latestStateRef, pendingEditsRef, authEpochRef
   } = useAuthSyncContext();
 
   const {
@@ -448,10 +448,13 @@ export default function App() {
 
   const handleDeleteData = async () => {
     if (deleteConfirmText !== 'DELETE' || !user) return;
+    const ownerEpoch = authEpochRef.current;
     try {
       const docRef = doc(db, 'users', user.uid);
       await deleteDoc(docRef);
       await setIndexedValue(scopedKey(user.uid, 'offlineLogsQueue'), []);
+      clearLegacyWalletHistory();
+      if (ownerEpoch !== authEpochRef.current) return;
       skipSyncRef.current = true;
       setExhaustedCards({});
       setLoungePassesUsed({});
@@ -543,6 +546,10 @@ export default function App() {
   };
 
   const [isLogged, setIsLogged] = useState(false);
+  const logTransactionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (logTransactionTimerRef.current) clearTimeout(logTransactionTimerRef.current);
+  }, []);
 
   const searchAbortControllerRef = useRef<AbortController | null>(null);
 
@@ -850,7 +857,7 @@ export default function App() {
                                 }).onfinish = () => confetti.remove();
                               }
 
-                              setTimeout(() => {
+                              logTransactionTimerRef.current = setTimeout(() => {
                                 handleLogTransaction();
                               }, 1200);
                             }}
@@ -1556,7 +1563,11 @@ export default function App() {
           onClose={() => setIsDashboardOpen(false)}
           logs={cashbackLogs}
           setLogs={setCashbackLogs}
-          onRemoveLogs={(dates) => setOfferUsage(previous => removeRewardLogs(previous, dates))}
+          onRemoveLogs={(dates) => {
+            const key = scopedKey(user?.uid ?? null, 'removedSavingsDates');
+            safeSetItem(key, [...new Set([...getInitialState<number[]>(key, []), ...dates])]);
+            setOfferUsage(previous => removeRewardLogs(previous, dates));
+          }}
         />
       </Suspense>
 

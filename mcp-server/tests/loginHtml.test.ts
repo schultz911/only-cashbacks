@@ -75,7 +75,9 @@ describe('standalone plugin login', () => {
     page.auth.signInWithPopup.mockResolvedValueOnce({ user: { getIdToken: async () => 'test-identity' } });
     page.fetch.mockResolvedValueOnce({ ok: false, json: async () => ({ error: 'Authorization request expired' }) });
     await page.click();
-    expect(page.element('status-msg').innerText).toBe('Authorization request expired');
+    expect(page.fetch).not.toHaveBeenCalled();
+    await page.element('oauth-consent').onclick();
+    expect(page.element('status-msg').textContent).toBe('Authorization request expired');
     expect(page.auth.signInWithRedirect).not.toHaveBeenCalled();
   });
 

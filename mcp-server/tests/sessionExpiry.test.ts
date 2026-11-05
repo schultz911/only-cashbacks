@@ -1,12 +1,14 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Server } from 'node:http';
+import crypto from 'node:crypto';
 import { get } from 'node:http';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { createRemoteApp } from '../src/index.js';
 import { getUserData } from '../src/firebase.js';
 
 vi.mock('../src/firebase.js', () => ({
+  checkWalletIdentity: vi.fn(async () => {}),
   verifyIdToken: vi.fn(async () => ({ uid: 'expiry-test-user' })),
   getUserData: vi.fn(async () => ({ walletCards: ['sbi-cashback'] })),
 }));
@@ -36,9 +38,23 @@ async function start() {
   await new Promise<void>(resolve => http.once('listening', resolve));
   origin = `http://127.0.0.1:${(http.address() as any).port}`;
 }
-async function initialize() {
+async function oauthHeaders() {
+  const post = (path: string, body: object) => fetch(origin + path, { method: 'POST', headers, body: JSON.stringify(body) });
+  const redirect_uri = 'https://example.test/callback';
+  const { client_id } = await (await post('/oauth/register', { redirect_uris: [redirect_uri] })).json();
+  const code_verifier = 'v'.repeat(43);
+  const query = new URLSearchParams({ client_id, redirect_uri, response_type: 'code', code_challenge_method: 'S256',
+    code_challenge: crypto.createHash('sha256').update(code_verifier).digest('base64url') });
+  const page = await (await fetch(origin + '/oauth/authorize?' + query)).text();
+  const requestId = JSON.parse(page.match(/const oauthRequestId = ("[^"]+");/)![1]);
+  const { redirectUrl } = await (await post('/oauth/approve', { requestId, idToken: 'synthetic', consent: true })).json();
+  const code = new URL(redirectUrl).searchParams.get('code');
+  const { access_token } = await (await post('/oauth/token', { grant_type: 'authorization_code', client_id, redirect_uri, code, code_verifier })).json();
+  return { ...headers, Authorization: 'Bearer ' + access_token };
+}
+async function initialize(requestHeaders = headers) {
   const response = await fetch(origin + '/mcp', {
-    method: 'POST', headers,
+    method: 'POST', headers: requestHeaders,
     body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {
       protocolVersion: '2025-03-26', capabilities: {}, clientInfo: { name: 'expiry-regression', version: '1' },
     } }),
@@ -47,9 +63,9 @@ async function initialize() {
   expect(response.status).toBe(200);
   return response.headers.get('mcp-session-id')!;
 }
-async function request(sessionId: string, method = 'tools/list', params?: object) {
+async function request(sessionId: string, method = 'tools/list', params?: object, requestHeaders = headers) {
   const response = await fetch(origin + '/mcp', {
-    method: 'POST', headers: { ...headers, 'Mcp-Session-Id': sessionId, 'Mcp-Protocol-Version': '2025-03-26' },
+    method: 'POST', headers: { ...requestHeaders, 'Mcp-Session-Id': sessionId, 'Mcp-Protocol-Version': '2025-03-26' },
     body: JSON.stringify({ jsonrpc: '2.0', id: 2, method, params }),
   });
   return { status: response.status, body: await response.text() };
@@ -98,7 +114,7 @@ describe('MCP idle session cleanup', () => {
   });
 
   it('does not interrupt a pending tool request', async () => {
-    await start(); const id = await initialize();
+    await start(); const authHeaders = await oauthHeaders(); const id = await initialize(authHeaders);
     let release!: (wallet: any) => void;
     let entered!: () => void;
     const started = new Promise<void>(resolve => { entered = resolve; });
@@ -106,18 +122,16 @@ describe('MCP idle session cleanup', () => {
       entered();
       return new Promise(resolve => { release = resolve; });
     });
-    const result = request(id, 'tools/call', { name: 'authenticate', arguments: { idToken: 'test-identity' } });
+    const result = request(id, 'tools/call', { name: 'list_cards', arguments: {} }, authHeaders);
     await started;
     await vi.advanceTimersByTimeAsync(5 * 60 * 1000);
     release({ walletCards: ['sbi-cashback'] });
-    expect((await result).body).toContain('Signed in');
-    expect((await request(id)).status).toBe(200);
+    expect((await result).body).toContain('sbi-cashback');
+    expect((await request(id, 'tools/list', undefined, authHeaders)).status).toBe(200);
   });
 
-  it('releases pairing codes and the shared timer on explicit DELETE', async () => {
+  it('releases the session and shared timer on explicit DELETE', async () => {
     await start(); const id = await initialize();
-    const login = await request(id, 'tools/call', { name: 'authenticate', arguments: {} });
-    const code = login.body.match(/OC-[A-F0-9]{32}/)![0];
     expect(vi.getTimerCount()).toBe(1);
     const response = await fetch(origin + '/mcp', {
       method: 'DELETE', headers: { ...headers, 'Mcp-Session-Id': id, 'Mcp-Protocol-Version': '2025-03-26' },
@@ -125,7 +139,7 @@ describe('MCP idle session cleanup', () => {
     await response.text();
     expect(response.status).toBe(200);
     expect(vi.getTimerCount()).toBe(0);
-    expect((await fetch(origin + '/api/auth/status?code=' + code)).status).toBe(404);
+    expect((await request(id)).status).toBe(404);
   });
 
   it('uses one timer for multiple sessions and stops it when HTTP shuts down', async () => {

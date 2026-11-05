@@ -23,3 +23,14 @@ it('starts only on the statement day at India midnight, ignoring old lead-day se
   act(() => vi.advanceTimersByTime(1300));
   expect(props.markBillPaid).toHaveBeenCalledWith('icici-amazon-pay');
 });
+
+it('cancels a pending payment acknowledgement when the owner view unmounts', () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date('2026-11-02T18:30:00Z'));
+  const markBillPaid = vi.fn();
+  const { unmount } = render(<BillReminders walletCards={['icici-amazon-pay']} cardBillDates={{ 'icici-amazon-pay': 1, 'icici-amazon-pay:statement': 3 }} paidBills={{}} markBillPaid={markBillPaid} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Done' }));
+  unmount();
+  act(() => vi.advanceTimersByTime(1300));
+  expect(markBillPaid).not.toHaveBeenCalled();
+});

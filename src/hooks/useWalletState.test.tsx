@@ -9,6 +9,19 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); vi.clearAllTimers(); vi.useRealTimers(); vi.unstubAllGlobals(); });
 
+it('ignores a stale setter after the authentication epoch changes', () => {
+  const skip = { current: false };
+  const dirty = vi.fn();
+  const pending = { current: {} as Record<string, unknown> };
+  const epoch = { current: 1 };
+  const wallet = renderHook(() => useWalletState(skip, dirty, 'user-a', pending, epoch));
+  const staleSetter = wallet.result.current.setCashbackLogs;
+  epoch.current = 2;
+  act(() => staleSetter([{ date: 1, amount: 5, cardId: 'card', cardName: 'Card', merchantName: 'Store', category: 'Other' }]));
+  expect(pending.current).toEqual({});
+  expect(dirty).not.toHaveBeenCalled();
+});
+
 describe.each(['icici-amazon-pay', 'sbi-eternal'])('%s billing persistence', id => {
   it.each([1, 3, 15, 28, 30, 31])('saves and restores due day %i independently from statement and reminder settings', day => {
     const skip = { current: false };
