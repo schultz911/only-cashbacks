@@ -265,3 +265,7 @@ The repository includes a multi-stage [Dockerfile](file:///c:/only-cashbacks/Doc
 ---
 
 _Crafted by vibes, with vibes, for vibes by [schultz911](https://github.com/schultz911)._
+
+### Protected-route offline regression
+
+Run `npm run test:pwa-routes` to build the frontend in a temporary directory and check the generated service worker in Chromium. Install a Playwright-compatible Chromium browser (`npx playwright-core install chromium`), or set `CHROMIUM_PATH` to an existing Chromium executable. The test checks that the wallet shell loads offline, while protected routes with query strings are neither served that shell nor stored by runtime caching. It uses synthetic data and a local fixture server.
