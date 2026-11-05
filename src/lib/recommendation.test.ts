@@ -1,6 +1,20 @@
 import { describe, it, expect } from 'vitest';
 import { getRecommendations } from './recommendation';
 
+describe('OneCard airport dining offer', () => {
+  it.each([
+    { name: 'Local restaurant', category: 'Dining', isOnline: false },
+    { name: 'Swiggy', category: 'Food Delivery', isOnline: true },
+    { name: 'Airport restaurant', category: 'Dining', isOnline: false },
+  ])('does not apply the airport-only offer to $name', (merchant) => {
+    const result = getRecommendations(merchant, 1000, merchant.isOnline, false, false, {}, {}, 2, ['one-card']);
+    expect(result).not.toBeNull();
+    expect(result!.cashbackEarned).toBeLessThan(200);
+    expect(result!.expectedBenefit).not.toMatch(/airport|20%/i);
+    expect(result!.availableOffers?.some(offer => offer.cardId === 'one-card')).toBeFalsy();
+  });
+});
+
 describe('Movie offers recommendation logic', () => {
   it('displays both BMS and District offers for specific cinema merchants like PVR', () => {
     const res = getRecommendations(

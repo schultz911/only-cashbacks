@@ -160,6 +160,8 @@ function findBestBenefit(card: Card, cardCycle: string, ctx: RecommendationConte
 
   for (const benefit of card.benefits) {
     if (benefit.type === 'exclusion' || benefit.type === 'lounge' || (benefit.type as any) === 'milestone') continue;
+    // Airport terminal eligibility cannot be established from a merchant search.
+    if (card.id === 'one-card' && benefit.type === 'offer' && benefit.value === 'Airport Dining') continue;
     if (ctx.isIntl && benefit.type === 'offer' && benefit.category !== 'International') continue;
     let matchScore = -1;
 
