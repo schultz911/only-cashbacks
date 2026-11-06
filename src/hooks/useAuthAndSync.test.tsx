@@ -52,7 +52,14 @@ vi.mock('firebase/firestore', () => ({
         exists: () => state.cloudDocuments.has(document.uid),
         data: () => state.cloudDocuments.get(document.uid),
       }),
-      set: (document: any, data: any) => { write = [document, data]; },
+      set: (document: any, data: any, options: any) => {
+        const previous = state.cloudDocuments.get(document.uid);
+        // Firestore recursively merges nonempty maps and replaces empty maps.
+        const exhaustedCards = options?.merge && Object.keys(data.exhaustedCards).length
+          ? { ...previous?.exhaustedCards, ...data.exhaustedCards }
+          : data.exhaustedCards;
+        write = [document, { ...data, exhaustedCards }];
+      },
     });
     if (!write) return;
     const [doc, data] = write;
@@ -122,6 +129,22 @@ afterEach(() => {
 });
 
 describe('cloud synchronization provenance', () => {
+  it('keeps accelerated limits off after cloud acknowledgement with another exhausted card', async () => {
+    mount(); await hydrate({ ...cloudWallet(), walletCards: ['sbi-eternal'], exhaustedCards: { other: true } });
+    fireEvent.click(screen.getByRole('heading', { name: 'Eternal' }));
+    const toggle = within(screen.getByText('Accelerated Limit Reached').parentElement!.parentElement!).getByRole('button');
+    fireEvent.click(toggle);
+    await advance(2000);
+    expect(wallet.normalizedExhaustedCards['sbi-eternal']).toBe(true);
+    fireEvent.click(toggle);
+    await advance(2000);
+    const saved = state.cloudDocuments.get('sync-test-user');
+    cleanup();
+    mount(); await hydrate(saved);
+    expect(wallet.normalizedExhaustedCards['sbi-eternal']).toBeUndefined();
+    expect(wallet.exhaustedCards.other).toBe(true);
+  });
+
   it('keeps an older device from overwriting a newer wallet even when clocks match', async () => {
     const time = Date.now();
     mount(); await act(async () => { state.snapshot(snapshot({ ...cloudWallet(), updatedAt: time })); });

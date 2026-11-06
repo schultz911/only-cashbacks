@@ -1213,9 +1213,8 @@ export default function App() {
                     const isEx = normalizedExhaustedCards[selectedCardForDetails.card.id];
                     setExhaustedCards(prev => {
                       if (isEx) {
-                        const copy = { ...prev };
-                        delete copy[selectedCardForDetails.card.id];
-                        return copy;
+                        // Explicit false overwrites the cloud entry during Firestore's nested-map merge.
+                        return { ...prev, [selectedCardForDetails.card.id]: false };
                       } else {
                         return { ...prev, [selectedCardForDetails.card.id]: getCycleForCard(selectedCardForDetails.card.id, cardBillDates) };
                       }
