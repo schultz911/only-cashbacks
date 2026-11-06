@@ -1,0 +1,279 @@
+{
+ "method": "declared",
+ "source": "src/index.css, src/App.tsx, src/components, index.html",
+ "files": 20,
+ "elements": null,
+ "color": {
+  "accents": [
+   {
+    "hex": "#4ade80",
+    "count": 2,
+    "oklch": [
+     0.8,
+     0.182,
+     152
+    ],
+    "sources": {
+     "anywhere": 2
+    },
+    "score": 0.36
+   },
+   {
+    "hex": "#006bb3",
+    "count": 2,
+    "oklch": [
+     0.516,
+     0.14,
+     248
+    ],
+    "sources": {
+     "anywhere": 2
+    },
+    "score": 0.28
+   },
+   {
+    "hex": "#fef08a",
+    "count": 2,
+    "oklch": [
+     0.945,
+     0.124,
+     102
+    ],
+    "sources": {
+     "anywhere": 2
+    },
+    "score": 0.25
+   },
+   {
+    "hex": "#8b5cf6",
+    "count": 1,
+    "oklch": [
+     0.606,
+     0.219,
+     293
+    ],
+    "sources": {
+     "anywhere": 1
+    },
+    "score": 0.22
+   },
+   {
+    "hex": "#ef4444",
+    "count": 1,
+    "oklch": [
+     0.637,
+     0.208,
+     25
+    ],
+    "sources": {
+     "anywhere": 1
+    },
+    "score": 0.21
+   },
+   {
+    "hex": "#ea4335",
+    "count": 1,
+    "oklch": [
+     0.626,
+     0.206,
+     29
+    ],
+    "sources": {
+     "anywhere": 1
+    },
+    "score": 0.21
+   }
+  ],
+  "neutrals": [
+   {
+    "hex": "#000000",
+    "count": 8,
+    "oklch": [
+     0.0,
+     0.0,
+     0
+    ]
+   },
+   {
+    "hex": "#f5f5f7",
+    "count": 7,
+    "oklch": [
+     0.971,
+     0.003,
+     286
+    ]
+   },
+   {
+    "hex": "#ffffff",
+    "count": 7,
+    "oklch": [
+     1.0,
+     0.0,
+     90
+    ]
+   },
+   {
+    "hex": "#f8fafc",
+    "count": 4,
+    "oklch": [
+     0.984,
+     0.003,
+     248
+    ]
+   },
+   {
+    "hex": "#1d1d1f",
+    "count": 3,
+    "oklch": [
+     0.232,
+     0.004,
+     286
+    ]
+   },
+   {
+    "hex": "#334155",
+    "count": 3,
+    "oklch": [
+     0.372,
+     0.039,
+     257
+    ]
+   },
+   {
+    "hex": "#27272a",
+    "count": 3,
+    "oklch": [
+     0.274,
+     0.005,
+     286
+    ]
+   },
+   {
+    "hex": "#e2e8f0",
+    "count": 2,
+    "oklch": [
+     0.929,
+     0.013,
+     256
+    ]
+   }
+  ],
+  "confidence": "low",
+  "count": 2,
+  "basis": "no interactive elements with a chromatic color; ranked every color by count x chroma",
+  "borders": {},
+  "note": "the accent hex is the reference's identity, a measurement only: carry its role and chroma level, never the hue as the person's primary",
+  "neutralTint": {
+   "chroma": 0.039,
+   "hue": 257,
+   "count": 3,
+   "confidence": "medium"
+  },
+  "accentChroma": 0.182
+ },
+ "type": {
+  "scale": null,
+  "families": [],
+  "minorFaces": [],
+  "systemFaces": [],
+  "weights": []
+ },
+ "space": {
+  "unit": 8,
+  "shareDivisible": {
+   "8": 1.0,
+   "5": 0.0,
+   "4": 1.0
+  },
+  "steps": [
+   32
+  ],
+  "count": 1,
+  "confidence": "low"
+ },
+ "radius": {
+  "control": {
+   "px": "full",
+   "count": 1,
+   "share": 1.0,
+   "confidence": "low"
+  },
+  "basis": "no roles in this capture (all elements mixed; 1 px corners dropped): re-run read_page.js for control and container radii",
+  "mostCommon": "full",
+  "roundnessDial": 96
+ },
+ "depth": {
+  "shadows": [
+   "0px 0px 10px 0px rgba(0, 0, 0, 0.3)"
+  ],
+  "hint": "shadow-ladder",
+  "levels": [
+   {
+    "level": "medium",
+    "blur": 10.0,
+    "y": 0.0,
+    "alpha": 0.3,
+    "count": 1
+   }
+  ],
+  "rings": 0,
+  "ignored": {},
+  "count": 1,
+  "confidence": "medium",
+  "basis": "1 element(s) with elevation shadows, levels by blur and offset"
+ },
+ "motion": {
+  "note": "no UI transitions found; do not infer Energy from this source",
+  "count": 0,
+  "confidence": "none"
+ },
+ "summary": {
+  "accent": {
+   "value": {
+    "chroma": 0.182,
+    "usedOn": [
+     "anywhere"
+    ]
+   },
+   "confidence": "low",
+   "count": 2,
+   "basis": "no interactive elements with a chromatic color; ranked every color by count x chroma; the hue is identity and is not carried"
+  },
+  "neutralTint": {
+   "value": {
+    "chroma": 0.039,
+    "hue": 257
+   },
+   "confidence": "medium",
+   "count": 3,
+   "basis": "most-used mid-tone neutral"
+  },
+  "radiusControl": {
+   "value": "full",
+   "confidence": "low",
+   "count": 1,
+   "basis": "no roles in this capture (all elements mixed; 1 px corners dropped): re-run read_page.js for control and container radii"
+  },
+  "depth": {
+   "value": "shadow-ladder",
+   "confidence": "medium",
+   "count": 1,
+   "basis": "1 element(s) with elevation shadows, levels by blur and offset"
+  },
+  "spaceUnit": {
+   "value": 8,
+   "confidence": "low",
+   "count": 1,
+   "basis": "share divisible {8: 1.0, 5: 0.0, 4: 1.0}"
+  }
+ },
+ "identity": {
+  "rule": "measurements of the reference's identity, never values to adopt: carry role, chroma level, structure and rhythm; ask for the person's own brand color and typeface",
+  "accentHue": "#4ade80",
+  "typefaces": []
+ },
+ "neverInferred": [
+  "brandPresence (always ask)",
+  "intent, audience, principles"
+ ]
+}

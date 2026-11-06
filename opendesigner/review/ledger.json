@@ -1,0 +1,130 @@
+{
+  "cells": {
+    "/opendesigner/captured-ui.html|320x844|light": {
+      "status": "blocked",
+      "evidence": [
+        "opendesigner/review/probes/observations.json"
+      ],
+      "why": "Dimensions and overflow measured, but full retained screenshot and probe capture coverage is incomplete."
+    },
+    "/opendesigner/captured-ui.html|390x844|light": {
+      "status": "blocked",
+      "evidence": [
+        "opendesigner/review/probes/observations.json"
+      ],
+      "why": "Dimensions and overflow measured, but full retained screenshot and probe capture coverage is incomplete."
+    },
+    "/opendesigner/captured-ui.html|768x900|light": {
+      "status": "blocked",
+      "evidence": [
+        "opendesigner/review/probes/observations.json"
+      ],
+      "why": "Dimensions and overflow measured, but full retained screenshot and probe capture coverage is incomplete."
+    },
+    "/opendesigner/captured-ui.html|1024x900|light": {
+      "status": "blocked",
+      "evidence": [
+        "opendesigner/review/probes/observations.json"
+      ],
+      "why": "Dimensions and overflow measured, but full retained screenshot and probe capture coverage is incomplete."
+    },
+    "/opendesigner/captured-ui.html|1440x900|light": {
+      "status": "blocked",
+      "evidence": [
+        "opendesigner/review/probes/observations.json"
+      ],
+      "why": "Dimensions and overflow measured, but full retained screenshot and probe capture coverage is incomplete."
+    },
+    "task:/opendesigner/captured-ui.html|scroll-walk": {
+      "status": "blocked",
+      "evidence": [
+        "opendesigner/review/probes/observations.json"
+      ],
+      "why": "Dimensions and overflow measured, but full retained screenshot and probe capture coverage is incomplete."
+    },
+    "task:/opendesigner/captured-ui.html|focus-walk": {
+      "status": "done",
+      "evidence": [
+        "opendesigner/review/verifier/independent.json"
+      ],
+      "why": "All12 controls keyboard walked at390px by independent reviewer."
+    },
+    "task:/opendesigner/captured-ui.html|hover-and-press": {
+      "status": "blocked",
+      "evidence": [
+        "opendesigner/review/probes/observations.json"
+      ],
+      "why": "Dimensions and overflow measured, but full retained screenshot and probe capture coverage is incomplete."
+    },
+    "task:/opendesigner/captured-ui.html|states-and-data": {
+      "status": "done",
+      "evidence": [
+        "opendesigner/review/verifier/independent.json"
+      ],
+      "why": "Empty specimens and long input checked. Loading/error states are outside this static visual specimen."
+    },
+    "task:/opendesigner/captured-ui.html|motion": {
+      "status": "skipped",
+      "evidence": [
+        "opendesigner/review/probes/observations.json"
+      ],
+      "why": "Static specimen has no animation or letter reveals; browser reported0 animations."
+    },
+    "task:/opendesigner/captured-ui.html|stress-text": {
+      "status": "blocked",
+      "evidence": [
+        "opendesigner/review/probes/observations.json"
+      ],
+      "why": "Dimensions and overflow measured, but full retained screenshot and probe capture coverage is incomplete."
+    },
+    "task:/opendesigner/captured-ui.html|reduced-motion": {
+      "status": "done",
+      "evidence": [
+        "opendesigner/review/probes/observations.json"
+      ],
+      "why": "320px media emulation and computed controls checked. No active animation."
+    },
+    "task:/opendesigner/captured-ui.html|forced-colors": {
+      "status": "done",
+      "evidence": [
+        "opendesigner/review/probes/observations.json"
+      ],
+      "why": "320px media emulation and computed controls checked. No active animation."
+    },
+    "task:/opendesigner/captured-ui.html|console-and-network": {
+      "status": "blocked",
+      "evidence": [
+        "opendesigner/review/probes/observations.json"
+      ],
+      "why": "Dimensions and overflow measured, but full retained screenshot and probe capture coverage is incomplete."
+    },
+    "task:/opendesigner/captured-ui.html|letter-reveals": {
+      "status": "skipped",
+      "evidence": [
+        "opendesigner/review/probes/observations.json"
+      ],
+      "why": "Static specimen has no animation or letter reveals; browser reported0 animations."
+    },
+    "task:/opendesigner/captured-ui.html|text-pixels": {
+      "status": "blocked",
+      "evidence": [
+        "opendesigner/review/probes/observations.json"
+      ],
+      "why": "Dimensions and overflow measured, but full retained screenshot and probe capture coverage is incomplete."
+    },
+    "task:/opendesigner/captured-ui.html|floating-bars": {
+      "status": "blocked",
+      "evidence": [
+        "opendesigner/review/probes/observations.json"
+      ],
+      "why": "Dimensions and overflow measured, but full retained screenshot and probe capture coverage is incomplete."
+    },
+    "task:/opendesigner/captured-ui.html|toggles": {
+      "status": "skipped",
+      "evidence": [
+        "opendesigner/review/probes/observations.json"
+      ],
+      "why": "All themes are simultaneous specimens. No switches or theme toggles exist."
+    }
+  }
+}

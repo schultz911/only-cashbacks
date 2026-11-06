@@ -1,0 +1,59 @@
+{
+  "url": "http://localhost:3000",
+  "routes": [
+    "/opendesigner/captured-ui.html"
+  ],
+  "viewports": [
+    "320x844",
+    "390x844",
+    "768x900",
+    "1024x900",
+    "1440x900"
+  ],
+  "themes": [
+    "light"
+  ],
+  "tasks": [
+    "scroll-walk",
+    "focus-walk",
+    "hover-and-press",
+    "states-and-data",
+    "motion",
+    "stress-text",
+    "reduced-motion",
+    "forced-colors",
+    "console-and-network",
+    "letter-reveals",
+    "text-pixels",
+    "floating-bars",
+    "toggles"
+  ],
+  "system": "OnlyCashbacks",
+  "made": "2026-11-06",
+  "cells": [
+    "/opendesigner/captured-ui.html|320x844|light",
+    "/opendesigner/captured-ui.html|390x844|light",
+    "/opendesigner/captured-ui.html|768x900|light",
+    "/opendesigner/captured-ui.html|1024x900|light",
+    "/opendesigner/captured-ui.html|1440x900|light"
+  ],
+  "task_cells": [
+    "task:/opendesigner/captured-ui.html|scroll-walk",
+    "task:/opendesigner/captured-ui.html|focus-walk",
+    "task:/opendesigner/captured-ui.html|hover-and-press",
+    "task:/opendesigner/captured-ui.html|states-and-data",
+    "task:/opendesigner/captured-ui.html|motion",
+    "task:/opendesigner/captured-ui.html|stress-text",
+    "task:/opendesigner/captured-ui.html|reduced-motion",
+    "task:/opendesigner/captured-ui.html|forced-colors",
+    "task:/opendesigner/captured-ui.html|console-and-network",
+    "task:/opendesigner/captured-ui.html|letter-reveals",
+    "task:/opendesigner/captured-ui.html|text-pixels",
+    "task:/opendesigner/captured-ui.html|floating-bars",
+    "task:/opendesigner/captured-ui.html|toggles"
+  ],
+  "notes": [
+    "cells: run probe.js, then screenshot the top and every scroll step; tasks: things a static capture cannot show",
+    "skip a cell only with a reason (mark ... skipped --why); the report lists every skip"
+  ]
+}

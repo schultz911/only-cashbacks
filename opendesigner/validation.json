@@ -1,0 +1,110 @@
+{
+  "dir": "opendesigner",
+  "errors": 0,
+  "warnings": 0,
+  "advisories": 5,
+  "items": [
+    {
+      "severity": "info",
+      "category": "apca",
+      "rule": "APCA advisory only; WCAG 3 contrast is undetermined",
+      "where": "",
+      "measured": null,
+      "threshold": null,
+      "evidence": "S-L01-026, S-L01-021",
+      "fix": "",
+      "message": "in dark mode, secondary text on the base surface scores Lc 55 on APCA, a newer reading-contrast score. 60 or more is advised",
+      "plain": "Advice only: in dark mode, secondary text on the base surface scores Lc 55 on APCA, a newer reading-contrast score. 60 or more is advised"
+    },
+    {
+      "severity": "info",
+      "category": "apca",
+      "rule": "APCA advisory only; WCAG 3 contrast is undetermined",
+      "where": "",
+      "measured": null,
+      "threshold": null,
+      "evidence": "S-L01-026, S-L01-021",
+      "fix": "",
+      "message": "in dark mode, secondary text on the raised surface scores Lc 54 on APCA, a newer reading-contrast score. 60 or more is advised",
+      "plain": "Advice only: in dark mode, secondary text on the raised surface scores Lc 54 on APCA, a newer reading-contrast score. 60 or more is advised"
+    },
+    {
+      "severity": "info",
+      "category": "targets",
+      "rule": "L14 I-1",
+      "where": "",
+      "measured": null,
+      "threshold": null,
+      "evidence": "DC-L03-12, S-L03-029",
+      "fix": "",
+      "message": "the smallest control is 24px tall. Give it a 44px tap area with padding (size.target.min), never a smaller one",
+      "plain": "The smallest control is 24px tall. Give it a 44px tap area with padding (size.target.min), never a smaller one"
+    },
+    {
+      "severity": "info",
+      "category": "lint",
+      "rule": "Orphan tokens",
+      "where": "",
+      "measured": null,
+      "threshold": null,
+      "evidence": "spec 6.3",
+      "fix": "",
+      "message": "10 scale steps are not used by any named value yet (for example motion.duration.extra, motion.duration.long-exit, radius.0). That is fine if you plan to use them",
+      "plain": "10 scale steps are not used by any named value yet (for example motion.duration.extra, motion.duration.long-exit, radius.0). That is fine if you plan to use them"
+    },
+    {
+      "severity": "info",
+      "category": "hooks",
+      "rule": "Designer hooks, not designer replacement",
+      "where": "H-logo, H-appicon, H-favicon, H-icons, H-illus, H-photo, H-type, H-color, H-motion, H-motif, H-sound, H-haptic, H-voice, H-brandbook",
+      "measured": null,
+      "threshold": null,
+      "evidence": "BRIEF req. 2, Q-brand-08",
+      "fix": "",
+      "message": "14 assets a person must make, not asked about yet: logo, wordmark, symbol, lockups; app icon; favicon set; custom icons, pictograms, spot icons; illustration, characters, empty-state art; photography and art direction; brand typeface files; fixed brand colors; motion signature and rich media; graphic devices, patterns, textures, brand gradients, signature shape; UI sounds and sonic logo; custom haptic patterns; voice and tone guide; brand guidelines PDF",
+      "plain": "Not asked yet (assets a person must make): logo, wordmark, symbol, lockups; app icon; favicon set; custom icons, pictograms, spot icons; illustration, characters, empty-state art; photography and art direction; brand typeface files; fixed brand colors; motion signature and rich media; graphic devices, patterns, textures, brand gradients, signature shape; UI sounds and sonic logo; custom haptic patterns; voice and tone guide; brand guidelines PDF"
+    }
+  ],
+  "stats": {
+    "permutations": 12,
+    "tokens": 465,
+    "contrastPairs": 164,
+    "lowest": {
+      "dark fill-boundary": "4.07:1 (color.bg.action.primary on color.surface.raised)",
+      "dark focus": "5.29:1 (color.border.focus on color.bg.neutral.subtle)",
+      "dark non-text": "3.06:1 (color.border.input on color.bg.neutral.subtle)",
+      "dark text": "4.59:1 (color.text.secondary on color.bg.neutral.subtle-hover)",
+      "light fill-boundary": "5.50:1 (color.bg.action.primary on color.surface.base)",
+      "light focus": "4.69:1 (color.border.focus on color.bg.neutral.subtle)",
+      "light non-text": "3.05:1 (color.border.input on color.bg.neutral.subtle)",
+      "light text": "4.58:1 (color.text.on-success on color.bg.success.bold)"
+    },
+    "statePairs": 24,
+    "targets": {
+      "pointer": 24,
+      "touch": 44,
+      "min": 44
+    },
+    "typeSizes": [
+      12,
+      14,
+      16,
+      18,
+      22,
+      27,
+      34
+    ],
+    "orphans": [
+      "motion.duration.extra",
+      "motion.duration.long-exit",
+      "radius.0",
+      "radius.2",
+      "radius.20",
+      "radius.28",
+      "radius.32",
+      "radius.4",
+      "space.0",
+      "space.48"
+    ]
+  }
+}

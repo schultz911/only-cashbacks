@@ -1,0 +1,62 @@
+{
+  "status": "Captured current implementation, not an accessibility certification",
+  "sources": [
+    "src/index.css",
+    "src/components/SearchSection.tsx",
+    "src/App.tsx"
+  ],
+  "themes": {
+    "light": {
+      "page": "#f5f5f7",
+      "surface": "#ffffff",
+      "surface-muted": "#f9fafb",
+      "text": "#1d1d1f",
+      "text-secondary": "#4b5563",
+      "border": "#e5e7eb"
+    },
+    "dark": {
+      "page": "#0f172a",
+      "surface": "#1e293b",
+      "surface-muted": "#334155",
+      "text": "#f8fafc",
+      "text-secondary": "#94a3b8",
+      "border": "#334155"
+    },
+    "oled": {
+      "page": "#000000",
+      "surface": "#09090b",
+      "surface-muted": "#18181b",
+      "text": "#f8fafc",
+      "text-secondary": "#a1a1aa",
+      "border": "#27272a"
+    }
+  },
+  "shared": {
+    "action": "#006bb3",
+    "action-selected": "#2563eb",
+    "focus": "#3b82f6",
+    "on-action": "#ffffff"
+  },
+  "type": {
+    "family": "Plus Jakarta Sans",
+    "control": 14,
+    "field": 18,
+    "sectionHeading": 24
+  },
+  "radius": {
+    "control": 12,
+    "field": 16,
+    "detailDialog": 24,
+    "utility": "9999px"
+  },
+  "measurements": {
+    "viewport": [
+      1706,
+      890
+    ],
+    "fieldHeight": 62,
+    "checkHeight": 36,
+    "utilityHeight": 34
+  },
+  "spacingUnit": 4
+}

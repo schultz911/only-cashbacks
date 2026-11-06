@@ -1,0 +1,22 @@
+{
+  "url": "http://localhost:3000/opendesigner/captured-ui.html",
+  "viewport": {"width":390,"height":844,"deviceScaleFactor":2,"mobile":true,"touch":true},
+  "basis": "operated and measured using independent IAB tab, read-only live DOM styles",
+  "findings": [{
+    "severity":"error",
+    "description":"Dark and OLED input placeholders fail normal-text contrast",
+    "selectors":["#merchant-dark","#amount-dark","#merchant-oled","#amount-oled"],
+    "foreground":"#757575",
+    "placeholderOpacity":1,
+    "darkBackground":"#1e293b",
+    "darkContrast":3.174967039023072,
+    "oledBackground":"#09090b",
+    "oledContrast":4.3180205160291285,
+    "expectedMinimum":4.5,
+    "standard":"WCAG 2.2 1.4.3",
+    "measurement":"getComputedStyle(input,'::placeholder').color and opacity; input backgroundColor. sRGB relative luminance computation."
+  }],
+  "checked": ["All 12 inputs/buttons sequential keyboard focus, 2px #3b82f6 outlines present", "Focus rectangles remained within 844px viewport", "Document width 390px at 390px viewport", "Merchant long text remained internally scrollable, document width unchanged", "All six fields have explicit corresponding labels", "Language en", "Plus Jakarta Sans document.fonts.check true"],
+  "unchecked": ["200% text scaling", "Forced colors", "Screen reader", "All scroll tiles", "Pixel contrast on artwork", "Real wallet behavior intentionally outside specimen scope"],
+  "cleanup":"Long input reset, tab emulation restored, independent tab closed. No source changes."
+}

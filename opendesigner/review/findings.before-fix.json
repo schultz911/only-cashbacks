@@ -1,0 +1,43 @@
+{
+  "findings": [
+    {
+      "id": "H-001",
+      "case": "MS-04",
+      "severity": "error",
+      "basis": "operated",
+      "title": "Dark and OLED input placeholders fail text contrast at 3.17 and 4.32 to 1",
+      "where": [
+        "/opendesigner/captured-ui.html \u00b7 dark and OLED merchant/amount placeholders \u00b7 320px and390px"
+      ],
+      "measured": null,
+      "expected": "At least4.5 to1 under WCAG1.4.3",
+      "evidence": [
+        "opendesigner/review/probes/observations.json",
+        "opendesigner/review/verifier/independent.json"
+      ],
+      "fix": "Set input::placeholder to var(--oc-text-secondary) with opacity1, then remeasure each theme.",
+      "standard": null,
+      "status": "confirmed",
+      "at": "2026-11-06T17:02:02"
+    },
+    {
+      "id": "H-002",
+      "case": "MS-09",
+      "severity": "warn",
+      "basis": "operated",
+      "title": "Specimen action buttons are 36 to 38px high, below the preferred44px touch area",
+      "where": [
+        "/opendesigner/captured-ui.html \u00b7 all widths \u00b7 button and button.utility"
+      ],
+      "measured": null,
+      "expected": "Prefer44px touch areas. The24px minimum is met.",
+      "evidence": [
+        "opendesigner/review/probes/observations.json"
+      ],
+      "fix": "For reusable touch controls, add a44px target area while preserving distinct visual roles.",
+      "standard": null,
+      "status": "confirmed",
+      "at": "2026-11-06T17:02:02"
+    }
+  ]
+}

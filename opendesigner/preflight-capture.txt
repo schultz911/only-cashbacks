@@ -1,0 +1,4 @@
+       loaded from Google Fonts: Plus Jakarta Sans (needs the network when the page loads)
+       font sizes in px: [12, 14, 18, 24, 28]
+       sizes are as written; text inside a scaled container (transform: scale) is smaller on screen  [M31]
+0 error(s), 0 warning(s). The checklist covers what this script cannot see: references/checklist.md

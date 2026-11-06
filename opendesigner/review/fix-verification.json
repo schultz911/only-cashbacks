@@ -1,0 +1,16 @@
+{
+  "placeholderContrast": {
+    "light": 7.557378129674007,
+    "dark": 5.705336167182281,
+    "oled": 7.762805693682826
+  },
+  "browserMeasuredButtons": {
+    "count": 6,
+    "minimumHeight": 44,
+    "minimumWidth": 60.875
+  },
+  "sourceChecks": "Passed existing token references for placeholders and touch targets",
+  "scope": "captured-ui.html preview",
+  "coverage": "Focused desktop verification. Previous phone, text-enlargement and screenshot-capture gaps remain.",
+  "preflight": "0 errors,1 warning for captured24px and28px heading sizes outside generated scale. Captured typography intentionally retained."
+}

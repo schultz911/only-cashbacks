@@ -1,0 +1,94 @@
+{
+  "url": "http://localhost:3000/opendesigner/captured-ui.html",
+  "title": "OnlyCashbacks captured UI",
+  "method": "Live CUA DOM measurements and CDP emulation; compact observations, not full probe exports",
+  "themes": "light, dark and OLED specimens are displayed together in every viewport",
+  "viewports": [
+    {
+      "width": 320,
+      "height": 844,
+      "documentHeight": 3009,
+      "columns": "280px",
+      "fieldWidth": 230
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "documentHeight": 2736,
+      "columns": "350px",
+      "fieldWidth": 300
+    },
+    {
+      "width": 768,
+      "height": 900,
+      "documentHeight": 2589,
+      "columns": "728px",
+      "fieldWidth": 678
+    },
+    {
+      "width": 1024,
+      "height": 900,
+      "documentHeight": 1149,
+      "columns": "304px 304px 304px",
+      "fieldWidth": 254
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "documentHeight": 1096,
+      "columns": "384px 384px 384px",
+      "fieldWidth": 334
+    }
+  ],
+  "allWidths": {
+    "horizontalOverflow": 0,
+    "outOfBoundsElements": 0,
+    "fontStatus": "loaded",
+    "checkHeight": 36,
+    "editHeight": 38,
+    "inputHeight": 62
+  },
+  "placeholders": {
+    "selector": "input::placeholder",
+    "foreground": "#757575",
+    "opacity": 1,
+    "darkBackground": "#1e293b",
+    "darkRatio": 3.174967039023072,
+    "oledBackground": "#09090b",
+    "oledRatio": 4.3180205160291285,
+    "requiredRatio": 4.5,
+    "basis": "Computed styles measured at 320px; independently reproduced at390px. Ratios calculated using OpenDesigner engine.contrast."
+  },
+  "probeSummary": {
+    "ordinaryTextContrastPairsChecked": 14,
+    "ordinaryTextContrastFailures": 0,
+    "note": "probe ordinary-text contrast pass omits placeholders, requiring separate measurement",
+    "h1Count": 1,
+    "headingSkips": [],
+    "duplicateIds": [],
+    "fontFamilyState": "webfont",
+    "unusedLoadedFamilies": []
+  },
+  "displaySettings": {
+    "width": 320,
+    "reducedMotionEmulated": true,
+    "forcedColorsEmulated": true,
+    "activeAnimations": 0,
+    "forcedControlForeground": "#000000",
+    "forcedControlBackground": "#ffffff",
+    "forcedControlBorder": "#000000"
+  },
+  "scroll": {
+    "width": 320,
+    "bottomReached": 3009,
+    "documentHeight": 3009,
+    "note": "Top and bottom viewed, intervening scroll tiles not retained"
+  },
+  "limits": [
+    "Screenshot download timed out. Screenshots were viewed in tool output but no per-cell files were retained.",
+    "Probe loaded from same origin after eval was blocked by existing CSP. CSP was preserved.",
+    "text200 helper changed root size, but px-sized controls stayed at18px, so actual 200% text enlargement remains unverified.",
+    "No full hover/press, font platform confirmation, screen reader, physical-device or app-route review."
+  ],
+  "cleanup": "Temporary helper DOM and download link removed by reload. Review tab closed and emulation reset. Source files unchanged."
+}
