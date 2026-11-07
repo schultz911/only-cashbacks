@@ -16,6 +16,7 @@ interface CustomSelectProps {
   className?: string;
   dropdownClassName?: string;
   fullOpacity?: boolean;
+  label?: string;
 }
 
 export const CustomSelect: React.FC<CustomSelectProps> = ({ 
@@ -25,7 +26,8 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   placeholder, 
   className, 
   dropdownClassName, 
-  fullOpacity 
+  fullOpacity,
+  label
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const selectRef = useRef<HTMLDivElement>(null);
@@ -39,7 +41,19 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   const close = () => { setIsOpen(false); setFocusIndex(null); triggerRef.current?.focus(); };
   const onKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === 'Escape' && isOpen) { event.preventDefault(); event.stopPropagation(); close(); return; }
-    if (event.key === 'Tab') { setIsOpen(false); setFocusIndex(null); return; }
+    if (event.key === 'Tab' && isOpen) {
+      if (event.target !== triggerRef.current) {
+        event.preventDefault();
+        const scope = selectRef.current?.closest('[role=dialog], dialog') || document;
+        const controls = Array.from(scope.querySelectorAll<HTMLElement>('a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])')).filter(item => item.tabIndex >= 0 && item.getClientRects().length > 0 && !item.closest('[hidden], [inert], [aria-hidden="true"]'));
+        const index = controls.indexOf(triggerRef.current!);
+        const next = controls[index + (event.shiftKey ? -1 : 1)];
+        (next || (scope !== document ? controls[event.shiftKey ? controls.length - 1 : 0] : triggerRef.current))?.focus();
+      }
+      setIsOpen(false);
+      setFocusIndex(null);
+      return;
+    }
     if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key) || !options.length) return;
     event.preventDefault();
     const selected = Math.max(0, options.findIndex(option => option.value === value));
@@ -62,6 +76,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
       <button
         ref={triggerRef}
         type="button"
+        aria-label={label ? `${label}: ${options.find(option => option.value === value)?.label || placeholder || value}` : undefined}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         onClick={() => { setIsOpen(!isOpen); setFocusIndex(null); }}
@@ -92,6 +107,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
                   key={option.value}
                   type="button"
                   role="option"
+                  tabIndex={-1}
                   aria-selected={value === option.value}
                   className={cn(
                     "w-full text-left px-3 py-2 flex items-center justify-between focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-all duration-200 rounded-xl text-sm",

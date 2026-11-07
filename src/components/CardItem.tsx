@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { Card } from '../types';
-import { Zap, Plane } from 'lucide-react';
+import { Zap, Plane, Ticket } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils'; // Make sure you have this
 
@@ -42,7 +42,7 @@ interface CardItemProps {
   isExhausted?: boolean;
 }
 
-export const CardItem: React.FC<CardItemProps> = ({ card, className, isRecommendation, benefitText, onClick, layoutId, isExhausted }) => {
+export const CardItem: React.FC<CardItemProps> = React.memo(({ card, className, isRecommendation, benefitText, onClick, layoutId, isExhausted }) => {
   const hasLounge = card.hasLounge;
   const showLimitStatus = isExhausted && !isRecommendation;
   const hasBogo = card.id === 'sbi-eternal' || card.id === 'kotak-811-infinity' || card.id === 'hdfc-imperia' || card.id === 'axis-myzone';
@@ -57,6 +57,10 @@ export const CardItem: React.FC<CardItemProps> = ({ card, className, isRecommend
     <motion.div
       layoutId={layoutId}
       onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      aria-label={onClick ? `View ${card.name} card details` : undefined}
+      onKeyDown={onClick ? (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onClick(); } } : undefined}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       whileHover={onClick ? { scale: isRecommendation ? 1.08 : 1.03, y: -5 } : {}}
@@ -74,7 +78,7 @@ export const CardItem: React.FC<CardItemProps> = ({ card, className, isRecommend
         "relative overflow-hidden rounded-2xl p-6 shadow-xl flex flex-col justify-between min-h-[200px] min-w-[310px] group bg-gradient-to-br",
         card.gradient || "from-gray-700 to-gray-900",
         isRecommendation ? "scale-105" : "scale-100",
-        onClick && "cursor-pointer",
+        onClick && "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2",
         className
       )}
     >
@@ -105,9 +109,6 @@ export const CardItem: React.FC<CardItemProps> = ({ card, className, isRecommend
             {isForexPositive && (
               <span className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-emerald-500/20 border border-emerald-500/30 whitespace-nowrap">Forex+</span>
             )}
-            {hasBogo && (
-              <span className="px-1.5 py-0.5 rounded text-xs font-black uppercase tracking-widest border border-orange-400/40 bg-orange-400/15 whitespace-nowrap" style={{ color: lightFace ? '#9a3412' : '#fed7aa' }}>BOGO</span>
-            )}
           </div>
           <div className="relative w-full overflow-hidden">
              <h3 className="text-lg font-bold pr-2 whitespace-nowrap overflow-hidden text-ellipsis">
@@ -127,6 +128,12 @@ export const CardItem: React.FC<CardItemProps> = ({ card, className, isRecommend
           <div className="inline-flex w-fit items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/20 backdrop-blur-md border border-white/30 shadow-sm mt-auto">
             <Plane className="w-3.5 h-3.5" />
             <span className="text-[10px] font-bold uppercase tracking-wider">Lounge</span>
+          </div>
+        )}
+        {hasBogo && (
+          <div className="inline-flex w-fit items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/20 backdrop-blur-md border border-white/30 shadow-sm mt-auto">
+            <Ticket aria-hidden="true" className="w-3.5 h-3.5" />
+            <span className="text-[10px] font-bold uppercase tracking-wider">BOGO</span>
           </div>
         )}
 
@@ -155,4 +162,4 @@ export const CardItem: React.FC<CardItemProps> = ({ card, className, isRecommend
 
     </motion.div>
   );
-};
+});

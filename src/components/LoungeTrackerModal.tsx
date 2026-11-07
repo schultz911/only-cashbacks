@@ -73,6 +73,9 @@ export function LoungeTrackerModal({
   loungeMilestonesVerified, setLoungeMilestonesVerified,
   kiwiNeonEarnRate
 }: LoungeTrackerModalProps) {
+  const [confirmingCard, setConfirmingCard] = React.useState<string | null>(null);
+  React.useEffect(() => { setConfirmingCard(null); }, [isOpen, loungeTab]);
+
   const openDialog = React.useCallback((dialog: HTMLDialogElement | null) => {
     if (!dialog) return;
     const previousFocus = document.activeElement as HTMLElement | null;
@@ -171,6 +174,7 @@ export function LoungeTrackerModal({
             <div className="flex-1 flex flex-col p-6 overflow-hidden min-h-0">
               <div className="mb-6 relative shrink-0" style={{ zIndex: 100 }}>
                 <CustomSelect
+                  label="Lounge type"
                   value={loungeTab}
                   onChange={setLoungeTab}
                   options={LOUNGE_TAB_OPTIONS}
@@ -186,6 +190,8 @@ export function LoungeTrackerModal({
                     card={card}
                     parsed={parsed}
                     category={loungeTab}
+                    showVerifyDialog={confirmingCard === card.id}
+                    setShowVerifyDialog={(open) => setConfirmingCard(current => open ? card.id : current === card.id ? null : current)}
                     isVerified={isVerified}
                     passesUsed={loungePassesUsed[`${card.id}-${loungeTab}`] || 0}
                     setPassesUsed={(updater: any) => setLoungePassesUsed(prev => {

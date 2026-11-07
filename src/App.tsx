@@ -142,12 +142,14 @@ export default function App() {
 
   const [loading, setLoading] = useState(false);
   const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
+  const [recommendationError, setRecommendationError] = useState(false);
   const [lastSearchInfo, setLastSearchInfo] = useState<MerchantInfo | null>(null);
   const [history, setHistory] = useState<MerchantInfo[]>([]);
 
   const [isLoungeOpen, setIsLoungeOpen] = useState(false);
   const [showOffersOverlay, setShowOffersOverlay] = useState(false);
   const [selectedCardForDetails, setSelectedCardForDetails] = useState<{ card: Card, source: string } | null>(null);
+  const walletCardHandlers = useMemo(() => Object.fromEntries(CARD_DATA.map(card => [card.id, () => setSelectedCardForDetails({ card, source: 'list' })])), []);
 
   const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' | 'info' } | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -533,6 +535,7 @@ export default function App() {
     const signal = abortController.signal;
 
     setIsLogged(false);
+    setRecommendationError(false);
     const activeQuery = directQuery !== undefined ? directQuery : query;
     let activeAmountRaw = prefilledAmount !== undefined ? prefilledAmount : (isIntl ? foreignAmount : amount);
     const parsedAmount = parseFloat(prefilledAmount !== undefined ? prefilledAmount : amount) || 0;
@@ -540,6 +543,7 @@ export default function App() {
 
     if (!activeQuery.trim() || (isIntl ? parsedForeign <= 0 : parsedAmount <= 0)) {
       setRecommendation(null);
+      showToast(!activeQuery.trim() ? 'Enter a merchant or category.' : 'Enter an amount greater than zero.', 'error');
       return;
     }
 
@@ -570,6 +574,8 @@ export default function App() {
     } catch (error) {
       if (!signal.aborted) {
         console.error('Failed to get recommendation:', error);
+        setRecommendation(null);
+        setRecommendationError(true);
       }
     } finally {
       if (!signal.aborted) {
@@ -685,6 +691,18 @@ export default function App() {
                     </div>
                   </div>
                 </motion.section>
+              ) : recommendationError ? (
+                <motion.div
+                  key="recommendation-error"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  role="alert"
+                  className="rounded-2xl border border-red-200 dark:border-red-900/50 bg-white dark:bg-gray-900 p-6 text-sm text-gray-700 dark:text-gray-200"
+                >
+                  <p className="font-semibold text-gray-900 dark:text-white">Unable to get a recommendation.</p>
+                  <p className="mt-2">Check your connection and select Check to try again.</p>
+                </motion.div>
               ) : recommendation ? (
                 <motion.section
                   key="recommendation-result"
@@ -959,7 +977,7 @@ export default function App() {
             </h3>
             <div className="flex items-center gap-3">
               <div className="relative group flex cursor-pointer" onClick={() => setIsDashboardOpen(true)}>
-                <button aria-label="My Savings" className="relative overflow-hidden flex items-center justify-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-white/10 transition-colors shadow-sm text-yellow-600 dark:text-yellow-500 px-4 py-1.5 rounded-full text-sm font-bold gap-2 focus:ring-2 ring-gray-200 dark:ring-gray-800 outline-none group/piggy">
+                <button aria-label="My Savings" className="relative overflow-hidden flex items-center justify-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-white/10 transition-colors shadow-sm text-yellow-700 dark:text-yellow-500 min-h-11 min-w-11 px-4 py-1.5 rounded-full text-sm font-bold gap-2 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none group/piggy">
                   <span className="absolute -top-1 left-[50%] w-1.5 h-1.5 rounded-full bg-yellow-600 dark:bg-yellow-500 opacity-0 group-hover/piggy:opacity-0 group-hover/piggy:animate-[coin-drop_0.5s_ease-in_forwards] z-[5]"></span>
                   <PiggyBank className="w-5 h-5 transition-transform group-hover/piggy:scale-110 relative z-10 fill-white dark:fill-gray-800" strokeWidth={2} />
                 </button>
@@ -969,7 +987,7 @@ export default function App() {
               </div>
               <button
                 onClick={() => setIsWalletOpen(true)}
-                className="text-sm font-semibold flex items-center gap-2 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 px-5 py-1.5 rounded-full transition-colors shadow-sm focus:ring-2 ring-gray-200 outline-none"
+                className="text-sm font-semibold flex items-center gap-2 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 min-h-11 px-5 py-1.5 rounded-full transition-colors shadow-sm focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
               >
                 Edit
               </button>
@@ -985,7 +1003,7 @@ export default function App() {
             >
               {activeWalletCards.map((card) => (
                 <div key={card.id} className={cn("snap-start shrink-0 w-[310px] sm:w-auto", selectedCardForDetails?.card.id === card.id ? "opacity-0 pointer-events-none" : "opacity-100")}>
-                  <CardItem layoutId={`card-list-${card.id}`} card={card} onClick={() => setSelectedCardForDetails({ card, source: 'list' })} className="h-full shadow-sm hover:shadow-md transition-shadow cursor-pointer" isExhausted={normalizedExhaustedCards[card.id]} />
+                  <CardItem layoutId={`card-list-${card.id}`} card={card} onClick={walletCardHandlers[card.id]} className="h-full shadow-sm hover:shadow-md transition-shadow cursor-pointer" isExhausted={normalizedExhaustedCards[card.id]} />
                 </div>
               ))}
             </motion.div>
@@ -1024,9 +1042,9 @@ export default function App() {
                   { name: 'OneCard', type: 'Reward points' },
                   { name: 'Imperia Platinum', type: 'Cashback points' }
                 ].map((item, i) => (
-                  <li key={i} className="flex justify-between items-center bg-gray-50/50 hover:bg-gray-100/50 dark:bg-gray-800/50 dark:hover:bg-gray-800 transition-colors p-3 rounded-xl border border-gray-100 dark:border-gray-800">
+                  <li key={i} className="flex justify-between items-center gap-2 bg-gray-50/50 hover:bg-gray-100/50 dark:bg-gray-800/50 dark:hover:bg-gray-800 transition-colors p-3 rounded-xl border border-gray-100 dark:border-gray-800">
                     <span className="font-bold text-sm text-gray-700 dark:text-gray-300">{item.name}</span>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-pink-700 dark:text-pink-400 bg-pink-50 dark:bg-pink-900/30 px-2 py-1 rounded-md">{item.type}</span>
+                    <span className="shrink-0 whitespace-nowrap text-xs font-bold uppercase tracking-wider text-pink-700 dark:text-pink-400 bg-pink-50 dark:bg-pink-900/30 px-2 py-1 rounded-md">{item.type}</span>
                   </li>
                 ))}
               </ul>
@@ -1204,6 +1222,10 @@ export default function App() {
                   <span className="text-[11px] font-medium text-white/60 leading-none">Exclude from recommendations</span>
                 </div>
                 <button
+                  type="button"
+                  role="switch"
+                  aria-label="Accelerated Limit Reached"
+                  aria-checked={!!normalizedExhaustedCards[selectedCardForDetails.card.id]}
                   onClick={() => {
                     const isEx = normalizedExhaustedCards[selectedCardForDetails.card.id];
                     setExhaustedCards(prev => {
@@ -1215,7 +1237,7 @@ export default function App() {
                       }
                     });
                   }}
-                  className={cn("w-12 h-6 rounded-full transition-colors flex items-center px-1 shadow-inner shrink-0 ml-4", normalizedExhaustedCards[selectedCardForDetails.card.id] ? "bg-red-500" : "bg-white/20 border border-white/20")}
+                  className={cn("w-12 h-6 rounded-full transition-colors flex items-center px-1 shadow-inner shrink-0 ml-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900", normalizedExhaustedCards[selectedCardForDetails.card.id] ? "bg-red-500" : "bg-white/20 border border-white/20")}
                 >
                   <motion.div
                     layout
@@ -1476,6 +1498,8 @@ export default function App() {
       <AnimatePresence>
         {toast && (
           <motion.div
+            role="status"
+            aria-live="polite"
             initial={{ opacity: 0, y: 50, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 50, scale: 0.9 }}

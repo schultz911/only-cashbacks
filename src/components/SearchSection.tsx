@@ -68,11 +68,10 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
     <section className="space-y-4">
       <div className="space-y-1">
         <h2 className="text-2xl font-bold tracking-tight dark:text-white">Where are you spending?</h2>
-        <p className="text-gray-600 dark:text-gray-400 text-sm">Enter a merchant, category, or item.</p>
       </div>
 
       <form onSubmit={(e) => handleSearch(e)} className="space-y-4 relative z-[120]">
-        <label htmlFor="merchant-search" className="block text-sm font-semibold text-gray-700 dark:text-gray-200">Merchant or category</label>
+        <label htmlFor="merchant-search" className="block text-sm font-semibold text-gray-700 dark:text-gray-200">Merchant, category, or item</label>
         <div className="relative group z-[110]" ref={suggestionRef}>
           <input
             type="text"
@@ -112,7 +111,7 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
               }
             }}
             placeholder="e.g. Swiggy or groceries"
-            className="w-full bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-white border border-gray-200 rounded-2xl py-4 pl-12 pr-12 shadow-sm focus:ring-2 ring-blue-500 transition-all outline-none text-lg font-medium"
+            className="w-full bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-white border border-gray-200 rounded-2xl py-4 pl-12 pr-12 shadow-sm focus:ring-2 ring-blue-500 transition-all outline-none text-lg font-medium placeholder:text-gray-600 dark:placeholder:text-gray-400 placeholder:opacity-100"
             autoComplete="off"
           />
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
@@ -172,6 +171,7 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
           {isIntl && (
             <div className="absolute left-1 top-1/2 -translate-y-1/2 flex items-center pr-3 border-r border-gray-200 dark:border-gray-700 border-dashed z-50">
               <CustomSelect
+                label="Currency"
                 value={baseCurrency}
                 onChange={setBaseCurrency}
                 options={BASE_CURRENCY_OPTIONS}
@@ -201,7 +201,7 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
             disabled={loading}
             aria-label={loading ? "Checking recommendation" : "Check"}
             className={cn(
-              "absolute right-2 top-1/2 -translate-y-1/2 text-white rounded-xl px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-50 shadow flex items-center gap-1.5",
+              "absolute right-2 top-1/2 -translate-y-1/2 text-white rounded-xl min-h-11 px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-50 shadow flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2",
               isOffline ? "bg-amber-800 hover:bg-amber-900" : "bg-[#006bb3] hover:bg-blue-800"
             )}
           >
@@ -212,7 +212,7 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
         <span role="status" className="sr-only">{loading ? "Checking recommendation" : ""}</span>
 
         {isIntl && currencyError && (
-          <div className="text-red-500 text-sm mt-1 ml-2">
+          <div role="alert" className="text-red-600 dark:text-red-400 text-sm mt-1 ml-2">
             {currencyError}
           </div>
         )}
@@ -224,7 +224,7 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
               aria-pressed={isOnline}
               onClick={() => { setIsOnline(!isOnline); setIsScanToPay(false); }}
               className={cn(
-                "flex items-center gap-1.5 md:gap-1 px-3 md:px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0",
+                "flex items-center gap-1.5 md:gap-1 min-h-11 px-3 md:px-5 py-2 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 text-sm font-semibold transition-all duration-200 shrink-0",
                 isOnline
                   ? "bg-blue-600 text-white"
                   : "bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/30 dark:hover:border-white/60 dark:hover:text-white hover:scale-[1.03] active:scale-95 transition-all duration-200"
@@ -241,7 +241,7 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
                 if (!isIntl) { setIsScanToPay(false); }
               }}
               className={cn(
-                "flex items-center gap-1.5 md:gap-1 px-3 md:px-3 py-2 -ml-1 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0",
+                "flex items-center gap-1.5 md:gap-1 min-h-11 px-3 md:px-3 py-2 -ml-1 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 text-sm font-semibold transition-all duration-200 shrink-0",
                 isIntl
                   ? "bg-indigo-600 text-white"
                   : "bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/30 dark:hover:border-white/60 dark:hover:text-white hover:scale-[1.03] active:scale-95 transition-all duration-200"
@@ -262,7 +262,7 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
               aria-pressed={isScanToPay}
               onClick={() => { setIsScanToPay(!isScanToPay); setIsOnline(false); }}
               className={cn(
-                "flex items-center justify-center lg:ml-auto gap-2 px-3 md:px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0 md:portrait:w-full lg:w-auto",
+                "flex items-center justify-center lg:ml-auto gap-2 min-h-11 px-3 md:px-4 py-2 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 text-sm font-semibold transition-all duration-200 shrink-0 md:portrait:w-full lg:w-auto",
                 isScanToPay
                   ? "bg-emerald-600 text-white"
                   : "bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/30 dark:hover:border-white/60 dark:hover:text-white hover:scale-[1.03] active:scale-95 transition-all duration-200"
@@ -281,7 +281,7 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
               aria-label="In-Store"
               onClick={() => { setIsOnline(false); setIsScanToPay(false); }}
               className={cn(
-                "flex items-center justify-center lg:ml-auto gap-2 px-3 md:px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0 md:portrait:w-full lg:w-auto",
+                "flex items-center justify-center lg:ml-auto gap-2 min-h-11 px-3 md:px-4 py-2 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 text-sm font-semibold transition-all duration-200 shrink-0 md:portrait:w-full lg:w-auto",
                 !isOnline && !isScanToPay && !isIntl
                   ? "bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-900"
                   : "bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/30 dark:hover:border-white/60 dark:hover:text-white hover:scale-[1.03] active:scale-95 transition-all duration-200"

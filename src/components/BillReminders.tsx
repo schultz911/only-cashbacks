@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Calendar, CheckCircle2 } from 'lucide-react';
 import { Card } from '../types';
 import { CARD_DATA, CARD_DICT } from '../data/cards';
-import { formatBillDate, statementReminder } from '../lib/billingDates';
+import { formatBillDate, statementReminder, validBillDay } from '../lib/billingDates';
 import { useBillingDay } from '../hooks/useBillingDay';
 import { cn } from '../lib/utils';
 
@@ -57,6 +57,9 @@ export function BillReminders({ walletCards, cardBillDates, paidBills, markBillP
   };
 
   if (bills.length === 0) {
+    const eligibleCards = (walletCards.length > 0 ? walletCards : DEFAULT_EFFECTIVE_CARDS)
+      .filter(id => CARD_DICT[id] && !CARD_DICT[id].isDummy && CARD_DICT[id].type === 'Credit');
+    const configuredCards = eligibleCards.filter(id => validBillDay(cardBillDates[`${id}:statement`]));
     return (
       <section className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200/60 dark:border-gray-800 rounded-3xl p-6 shadow-sm flex flex-col h-full relative overflow-hidden group">
         <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-red-500/10 to-transparent rounded-bl-full pointer-events-none" />
@@ -66,13 +69,17 @@ export function BillReminders({ walletCards, cardBillDates, paidBills, markBillP
           </div>
           <div className="relative z-10">
             <h3 className="font-bold text-gray-900 dark:text-white leading-tight">Statement Reminders</h3>
-            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">All caught up</p>
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">Based on your statement day · IST</p>
           </div>
         </div>
         <div className="flex flex-col items-center justify-center p-6 text-center h-full min-h-[120px] relative z-10">
           <Calendar className="w-8 h-8 text-gray-300 dark:text-gray-700/50 mb-2" />
-          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">All caught up!</p>
-          <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Set each card's statement day in card details.</p>
+          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+            {eligibleCards.length === 0 ? 'No eligible credit cards' : configuredCards.length === 0 ? 'No statement days set' : 'No reminders in the next 7 days'}
+          </p>
+          {configuredCards.length < eligibleCards.length && (
+            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Set statement days in card details to see reminders.</p>
+          )}
         </div>
       </section>
     );

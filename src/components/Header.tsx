@@ -52,7 +52,7 @@ export const Header: React.FC<HeaderProps> = React.memo(({
 }) => {
   return (
     <header className="sticky top-0 z-[200] bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 px-6 py-4">
-      <div className="max-w-6xl mx-auto flex justify-between items-center">
+      <div className="max-w-6xl mx-auto flex flex-wrap justify-between items-center gap-x-3 gap-y-3">
         <div className="flex items-center gap-2">
           <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 shrink-0 bg-[#0095f6] rounded-full flex items-center justify-center shadow-md relative overflow-hidden">
             <svg viewBox="0 0 100 100" className="w-[85%] h-[85%] mt-0.5 ml-0.5" fill="white" xmlns="http://www.w3.org/2000/svg">

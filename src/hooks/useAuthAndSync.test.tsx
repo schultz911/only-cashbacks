@@ -132,7 +132,7 @@ describe('cloud synchronization provenance', () => {
   it('keeps accelerated limits off after cloud acknowledgement with another exhausted card', async () => {
     mount(); await hydrate({ ...cloudWallet(), walletCards: ['sbi-eternal'], exhaustedCards: { other: true } });
     fireEvent.click(screen.getByRole('heading', { name: 'Eternal' }));
-    const toggle = within(screen.getByText('Accelerated Limit Reached').parentElement!.parentElement!).getByRole('button');
+    const toggle = screen.getByRole('switch', { name: 'Accelerated Limit Reached' });
     fireEvent.click(toggle);
     await advance(2000);
     expect(wallet.normalizedExhaustedCards['sbi-eternal']).toBe(true);

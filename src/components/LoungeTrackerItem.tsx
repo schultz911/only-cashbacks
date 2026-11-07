@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useLayoutEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Card } from '../types';
 import { cn } from '../lib/utils';
@@ -25,6 +25,8 @@ interface LoungeTrackerItemProps {
   setPassesUsed: (val: number | ((prev: number) => number)) => void;
   isVerified: boolean;
   setIsVerified: (val: boolean) => void;
+  showVerifyDialog: boolean;
+  setShowVerifyDialog: (open: boolean) => void;
 }
 
 export const LoungeTrackerItem: React.FC<LoungeTrackerItemProps> = ({
@@ -34,10 +36,21 @@ export const LoungeTrackerItem: React.FC<LoungeTrackerItemProps> = ({
   passesUsed,
   setPassesUsed,
   isVerified,
-  setIsVerified
+  setIsVerified,
+  showVerifyDialog,
+  setShowVerifyDialog
 }) => {
   // If free, it's verified by default. Else requires verification.
-  const [showVerifyDialog, setShowVerifyDialog] = useState(false);
+  const actionRef = useRef<HTMLButtonElement>(null);
+  const cancelRef = useRef<HTMLButtonElement>(null);
+  const restoreFocus = useRef(false);
+
+  useLayoutEffect(() => {
+    if (showVerifyDialog) cancelRef.current?.focus();
+    else if (restoreFocus.current) { actionRef.current?.focus(); restoreFocus.current = false; }
+  }, [showVerifyDialog]);
+
+  const dismissConfirmation = () => { restoreFocus.current = true; setShowVerifyDialog(false); };
 
   const passesCount = parsed.passesCount || 0;
   const passesRemaining = Math.max(0, passesCount - passesUsed);
@@ -167,38 +180,53 @@ export const LoungeTrackerItem: React.FC<LoungeTrackerItemProps> = ({
         )}
       </div>
 
+      {(isVerified || card.id !== 'kiwi-neon') && !showVerifyDialog && (
+        <button
+          ref={actionRef}
+          type="button"
+          onClick={(event) => { event.stopPropagation(); handleInteract(); }}
+          aria-label={`${isVerified ? (isExhausted ? 'Reset lounge passes for' : 'Use a lounge pass for') : 'Confirm milestone for'} ${card.name}`}
+          className="relative z-20 self-start inline-flex min-h-11 items-center text-sm font-semibold text-blue-700 dark:text-blue-300 underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
+        >
+          {isVerified ? (isExhausted ? 'Reset passes' : 'Use pass') : 'Confirm milestone'}
+        </button>
+      )}
+
       {/* Verify Dialog Overlay */}
-      <AnimatePresence>
         {showVerifyDialog && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={(e) => e.stopPropagation()}
+            onKeyDown={(event) => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); dismissConfirmation(); } }}
+            role="group"
+            aria-label={`Confirm milestone for ${card.name}`}
             className="absolute inset-0 z-30 bg-white/90 backdrop-blur-md flex flex-col items-center justify-center p-4 text-center rounded-2xl"
           >
             <h4 className="text-gray-900 font-bold text-sm mb-1">Confirm Milestone</h4>
             <p className="text-xs text-gray-500 font-medium mb-3">Have you met the required spend target?</p>
             <div className="flex gap-2 w-full">
               <button
-                onClick={() => setShowVerifyDialog(false)}
-                className="flex-1 bg-gray-100 text-gray-600 hover:bg-gray-200 text-xs font-bold py-2 rounded-xl transition-colors"
+                ref={cancelRef}
+                type="button"
+                onClick={dismissConfirmation}
+                className="flex-1 min-h-11 bg-gray-100 text-gray-900 dark:text-white hover:bg-gray-200 text-xs font-bold py-2 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
               >
                 Not Yet
               </button>
               <button
                 onClick={() => {
                   setIsVerified(true);
-                  setShowVerifyDialog(false);
+                  dismissConfirmation();
                 }}
-                className="flex-1 bg-gradient-to-br from-blue-500 to-blue-700 text-white hover:from-blue-600 hover:to-blue-800 shadow-md shadow-blue-600/30 text-xs font-bold py-2 rounded-xl transition-colors flex items-center justify-center gap-1"
+                className="flex-1 min-h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 bg-gradient-to-br from-blue-500 to-blue-700 text-white hover:from-blue-600 hover:to-blue-800 shadow-md shadow-blue-600/30 text-xs font-bold py-2 rounded-xl transition-colors flex items-center justify-center gap-1"
               >
                 <Check className="w-3 h-3" /> Yes, Enable
               </button>
             </div>
           </motion.div>
         )}
-      </AnimatePresence>
     </motion.div>
   );
 };
