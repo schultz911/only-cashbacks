@@ -89,7 +89,7 @@ export const LoungeTrackerItem: React.FC<LoungeTrackerItemProps> = ({
             ? "bg-gradient-to-br from-blue-50/90 to-blue-100/50 dark:from-blue-900/40 dark:to-blue-900/10 border-blue-200/50 dark:border-blue-700/30 hover:shadow-md hover:border-blue-300 dark:hover:border-blue-600/50"
             : "bg-white/80 dark:bg-gray-800/80 border-gray-200/60 dark:border-gray-700 hover:shadow-md"
       )}
-      onClick={handleInteract}
+      onClick={showVerifyDialog ? undefined : handleInteract}
     >
       {/* Silver Frosted Glass Overlay for active passes */}
       {isVerified && !isExhausted && passesCount > 0 && (
@@ -114,7 +114,7 @@ export const LoungeTrackerItem: React.FC<LoungeTrackerItemProps> = ({
         )}
       </AnimatePresence>
 
-      <div className={cn("flex justify-between items-start gap-4 relative z-20 transition-all", isVerified && !isExhausted && passesCount > 0 ? "pt-2" : "")}>
+      <div inert={showVerifyDialog ? true : undefined} className={cn("flex justify-between items-start gap-4 relative z-20 transition-all", isVerified && !isExhausted && passesCount > 0 ? "pt-2" : "")}>
         <div className="flex flex-col gap-1">
           <div className="font-black text-gray-900 dark:text-gray-100 mt-1">{card.name}</div>
           <div className={cn("font-bold backdrop-blur-md border px-2.5 py-0.5 rounded-lg text-xs w-fit shadow-sm bg-white/60 dark:bg-gray-800/60", category === 'International' ? "text-purple-600 dark:text-purple-400 border-purple-100 dark:border-purple-800/30" : "text-blue-600 dark:text-blue-400 border-blue-100 dark:border-blue-800/30")}>
@@ -138,7 +138,7 @@ export const LoungeTrackerItem: React.FC<LoungeTrackerItemProps> = ({
           )}
         </div>
       </div>
-      <div className="flex flex-col gap-2 relative z-20 mt-1">
+      <div inert={showVerifyDialog ? true : undefined} className="flex flex-col gap-2 relative z-20 mt-1">
         <div className="text-sm text-gray-500 font-medium leading-relaxed">
           {LOUNGE_ACCESS_INSTRUCTIONS[`${card.id}-${category}`] ?? parsed.description}
         </div>
@@ -200,7 +200,8 @@ export const LoungeTrackerItem: React.FC<LoungeTrackerItemProps> = ({
             exit={{ opacity: 0 }}
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(event) => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); dismissConfirmation(); } }}
-            role="group"
+            role="dialog"
+            aria-modal="true"
             aria-label={`Confirm milestone for ${card.name}`}
             className="absolute inset-0 z-30 bg-white/90 backdrop-blur-md flex flex-col items-center justify-center p-4 text-center rounded-2xl"
           >

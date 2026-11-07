@@ -52,12 +52,12 @@ it('keeps only the latest milestone confirmation open and clears it on close', (
   };
   const view = render(<LoungeTrackerModal {...props} isOpen />);
   fireEvent.click(screen.getByRole('button', { name: 'Confirm milestone for Imperia Platinum Debit' }));
-  expect(screen.getByRole('group', { name: 'Confirm milestone for Imperia Platinum Debit' })).toBeTruthy();
+  expect(screen.getByRole('dialog', { name: 'Confirm milestone for Imperia Platinum Debit' })).toBeTruthy();
   fireEvent.click(screen.getByRole('button', { name: 'Confirm milestone for Tata Neu Infinity' }));
-  expect(screen.queryByRole('group', { name: 'Confirm milestone for Imperia Platinum Debit' })).toBeNull();
-  expect(screen.getByRole('group', { name: 'Confirm milestone for Tata Neu Infinity' })).toBeTruthy();
+  expect(screen.queryByRole('dialog', { name: 'Confirm milestone for Imperia Platinum Debit' })).toBeNull();
+  expect(screen.getByRole('dialog', { name: 'Confirm milestone for Tata Neu Infinity' })).toBeTruthy();
   expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Not Yet' }));
   view.rerender(<LoungeTrackerModal {...props} isOpen={false} />);
   view.rerender(<LoungeTrackerModal {...props} isOpen />);
-  expect(screen.queryByRole('group', { name: /Confirm milestone for/ })).toBeNull();
+  expect(screen.queryByRole('dialog', { name: /Confirm milestone for/ })).toBeNull();
 });

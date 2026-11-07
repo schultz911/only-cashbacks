@@ -39,10 +39,14 @@ export function installOAuthRoutes(
     if (window !== rateWindow) { publicCalls.clear(); rateWindow = window; }
     const caller = req.ip ?? 'unknown';
     const calls = publicCalls.get(caller) ?? 0;
-    if (calls >= 120 || (calls === 0 && publicCalls.size >= limit)) {
+    if (calls >= 120) {
       res.setHeader('Retry-After', '60');
       res.status(429).json({ error: 'temporarily_unavailable' });
       return;
+    }
+    if (calls === 0 && publicCalls.size >= limit) {
+      const oldest = publicCalls.keys().next().value;
+      if (oldest !== undefined) publicCalls.delete(oldest);
     }
     publicCalls.set(caller, calls + 1);
     next();

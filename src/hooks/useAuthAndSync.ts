@@ -84,17 +84,13 @@ export function useAuthAndSync(latestStateRef: React.MutableRefObject<any>, skip
       themeColor = '#000000';
     }
     
-    let metaThemeColor = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement;
+    let metaThemeColor = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
     if (!metaThemeColor) {
       metaThemeColor = document.createElement('meta');
       metaThemeColor.name = "theme-color";
       document.head.appendChild(metaThemeColor);
     }
     metaThemeColor.content = themeColor;
-    
-    document.querySelectorAll('meta[name="theme-color"]').forEach(meta => {
-      if (meta !== metaThemeColor) meta.remove();
-    });
 
     setOwnedState(activeUidRef.current, 'oc_theme', theme);
   }, [theme]);

@@ -2,7 +2,18 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      function validUserData() {
+        let data = request.resource.data;
+        return request.auth != null && request.auth.uid == userId &&
+          data.userId == userId &&
+          (!('openRouterApiKey' in data) || (data.openRouterApiKey is string && data.openRouterApiKey.size() <= 256)) &&
+          (!('walletCards' in data) || (data.walletCards is list && data.walletCards.size() <= 100)) &&
+          (!('cashbackLogs' in data) || (data.cashbackLogs is list && data.cashbackLogs.size() <= 2000)) &&
+          (!('theme' in data) || (data.theme in ['light', 'dark', 'oled']));
+      }
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if validUserData();
+      allow delete: if request.auth != null && request.auth.uid == userId;
     }
     
     // Crashlytics style client error logging

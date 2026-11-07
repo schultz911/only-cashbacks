@@ -96,6 +96,12 @@ describe('Recommendation failure recovery', () => {
     await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Check' })); await Promise.resolve(); vi.advanceTimersByTime(1000); });
     expect(screen.getByText('Net Value')).toBeTruthy();
     expect(screen.queryByText('Unable to get a recommendation.')).toBeNull();
+
+    // Empty search clears error and shows toast
+    fireEvent.change(screen.getByRole('textbox', { name: 'Amount' }), { target: { value: '' } });
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Check' })); });
+    expect(screen.queryByText('Unable to get a recommendation.')).toBeNull();
+
     consoleError.mockRestore();
   });
 });

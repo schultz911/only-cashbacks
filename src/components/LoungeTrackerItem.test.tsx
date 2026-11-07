@@ -15,6 +15,7 @@ describe('lounge milestone confirmation', () => {
   it('moves focus into the confirmation and restores it on cancel and Escape', () => {
     render(<Example />);
     fireEvent.click(screen.getByRole('button', { name: /confirm milestone for/i }));
+    expect(screen.getByRole('dialog', { name: /confirm milestone for/i }).getAttribute('aria-modal')).toBe('true');
     expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Not Yet' }));
     fireEvent.click(screen.getByRole('button', { name: 'Not Yet' }));
     expect(document.activeElement).toBe(screen.getByRole('button', { name: /confirm milestone for/i }));

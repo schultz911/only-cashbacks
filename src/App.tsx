@@ -149,7 +149,7 @@ export default function App() {
   const [isLoungeOpen, setIsLoungeOpen] = useState(false);
   const [showOffersOverlay, setShowOffersOverlay] = useState(false);
   const [selectedCardForDetails, setSelectedCardForDetails] = useState<{ card: Card, source: string } | null>(null);
-  const walletCardHandlers = useMemo(() => Object.fromEntries(CARD_DATA.map(card => [card.id, () => setSelectedCardForDetails({ card, source: 'list' })])), []);
+  const handleSelectCard = useCallback((card: Card) => setSelectedCardForDetails({ card, source: 'list' }), []);
 
   const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' | 'info' } | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -543,6 +543,7 @@ export default function App() {
 
     if (!activeQuery.trim() || (isIntl ? parsedForeign <= 0 : parsedAmount <= 0)) {
       setRecommendation(null);
+      setRecommendationError(false);
       showToast(!activeQuery.trim() ? 'Enter a merchant or category.' : 'Enter an amount greater than zero.', 'error');
       return;
     }
@@ -1003,7 +1004,7 @@ export default function App() {
             >
               {activeWalletCards.map((card) => (
                 <div key={card.id} className={cn("snap-start shrink-0 w-[310px] sm:w-auto", selectedCardForDetails?.card.id === card.id ? "opacity-0 pointer-events-none" : "opacity-100")}>
-                  <CardItem layoutId={`card-list-${card.id}`} card={card} onClick={walletCardHandlers[card.id]} className="h-full shadow-sm hover:shadow-md transition-shadow cursor-pointer" isExhausted={normalizedExhaustedCards[card.id]} />
+                  <CardItem layoutId={`card-list-${card.id}`} card={card} onClick={() => handleSelectCard(card)} className="h-full shadow-sm hover:shadow-md transition-shadow cursor-pointer" isExhausted={normalizedExhaustedCards[card.id]} />
                 </div>
               ))}
             </motion.div>
