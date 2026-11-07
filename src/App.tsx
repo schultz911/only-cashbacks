@@ -752,7 +752,7 @@ export default function App() {
                             </span>
                           </div>
                           {recommendation.feesPaid > 0 && (
-                            <div className="absolute top-2 right-2 text-[8px] font-black text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/40 rounded-lg px-1.5 py-0.5 shadow-sm border border-red-100 dark:border-red-900/50 flex items-center justify-center uppercase tracking-tighter">
+                            <div className="text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/40 rounded-lg px-1.5 py-0.5 shadow-sm border border-red-100 dark:border-red-900/50 flex items-center justify-center uppercase tracking-tighter">
                               <div>Fee: ₹{recommendation.feesPaid.toFixed(2)}</div>
                             </div>
                           )}
@@ -763,7 +763,7 @@ export default function App() {
                             <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5 animate-pulse" />
                             <div className="space-y-0.5">
                               <span className="text-xs font-bold text-amber-800 dark:text-amber-400 block uppercase tracking-wide">P2P UPI Exclusion Warning</span>
-                              <span className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed font-semibold block">
+                              <span className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed font-medium block">
                                 Peer-to-peer personal transfers are excluded from standard credit card rewards. Use bank-account UPI (CRED, Amazon) or Kotak 811.
                               </span>
                             </div>
@@ -929,7 +929,7 @@ export default function App() {
 
             <div className="w-full flex flex-col gap-8 md:gap-6">
               {/* Lounge Access Tip */}
-              <section className="bg-gray-900/95 dark:bg-black/80 backdrop-blur-xl rounded-3xl p-6 py-6 md:py-8 text-white overflow-hidden relative shadow-lg min-h-[140px] flex flex-col sm:flex-row sm:items-center justify-between border border-gray-800 dark:border-gray-700/50 group">
+              <section className="bg-gray-800 dark:bg-gray-800 rounded-3xl p-6 py-6 md:py-8 text-white overflow-hidden relative shadow-lg min-h-[140px] flex flex-col sm:flex-row sm:items-center justify-between border border-gray-800 dark:border-gray-700/50 group">
                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-500/20 via-transparent to-transparent pointer-events-none opacity-50 group-hover:opacity-100 transition-opacity duration-500" />
                 <div className="space-y-3 relative z-10 sm:max-w-[70%]">
                   <div className="flex items-center gap-3">

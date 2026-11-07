@@ -196,7 +196,7 @@ export const Header: React.FC<HeaderProps> = React.memo(({
             </div>
           </div>
         ) : (
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <div className="hidden sm:flex flex-col items-end">
               <span className="text-sm font-bold text-gray-900 dark:text-gray-100">Guest</span>
               <div className="flex items-center gap-1 text-[10px] uppercase font-bold tracking-widest text-gray-600 dark:text-gray-400">
@@ -205,8 +205,16 @@ export const Header: React.FC<HeaderProps> = React.memo(({
               </div>
             </div>
             <button
+              type="button"
+              onClick={() => setTheme(prev => prev === 'light' ? 'dark' : prev === 'dark' ? 'oled' : 'light')}
+              aria-label={theme === 'light' ? 'Switch to Dark Mode' : theme === 'dark' ? 'Switch to OLED Mode' : 'Switch to Light Mode'}
+              className="w-10 h-10 rounded-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            >
+              {theme === 'light' ? <Sun className="w-5 h-5 text-amber-500" /> : <Moon className={cn('w-5 h-5 text-amber-500', theme === 'oled' && 'fill-amber-500')} />}
+            </button>
+            <button
               onClick={handleLogin}
-              className="flex items-center gap-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-full font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
+              className="flex items-center gap-2 whitespace-nowrap bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-full font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
@@ -219,6 +227,12 @@ export const Header: React.FC<HeaderProps> = React.memo(({
           </div>
         )}
       </div>
+      {user && !isAuthLoading && (
+        <div className="sm:hidden max-w-6xl mx-auto mt-2 flex items-center justify-end gap-2 text-xs text-gray-700 dark:text-gray-300" role="status">
+          <span>{isSyncPaused ? 'Sync paused' : isSyncing ? 'Syncing…' : syncError ? 'Sync failed' : isDirty ? 'Pending save' : 'Synced'}</span>
+          {syncError && !isSyncPaused && <button type="button" onClick={() => saveData()} disabled={isSyncing} className="font-semibold text-blue-700 dark:text-blue-300 underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">Retry sync</button>}
+        </div>
+      )}
     </header>
   );
 });

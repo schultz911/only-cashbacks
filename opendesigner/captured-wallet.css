@@ -1,0 +1,36 @@
+/* Captured from the incumbent wallet; opt-in reference, not app CSS. */
+:root {
+  --wallet-page: #f5f5f7;
+  --wallet-surface: #ffffff;
+  --wallet-surface-muted: #f9fafb;
+  --wallet-text: #1d1d1f;
+  --wallet-text-secondary: #4b5563;
+  --wallet-border: #e5e7eb;
+}
+html.dark {
+  --wallet-page: #0f172a;
+  --wallet-surface: #1e293b;
+  --wallet-surface-muted: #334155;
+  --wallet-text: #f8fafc;
+  --wallet-text-secondary: #94a3b8;
+  --wallet-border: #334155;
+}
+html.oled {
+  --wallet-page: #000000;
+  --wallet-surface: #09090b;
+  --wallet-surface-muted: #18181b;
+  --wallet-text: #f8fafc;
+  --wallet-text-secondary: #a1a1aa;
+  --wallet-border: #27272a;
+}
+:root {
+  --wallet-action: #006bb3;
+  --wallet-action-selected: #2563eb;
+  --wallet-focus: #3b82f6;
+  --wallet-on-action: #ffffff;
+  --wallet-font: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --wallet-radius-control: 12px;
+  --wallet-radius-field: 16px;
+  --wallet-radius-detail-dialog: 24px;
+  --wallet-radius-utility: 9999px;
+}

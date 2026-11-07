@@ -78,22 +78,32 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
             type="text"
             id="merchant-search"
             aria-label="Search merchant, category, or item"
+            role="combobox"
+            aria-autocomplete="list"
+            aria-expanded={showSuggestions && suggestions.length > 0}
+            aria-controls="merchant-suggestions"
+            aria-activedescendant={showSuggestions && focusedSuggestionIndex >= 0 && focusedSuggestionIndex < suggestions.length ? `merchant-suggestion-${focusedSuggestionIndex}` : undefined}
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
+              setFocusedSuggestionIndex(-1);
               setShowSuggestions(true);
             }}
             onFocus={() => setShowSuggestions(true)}
             onKeyDown={(e) => {
               if (!showSuggestions || suggestions.length === 0) return;
-              if (e.key === 'ArrowDown') {
+              if (e.key === 'Escape') {
+                e.preventDefault();
+                setShowSuggestions(false);
+                setFocusedSuggestionIndex(-1);
+              } else if (e.key === 'ArrowDown') {
                 e.preventDefault();
                 setFocusedSuggestionIndex(prev => (prev < suggestions.length - 1 ? prev + 1 : prev));
               } else if (e.key === 'ArrowUp') {
                 e.preventDefault();
                 setFocusedSuggestionIndex(prev => (prev > 0 ? prev - 1 : -1));
               } else if (e.key === 'Enter') {
-                if (focusedSuggestionIndex >= 0) {
+                if (focusedSuggestionIndex >= 0 && focusedSuggestionIndex < suggestions.length) {
                   e.preventDefault();
                   setQuery(suggestions[focusedSuggestionIndex]);
                   setShowSuggestions(false);
@@ -112,7 +122,7 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
               aria-label="Clear search"
               title="Clear search"
               onClick={() => { setQuery(''); setShowSuggestions(false); }}
-              className="absolute right-4 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 bg-gray-100 dark:bg-gray-700 rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
+              className="absolute right-1 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center text-gray-400 hover:text-gray-600 bg-gray-100 dark:bg-gray-700 rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
             >
               <X className="w-4 h-4" />
             </button>
@@ -122,6 +132,8 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
           <AnimatePresence>
             {showSuggestions && suggestions.length > 0 && (
               <motion.div
+                id="merchant-suggestions"
+                role="listbox"
                 initial={{ opacity: 0, y: -10, scale: 0.98 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -10, scale: 0.98 }}
@@ -131,10 +143,15 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
                 {suggestions.map((s, idx) => (
                   <button
                     key={idx}
+                    id={`merchant-suggestion-${idx}`}
+                    role="option"
+                    aria-selected={focusedSuggestionIndex === idx}
+                    tabIndex={-1}
                     type="button"
                     onClick={() => {
                       setQuery(s);
                       setShowSuggestions(false);
+                      setFocusedSuggestionIndex(-1);
                     }}
                     className={cn(
                       "w-full px-5 py-3 text-left flex items-center gap-3 transition-colors text-gray-700 dark:text-gray-200 font-medium border-b border-gray-50 dark:border-gray-700/50 last:border-0",
@@ -182,6 +199,7 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
           <motion.button
             whileTap={{ scale: 0.95 }}
             disabled={loading}
+            aria-label={loading ? "Checking recommendation" : "Check"}
             className={cn(
               "absolute right-2 top-1/2 -translate-y-1/2 text-white rounded-xl px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-50 shadow flex items-center gap-1.5",
               isOffline ? "bg-amber-800 hover:bg-amber-900" : "bg-[#006bb3] hover:bg-blue-800"
@@ -190,6 +208,8 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : isOffline ? <><CloudOff className="w-4 h-4" /> Check</> : 'Check'}
           </motion.button>
         </div>
+
+        <span role="status" className="sr-only">{loading ? "Checking recommendation" : ""}</span>
 
         {isIntl && currencyError && (
           <div className="text-red-500 text-sm mt-1 ml-2">
@@ -272,6 +292,7 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
             </motion.button>
           )}
         </div>
+        <p className="text-xs text-gray-600 dark:text-gray-400">Online and International can be combined. Scan &amp; Pay is available for domestic in-store purchases.</p>
       </form>
 
       {/* Recent History Shortcuts */}

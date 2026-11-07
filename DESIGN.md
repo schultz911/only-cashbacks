@@ -6,7 +6,7 @@
 
 PRODUCT.md owns product truth. This document captures the existing wallet interface for Indian cardholders choosing a card before purchase. The main surface supports completing a task. Preserve reward rules, content, account isolation, offline behavior, optional BYOK and Firebase protections.
 
-The source UI and `opendesigner/references/captured-values.json` own captured values. `opendesigner/build/css/captured-wallet.css` exposes these values as reusable CSS variables. It is opt-in. The app currently uses Tailwind utilities and CSS overrides.
+The source UI and `opendesigner/references/captured-values.json` own captured values. `opendesigner/captured-wallet.css` exposes these values as reusable CSS variables. It is opt-in. The app currently uses Tailwind utilities and CSS overrides.
 
 OpenDesigner also generated a foundation library in `opendesigner/tokens/`, CSS and Tailwind exports, and `opendesigner/overview.html`. Unmeasured values in that library are defaults. Its generated color ramps, motion and component recipes require review before adoption. Its light/dark themes do not model the app's OLED theme. Use captured-wallet.css for that theme.
 
@@ -57,6 +57,11 @@ Keep the existing shadow hierarchy, subtle field shadows, stronger menus and ove
 
 ## Components and states
 
+Source review on 2026-11-07 confirms the wallet uses Tailwind utilities and theme overrides rather than the generated foundation tokens. The header cycles light → dark → OLED. The purchase-mode strip shows Online and International; Scan & Pay appears when neither is active, and In-Store appears when Online is active without International. Selectable modes expose pressed state where implemented. These are observations, not new interaction requirements.
+
+Recommendation results include net value and alternatives; the wallet provides card details, savings, lounge tracking and reminders. Card-specific artwork and benefit colors come from card data. Dialog styles vary: card details use a dark 24 px-radius surface, while other dialogs use light or theme-dependent surfaces. Do not assume a single dialog recipe covers them all.
+
+
 - SearchSection owns labeled merchant and amount inputs, Check, purchase-mode selections, suggestions and recent searches. Keep loading, offline and validation states.
 - CardItem owns issuer artwork, network mark, benefit summary and exhaustion indication. Preserve card identity and keyboard entry points.
 - Card details own billing controls, reward usage and Accelerated Limit Reached. The toggle must retain its off state through cloud synchronization.
@@ -75,12 +80,12 @@ The app already has a global reduced-motion CSS rule. Motion components need a s
 
 The current guest wallet was visually inspected at 1706 by 890. Computed styles confirmed the font, control sizes, corners and action colors. Source inspection covered light/dark/OLED overrides and shared components. Phone layouts, signed-in screens, every overlay and full keyboard interaction remain unverified in this capture.
 
-OpenDesigner validation passed with no errors or warnings across its generated token library. That result covers the generated library, not all existing UI combinations. No comparison against three shipped products was performed.
+On 2026-11-07, OpenDesigner validation passed with no errors or warnings across its generated token library (five advisory notes). Its source review reported 281 hard-coded values and 142 standard findings; these are automated leads, not confirmed defects. The generated tokens are not used by the app, so a token migration requires separate review. That result covers the generated library, not all existing UI combinations. No comparison against three shipped products was performed.
 
 Keep voice and brand strategy open as recorded in PRODUCT.md. Treat potential accessibility issues in opendesigner/AUDIT.md as review items. New design directions and application-wide migration require a separate scope decision.
 
 ## Maintenance
 
-Use opendesigner-extend for changes. Read PRODUCT.md, this document, the captured values and the decision log first. Preserve these captured roles when rebuilding. The engine can regenerate root documents, so retain PRODUCT.md and this captured record before running build. Record newly adopted values with their source and approval.
+Use opendesigner-extend for changes. Read PRODUCT.md, this document, the captured values and the decision log first. Preserve these captured roles when rebuilding. The engine can regenerate root documents and create .hand-edited backups; preserve PRODUCT.md and this captured record when running build. Generated build/ exports are ignored by Git; the captured CSS reference is tracked outside that directory. Record newly adopted values with their source and approval.
 
 <!-- /od:keep -->

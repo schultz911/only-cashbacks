@@ -222,6 +222,6 @@
 ## Design system
 
 - Before UI or styling changes, read `PRODUCT.md` and `DESIGN.md`. Product truth and the captured incumbent UI guide the work.
-- Use `opendesigner/references/captured-values.json` and `opendesigner/build/css/captured-wallet.css` for captured roles, including light, dark and OLED themes. Generated foundations in `opendesigner/tokens/` contain labeled defaults that require review before adoption.
+- Use `opendesigner/references/captured-values.json` and `opendesigner/captured-wallet.css` for captured roles, including light, dark and OLED themes. Generated foundations in `opendesigner/tokens/` contain labeled defaults that require review before adoption.
 - For system changes, use `opendesigner-extend` and read `opendesigner/PROTOCOL.md`, `opendesigner/decisions.md` and `opendesigner/RULES.md` when present. Preserve the confirmed product record and captured design guidance when regenerating files.
 - Review affected screens at desktop and phone sizes, including themes, keyboard focus and reduced motion. Record verification gaps alongside the result. The UI capture does not establish complete accessibility compliance.

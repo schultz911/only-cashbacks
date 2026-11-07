@@ -137,8 +137,8 @@ export function WalletManagerModal({ isOpen, onClose, walletCards, setWalletCard
               </div>
             </div>
             <div className="p-5 sm:px-6 border-t border-gray-200/70 dark:border-gray-800 bg-white/70 dark:bg-gray-900 shrink-0">
-              <p className="text-xs text-gray-500 dark:text-gray-400 text-center mb-3">Your selection personalizes your recommendations.</p>
-              <button onClick={onClose} className="w-full py-3.5 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold text-sm hover:bg-black dark:hover:bg-gray-100 transition-colors shadow-sm focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none">Save &amp; Close</button>
+              <p className="text-xs text-gray-500 dark:text-gray-400 text-center mb-3">Changes apply as you select cards.</p>
+              <button onClick={onClose} className="w-full py-3.5 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold text-sm hover:bg-black dark:hover:bg-gray-100 transition-colors shadow-sm focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none">Done</button>
             </div>
           </motion.div>
         </motion.div>

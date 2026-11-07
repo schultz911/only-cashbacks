@@ -428,3 +428,7 @@ Append-only, ADR-style (spec 7.9): one entry per decision, newest last. A later 
 ## Preview accessibility fixes · 2026-11-06
 
 Owner requested fixes to the review findings. Existing specimen inputs now use the captured secondary-text color for placeholders with full opacity. Existing buttons use the generated size.target.touch value for minimum width and height. These are specimen rules. Captured application measurements remain historical evidence.
+
+## Incumbent system refresh · 2026-11-07
+
+Owner requested updating the design system based on the current implementation. Source review confirmed the previously captured core palette and layout; no visual direction or application behavior was changed. The captured CSS reference is now tracked at `opendesigner/captured-wallet.css` because the generated build directory is ignored. Documented current mode controls, recommendation surfaces and dialog variation in DESIGN.md. Generated foundation values remain provisional.
