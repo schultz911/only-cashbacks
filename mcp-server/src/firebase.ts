@@ -96,20 +96,6 @@ export async function getUserData(uid: string): Promise<UserData | null> {
   }
 }
 
-/**
- * Look up a user's UID by their email address.
- * Useful for the authenticate flow where the user provides their email.
- */
-export async function getUserByEmail(email: string): Promise<UserRecord | null> {
-  ensureInitialized();
-  try {
-    return await getAuth().getUserByEmail(email);
-  } catch {
-    return null;
-  }
-}
-
-
 const walletIdentityChecks = new Map<string, { expiresAt: number; result: Promise<UserRecord>; pending: boolean }>();
 
 export async function checkWalletIdentity(identity: { uid: string; auth_time: number }, fresh = false) {

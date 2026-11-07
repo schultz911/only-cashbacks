@@ -80,13 +80,14 @@ export const Header: React.FC<HeaderProps> = React.memo(({
               <div className="relative group flex items-center">
                 <button 
                   aria-label="Open API settings" 
+                  aria-describedby="api-warning-tip"
                   onClick={() => { setTempApiKey(openRouterApiKey); setIsApiModalOpen(true); }} 
-                  className="flex items-center justify-center bg-amber-100 text-amber-700 p-2 rounded-full hover:bg-amber-200 transition-colors shadow-sm"
+                  className="flex items-center justify-center bg-amber-100 text-amber-700 min-h-11 min-w-11 p-2 rounded-full hover:bg-amber-200 transition-colors shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                 >
                   <AlertCircle className="w-5 h-5" />
                 </button>
-                <div className="absolute top-full right-0 mt-2 w-max max-w-[200px] bg-gray-900 border border-gray-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-xl text-center">
-                  API not set. Live verification is unavailable. Using local database. Click to set.
+                <div id="api-warning-tip" role="tooltip" className="absolute top-full right-0 mt-2 w-max max-w-[200px] bg-gray-900 border border-gray-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-xl text-center">
+                  API key not set. Using local database. Select to configure OpenRouter.
                 </div>
               </div>
             )}
@@ -96,8 +97,9 @@ export const Header: React.FC<HeaderProps> = React.memo(({
               <button
                 onClick={() => !isSyncing && saveData()}
                 disabled={isSyncing}
+                aria-label={syncError ? "Sync failed, try again now" : isDirty ? "Save pending changes to cloud" : "Cloud data is synced"}
                 className={cn(
-                  "flex items-center gap-1 text-[10px] uppercase font-bold tracking-widest transition-all hover:opacity-80 disabled:opacity-50",
+                  "flex items-center gap-1 text-[10px] uppercase font-bold tracking-widest transition-all hover:opacity-80 disabled:opacity-50 rounded px-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
                   syncError ? "text-amber-600" : isDirty ? "text-blue-600" : "text-green-600"
                 )}
               >

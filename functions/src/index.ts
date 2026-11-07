@@ -62,7 +62,7 @@ Output strictly a JSON object matching this TypeScript interface:
           "X-Title": "Only Cashbacks",
         },
         body: JSON.stringify({
-          model: "anthropic/claude-haiku-5.5",
+          model: "anthropic/claude-3.5-haiku",
           temperature: 0,
           response_format: { type: "json_object" },
           messages: [

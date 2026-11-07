@@ -89,8 +89,17 @@ export function WalletManagerModal({ isOpen, onClose, walletCards, setWalletCard
               </div>
               <div className="relative">
                 <Search className="absolute left-3.5 top-3.5 w-4 h-4 text-gray-400 pointer-events-none" />
-                <input aria-label="Search cards" placeholder="Search by card, bank, or network" value={search} onChange={e => setSearch(e.target.value)} className="w-full rounded-xl bg-white dark:bg-gray-800/70 border border-gray-200 dark:border-gray-700 py-3 pl-10 pr-10 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
-                {search && <button aria-label="Clear card search" onClick={() => setSearch('')} className="absolute right-2 top-2 p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"><X className="w-4 h-4" /></button>}
+                <input aria-label="Search cards" placeholder="Search by card, bank, or network" value={search} onChange={e => setSearch(e.target.value)} className="w-full rounded-xl bg-white dark:bg-gray-800/70 border border-gray-200 dark:border-gray-700 py-3 pl-10 pr-12 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+                {search && (
+                  <button
+                    type="button"
+                    aria-label="Clear card search"
+                    onClick={() => setSearch('')}
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 min-h-11 min-w-11 flex items-center justify-center p-2 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
               </div>
               <div className="flex justify-between items-center mt-4 text-xs font-medium">
                 <span className="text-gray-500 dark:text-gray-400">{search ? `${visibleCards.length} matching cards` : 'Available cards'}</span>

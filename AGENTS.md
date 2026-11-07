@@ -1,200 +1,178 @@
 # STRICTIONS, GUARDRAILS & CORE CONSTRAINTS
 
-- Pure-Functionality Preservation: Do not alter core business logic, API signatures, edge-case handling, or database schemas. Every optimization must maintain identical functionality.
-- No Refactoring for "Cleanliness": Avoid aesthetic refactoring (e.g., changing variable names, reorganizing folder structures) unless it directly yields measurable performance dividends.
-- Deterministic Outcomes: The output code must pass identical unit, integration, and regression tests.
-- Firebase Protections: Under no circumstances suggest the removal, alteration, or optimization of code blocks, configuration files, or variables explicitly marked or structured for use by Firebase Functions.
-- No "Any" Stripping: Do not recommend or force the removal or refactoring of TypeScript any types simply for strict compliance unless it directly resolves a critical, reproducible memory or runtime leak.
+- Pure-Functionality Preservation: Keep core business logic, API signatures, edge-case handling, database schemas. Every optimization keep identical functionality.
+- No Refactoring for "Cleanliness": No aesthetic refactoring (variable names, folder structures) unless direct measurable performance dividend.
+- Deterministic Outcomes: Output code must pass identical unit, integration, regression tests.
+- Firebase Protections: Never remove, alter, or optimize code blocks, configuration files, or variables for Firebase Functions.
+- No "Any" Stripping: Never remove or refactor TypeScript any types for strict compliance unless resolving critical, reproducible memory or runtime leak.
 
 ## Discovered Optimizations
 
-- (2026-11-05 PWA restoration) Workbox navigation exclusions must match query strings to prevent OAuth aliases from receiving the app shell; uncached chart imports also required a local failure boundary to keep savings controls available offline.
-
-- (2026-11-05 readiness sweep) Account switching can carry a previous user’s cached BYOK key and savings into a new account; the global offline queue can also merge records across accounts. Both paths reproduced with synthetic users.
-- (2026-11-05 readiness sweep) Persistent asynchronous save failure caused 11 attempts in 12 simulated seconds without new edits.
-- (2026-11-05 readiness sweep) The savings chart loads on initial render even when the dashboard is closed; a chart-only prototype reduced initial JavaScript by 16.96% gzip-equivalent.
-- (2026-11-05 readiness sweep, separate product decision) The Railway service-worker removal route unregisters the worker, preventing retained offline PWA caching in the local reproduction.
-
-- (2026-10-25 sweep, Phase 1) Cloud hydration clears its suppression flag after 100 ms, but the 500 ms wallet persistence timer marks that cloud data dirty again; controlled reproduction: 8 writes in 12 seconds without user edits. Distinct from the already-implemented Phase 6 storage debounce.
-- (2026-10-25 sweep, Phase 2) Streamable HTTP MCP sessions remain referenced without idle expiry after clients abandon them; 1,000 local sessions retained 72.7 MB, with explicit cleanup reclaiming 70.4 MB.
-
-- (Phase 8) `src/services/gemini.ts:167` Iterating over EXHAUSTIVE_MERCHANT_MAPPINGS with regex `.test()` sequentially.
-- (Phase 8) `src/lib/recommendation.ts:699` Calling `DEFAULT_EXCLUSIONS.find` dynamically during recommendation calculation.
-- (Phase 8) `server.ts:28` Content Security Policy uses 'unsafe-inline' for script-src and style-src.
+- (2026-11-05 PWA restoration) Workbox navigation exclusions match query strings; prevent OAuth aliases receiving app shell. Uncached chart imports need local failure boundary for offline savings controls.
+- (2026-11-05 readiness sweep) Account switch can carry cached BYOK key and savings into new account; global offline queue can merge records across accounts. Both reproduced.
+- (2026-11-05 readiness sweep) Persistent async save failure caused 11 attempts in 12s without new edits.
+- (2026-11-05 readiness sweep) Savings chart loaded on initial render when dashboard closed; chart-only prototype cut initial JS 16.96% gzip-equivalent.
+- (2026-11-05 readiness sweep) Railway service-worker removal route unregisters worker, preventing retained offline PWA caching.
+- (2026-10-25 sweep, Phase 1) Cloud hydration cleared suppression flag after 100ms; 500ms wallet persistence timer marked cloud data dirty again (8 writes in 12s idle). Distinct from Phase 6 storage debounce.
+- (2026-10-25 sweep, Phase 2) Streamable HTTP MCP sessions retained without idle expiry after abandonment; 1,000 sessions retained 72.7MB, explicit cleanup freed 70.4MB.
+- (Phase 8) `src/services/gemini.ts:167` Sequential regex `.test()` over EXHAUSTIVE_MERCHANT_MAPPINGS.
+- (Phase 8) `src/lib/recommendation.ts:699` Calling `DEFAULT_EXCLUSIONS.find` dynamically in recommendation loop.
+- (Phase 8) `server.ts:28` CSP uses 'unsafe-inline' for script-src and style-src.
 - (Phase 8) `src/App.tsx:455` Catching `error` as `any` in error handler.
 - (Phase 8) `src/App.tsx:200` Catching `error` as `any` in catch block.
 - (Phase 8) `src/lib/recommendation.ts:459` Calling `card.benefits.find` inside `calculateCardRecommendation`.
-- (Phase 7) `src/components/ErrorBoundary.tsx:1` React import is declared but never read.
-- (Phase 7) `src/components/DashboardModal.tsx:34` Calling `map.get` immediately followed by `map.set` inside a loop can be optimized by storing the get result.
-- (Phase 7) `src/hooks/usePushNotifications.ts:50` Checking `localStorage.getItem` for each notification key inside a loop or timer can cause main thread blocking.
-- (Phase 7) `src/services/gemini.ts:168` Iterating over EXHAUSTIVE_MERCHANT_MAPPINGS and executing regex `.test()` sequentially is O(N).
-- (Phase 7) `src/lib/recommendation.ts:695` Using `.some()` and `.includes()` repeatedly for membership checks on arrays is O(N).
-- (Phase 7) `src/components/LoungeTrackerModal.tsx:77` Calling `card.benefits.find` inside a `reduce` loop during every render is O(N*M).
-- (Phase 7) `src/App.tsx:274` Calling `filter` multiple times on `CARD_DATA` inside a `useMemo` can be combined into a single pass.
-- (Phase 7) `src/App.tsx:81` Variable 'isDirtyRef' is destructured from context but never used in App.tsx.
-- (Phase 7) `src/components/DashboardModal.tsx:155` Parameter 'entry' is defined in the map function but only 'index' is used.
-- (Phase 7) `src/App.tsx:540` Variable 'activeAmountRaw' is calculated but never used.
-- (Phase 7) `src/lib/recommendation.ts:12` Constant 'DINING_PLATFORMS' is declared but never used in the recommendation logic.
-- (Phase 7) `src/components/BillReminders.tsx:1` React is imported but not used.
-- (Phase 7) `src/App.tsx:61` The state setter 'setNeedRefresh' is destructured but never used.
-- (Phase 7) `src/components/BillDateSelector.tsx:1` React is imported but not used, causing a linter/TypeScript warning.
-- (Phase 7) `server.ts:20` Express 'req' parameter is declared but never read.
-- (Phase 7) `src/lib/recommendation.ts:834` Using nested `.some()` loops with `.includes()` for category matching is O(N^2) or worse.
-- (Phase 7) `src/lib/recommendation.ts:864` Mapping over cardsToEvaluate calls evaluateCard for each card sequentially, performing duplicate computations.
-- (Phase 6) `.env.example` and `.env` contain dead environment variables: `OPENROUTER_MODEL`, `APP_URL`, `URL`, `GEMINI_API_KEY`.
-- (Phase 6) Root directory contains an orphan `metadata.json` declaring unused geolocation capabilities.
+- (Phase 7) `src/components/ErrorBoundary.tsx:1` Unread React import.
+- (Phase 7) `src/components/DashboardModal.tsx:34` Redundant `map.get` before `map.set` in loop.
+- (Phase 7) `src/hooks/usePushNotifications.ts:50` `localStorage.getItem` per key in loop blocks main thread.
+- (Phase 7) `src/services/gemini.ts:168` Sequential regex `.test()` is O(N).
+- (Phase 7) `src/lib/recommendation.ts:695` Repeated `.some()` and `.includes()` array checks are O(N).
+- (Phase 7) `src/components/LoungeTrackerModal.tsx:77` `card.benefits.find` in render reduce loop is O(N*M).
+- (Phase 7) `src/App.tsx:274` Multiple `filter` calls on `CARD_DATA` in `useMemo`.
+- (Phase 7) `src/App.tsx:81` Unused `isDirtyRef` destructuring.
+- (Phase 7) `src/components/DashboardModal.tsx:155` Unused `entry` parameter in map.
+- (Phase 7) `src/App.tsx:540` Unused `activeAmountRaw`.
+- (Phase 7) `src/lib/recommendation.ts:12` Unused constant `DINING_PLATFORMS`.
+- (Phase 7) `src/components/BillReminders.tsx:1` Unused React import.
+- (Phase 7) `src/App.tsx:61` Unused `setNeedRefresh` destructuring.
+- (Phase 7) `src/components/BillDateSelector.tsx:1` Unused React import.
+- (Phase 7) `server.ts:20` Unread Express `req` parameter.
+- (Phase 7) `src/lib/recommendation.ts:834` Nested `.some()` with `.includes()` category matching is O(N^2).
+- (Phase 7) `src/lib/recommendation.ts:864` Sequential duplicate evaluateCard calls.
+- (Phase 6) `.env.example` and `.env` contain dead vars: `OPENROUTER_MODEL`, `APP_URL`, `URL`, `GEMINI_API_KEY`.
+- (Phase 6) Root directory contains orphan `metadata.json`.
 - (Phase 6) `package.json` contains unused devDependency `workbox-build`.
-- (Phase 6) `App.tsx` contains duplicate inline definitions of `mockRates` with stale 2024 exchange rates.
-- (Phase 6) `useWalletState.ts` performs 9 synchronous `localStorage.setItem` calls on every state change, blocking the main thread.
-- (Phase 6) `DashboardModal.tsx` recomputes `chartData` on every render using an O(N²) find-inside-reduce pattern.
-- (Phase 6) `gemini.ts` uses dynamic imports of `httpsCallable` and `functions` on every search call, adding microtask overhead.
-- (Phase 6) `ErrorBoundary.tsx` lacks a limit on error logging to the Firestore `clientErrors` collection, exposing the app to billing spikes.
-- (Phase 6) `vite.config.ts` includes `woff2` in `globPatterns` but no local font files exist in the project.
-- (Phase 5) `useAuthAndSync.ts` uses a naive offline queue strategy that drops logs if multiple transactions occur offline.
-- (Phase 5) `functions/src/index.ts` strictly requires a BYOK OpenRouter key, causing friction during onboarding.
-- (Phase 5) `DashboardModal.tsx` Recharts `PieChart` leaves idle animation frames active, causing memory bloat on mobile.
-- (Phase 4) `server.ts` is missing the `X-Permitted-Cross-Domain-Policies` security header.
-- (Phase 4) `gemini.ts` stores cached IDB entries indefinitely without an active eviction strategy, leading to unbounded storage bloat.
-- (Phase 4) `App.tsx` has a heavy, synchronous calculation loop inside a `useEffect` causing main thread hydration stutter.
-- (Phase 4) Dead local Express `/api/categorize` endpoint and `zod` dependency leftover from Phase 1.
-- (Phase 4) `App.tsx`'s test connection hitting deprecated local route instead of Firebase.
-- Orphan functions folder found, but user instructed to pivot and implement Firebase Functions instead.
+- (Phase 6) `App.tsx` contains duplicate inline `mockRates` maps with stale 2024 rates.
+- (Phase 6) `useWalletState.ts` performs 9 synchronous `localStorage.setItem` calls per state change.
+- (Phase 6) `DashboardModal.tsx` recomputes `chartData` on render with O(N^2) find-in-reduce.
+- (Phase 6) `gemini.ts` dynamic imports of `httpsCallable` and `functions` on every search call.
+- (Phase 6) `ErrorBoundary.tsx` lacks write limit to Firestore `clientErrors` collection.
+- (Phase 6) `vite.config.ts` includes `woff2` in `globPatterns` without local font files.
+- (Phase 5) `useAuthAndSync.ts` naive single-log queue drops logs on multiple offline transactions.
+- (Phase 5) `functions/src/index.ts` strictly requires BYOK OpenRouter key.
+- (Phase 5) `DashboardModal.tsx` Recharts `PieChart` leaves idle animations active on mobile.
+- (Phase 4) `server.ts` missing `X-Permitted-Cross-Domain-Policies` security header.
+- (Phase 4) `gemini.ts` unbounded IDB cache growth without eviction.
+- (Phase 4) `App.tsx` synchronous calculation in `useEffect` causes hydration stutter.
+- (Phase 4) Dead local Express `/api/categorize` endpoint and `zod` dependency.
+- (Phase 4) `App.tsx` test connection hits deprecated local route instead of Firebase.
+- Orphan functions folder found; user pivoted to implement Firebase Functions.
 - Dead code in firebase.ts identified.
 
 ## Previously Suggested
 
-- (2026-11-05 readiness plan, awaiting phase approval) Isolate account-local wallet/settings and queued edits by owner, retaining unowned legacy data for explicit recovery.
-- (2026-11-05 readiness plan, awaiting phase approval) Stop automatic retries for permanent save errors and back off transient failures, retaining dirty edits and manual retry.
-- (2026-11-05 readiness plan, awaiting phase approval) Defer the savings chart until displayed, preserving the dashboard shell and existing behavior.
-- (2026-11-05 readiness plan, separately considered) Restore offline PWA launch only after explicit approval and OAuth/cache regression checks.
-
-- (2026-10-25 sweep, Phase 1) Track local wallet/settings revisions at setter time; suppress tracking only during synchronous hydration, preserve edits across acknowledgements and account changes, and retain the 500 ms local persistence debounce.
-- (2026-10-25 sweep, Phase 2) Reclaim abandoned MCP sessions with a configurable 60-minute idle timeout, protect active requests/streams, close associated resources and preserve reconnection/account isolation. User approved the timeout policy, then explicitly approved all phases, push and deployment.
-
-- (Phase 8) Combining RegExp patterns in `src/services/gemini.ts`.
-- (Phase 8) Replacing `DEFAULT_EXCLUSIONS.find` with a pre-computed Set or Map in `src/lib/recommendation.ts`.
-- (Phase 8) Removing 'unsafe-inline' from script-src and style-src headers in `server.ts`.
-- (Phase 8) Refactoring `error: any` to `error: unknown` in `src/App.tsx:455`.
-- (Phase 8) Refactoring `error: any` to `error: unknown` in `src/App.tsx:200`.
-- (Phase 8) Indexing `card.benefits` to avoid `.find` in `src/lib/recommendation.ts:459`.
-- (Phase 7) Removal of unused React import from `src/components/ErrorBoundary.tsx`.
-- (Phase 7) Avoiding double map lookup in `src/components/DashboardModal.tsx`.
-- (Phase 7) Optimizing `localStorage` reads in `src/hooks/usePushNotifications.ts`.
-- (Phase 7) Combining RegExp patterns in `src/services/gemini.ts`.
-- (Phase 7) Converting array checks to Set lookups in `src/lib/recommendation.ts:695`.
-- (Phase 7) Optimizing `benefits.find` inside reduce in `src/components/LoungeTrackerModal.tsx`.
-- (Phase 7) Combining filters in `src/App.tsx:274`.
-- (Phase 7) Removing unused destructuring of `isDirtyRef` in `src/App.tsx`.
-- (Phase 7) Removing unused parameter `entry` in `src/components/DashboardModal.tsx`.
-- (Phase 7) Removing unused variable `activeAmountRaw` in `src/App.tsx`.
-- (Phase 7) Removing unused constant `DINING_PLATFORMS` in `src/lib/recommendation.ts`.
-- (Phase 7) Removing unused React import in `src/components/BillReminders.tsx`.
-- (Phase 7) Removing unused destructuring of `setNeedRefresh` in `src/App.tsx`.
-- (Phase 7) Removing unused React import in `src/components/BillDateSelector.tsx`.
-- (Phase 7) Prefixing/removing unused parameter `req` in `server.ts`.
-- (Phase 7) Precomputing intersections using Sets in `src/lib/recommendation.ts:834`.
-- (Phase 7) Hoisting evaluateCard computations in `src/lib/recommendation.ts:864`.
-- (Phase 6) Removal of dead environment variables (`OPENROUTER_MODEL`, `APP_URL`, `URL`) from `.env.example` and `.env`.
-- (Phase 6) Deletion of orphan root file `metadata.json`.
-- (Phase 6) Uninstalling unused `workbox-build` devDependency.
-- (Phase 6) Extraction of duplicate `mockRates` maps into a module-scoped `FALLBACK_EXCHANGE_RATES` constant in `App.tsx`.
-- (Phase 6) Debouncing `localStorage` writes in `useWalletState.ts` with a 500ms trailing debounce.
-- (Phase 6) Memoizing `chartData` and optimizing the aggregation logic to O(N) using a `Map` in `DashboardModal.tsx`.
-- (Phase 6) Statically importing `httpsCallable` and `functions` at the top of `gemini.ts`.
-- (Phase 6) Capping Firestore client error logging at 5 errors per session in `ErrorBoundary.tsx`.
-- (Phase 6) Removing `woff2` from PWA `globPatterns` in `vite.config.ts`.
-- (Phase 5) Robust offline queue logic replacing naive single-log queue in `useAuthAndSync.ts`.
-- (Phase 5) Server-side fallback API key in `functions/src/index.ts` to gracefully handle missing BYOK setup.
-- (Phase 5) Adding `isAnimationActive={false}` to `DashboardModal.tsx` to halt idle Recharts animations.
-- (Phase 4) Addition of `X-Permitted-Cross-Domain-Policies` to the local Express server.
-- (Phase 4) Implementation of an asynchronous `evictStaleCache` routine in `gemini.ts` to prune old IDB entries on idle.
-- (Phase 4) Deferring the massive string/regex calculation in `App.tsx` using a 100ms `setTimeout` to push it off the critical rendering path.
-- (Phase 4) Removal of `/api/categorize` endpoint, rate-limit cache, and `zod` schema from `server.ts`.
+- (2026-11-05 readiness plan) Isolate account-local wallet/settings and queued edits by owner; retain unowned legacy data.
+- (2026-11-05 readiness plan) Stop retries on permanent save errors; back off transient failures; retain dirty edits.
+- (2026-11-05 readiness plan) Defer savings chart until displayed; preserve dashboard shell.
+- (2026-11-05 readiness plan) Restore offline PWA launch after approval and regression checks.
+- (2026-10-25 sweep, Phase 1) Track local wallet/settings revisions at setter; suppress tracking during synchronous hydration; retain 500ms persistence debounce.
+- (2026-10-25 sweep, Phase 2) Reclaim abandoned MCP sessions with 60-min idle timeout; protect active requests; clean protocol/pairing resources.
+- (Phase 8) Combine RegExp patterns in `src/services/gemini.ts`.
+- (Phase 8) Replace `DEFAULT_EXCLUSIONS.find` with Set/Map in `src/lib/recommendation.ts`.
+- (Phase 8) Remove 'unsafe-inline' from script-src and style-src in `server.ts`.
+- (Phase 8) Refactor `error: any` to `error: unknown` in `src/App.tsx:455`.
+- (Phase 8) Refactor `error: any` to `error: unknown` in `src/App.tsx:200`.
+- (Phase 8) Index `card.benefits` in `src/lib/recommendation.ts:459`.
+- (Phase 7) Remove unused React import from `src/components/ErrorBoundary.tsx`.
+- (Phase 7) Avoid double map lookup in `src/components/DashboardModal.tsx`.
+- (Phase 7) Optimize `localStorage` reads in `src/hooks/usePushNotifications.ts`.
+- (Phase 7) Combine RegExp patterns in `src/services/gemini.ts`.
+- (Phase 7) Convert array checks to Set lookups in `src/lib/recommendation.ts:695`.
+- (Phase 7) Optimize `benefits.find` in reduce in `src/components/LoungeTrackerModal.tsx`.
+- (Phase 7) Combine filters in `src/App.tsx:274`.
+- (Phase 7) Remove unused destructuring of `isDirtyRef` in `src/App.tsx`.
+- (Phase 7) Remove unused parameter `entry` in `src/components/DashboardModal.tsx`.
+- (Phase 7) Remove unused variable `activeAmountRaw` in `src/App.tsx`.
+- (Phase 7) Remove unused constant `DINING_PLATFORMS` in `src/lib/recommendation.ts`.
+- (Phase 7) Remove unused React import in `src/components/BillReminders.tsx`.
+- (Phase 7) Remove unused destructuring of `setNeedRefresh` in `src/App.tsx`.
+- (Phase 7) Remove unused React import in `src/components/BillDateSelector.tsx`.
+- (Phase 7) Prefix/remove unused parameter `req` in `server.ts`.
+- (Phase 7) Precompute intersections using Sets in `src/lib/recommendation.ts:834`.
+- (Phase 7) Hoist evaluateCard computations in `src/lib/recommendation.ts:864`.
+- (Phase 6) Remove dead environment variables (`OPENROUTER_MODEL`, `APP_URL`, `URL`) from `.env.example` and `.env`.
+- (Phase 6) Delete orphan root file `metadata.json`.
+- (Phase 6) Uninstall unused `workbox-build` devDependency.
+- (Phase 6) Extract duplicate `mockRates` maps into module-scoped `FALLBACK_EXCHANGE_RATES` constant in `App.tsx`.
+- (Phase 6) Debounce `localStorage` writes in `useWalletState.ts` with 500ms trailing debounce.
+- (Phase 6) Memoize `chartData` and optimize aggregation to O(N) using `Map` in `DashboardModal.tsx`.
+- (Phase 6) Statically import `httpsCallable` and `functions` in `gemini.ts`.
+- (Phase 6) Cap Firestore client error logging at 5 errors per session in `ErrorBoundary.tsx`.
+- (Phase 6) Remove `woff2` from PWA `globPatterns` in `vite.config.ts`.
+- (Phase 5) Robust offline array queue in `useAuthAndSync.ts`.
+- (Phase 5) Server-side fallback API key in `functions/src/index.ts`.
+- (Phase 5) Set `isAnimationActive={false}` in `DashboardModal.tsx`.
+- (Phase 4) Add `X-Permitted-Cross-Domain-Policies` to Express server.
+- (Phase 4) Implement async `evictStaleCache` routine in `gemini.ts` using `idb-keyval`.
+- (Phase 4) Defer heavy calculation in `App.tsx` via 100ms `setTimeout`.
+- (Phase 4) Remove `/api/categorize` endpoint, rate-limit cache, and `zod` schema from `server.ts`.
 - (Phase 4) Uninstall `zod` from `package.json`.
-- (Phase 4) Migration of `handleTestConnection` in `App.tsx` to Firebase `httpsCallable`.
-- Deletion of functions/ directory.
-- Cleanup of unused getFunctions in src/firebase.ts.
+- (Phase 4) Migrate `handleTestConnection` in `App.tsx` to Firebase `httpsCallable`.
+- Delete functions/ directory.
+- Clean up unused getFunctions in src/firebase.ts.
 
 ## Approved and Implemented
 
-- (2026-11-05 readiness sweep, separately approved PWA enhancement) Restored generated service worker delivery and retained caches through sign-in; excluded protected paths including OAuth aliases and query strings from navigation fallback/runtime caching, migrated old named runtime caches, and contained unavailable-chart failures. Local Chromium tests stopped the server and verified offline launch, a local Swiggy recommendation, savings with both cached and uncached charts, protected-route exclusions, and app-first migration from two synthetic legacy workers. 244 tests, root/MCP TypeScript checks, frontend/PWA and standalone server builds passed. No real Google sign-in, real-account write, deployment, iOS test or arbitrary direct-to-sign-in legacy migration was performed. Existing users with a stale worker should open the wallet app online once before reconnecting.
-
-- (2026-11-05 readiness sweep, Phase 3) Deferred only the savings chart until the dashboard displays it; retained existing totals, controls, chart behavior and PWA policy. Fresh local browser comparison against Phase 2: initial JS gzip-equivalent 417,593 to 347,035 bytes (16.90% reduction); chart loaded and rendered on opening. Validated 241 tests, root and MCP TypeScript checks and production frontend/PWA build. No deployment or real-account test performed.
-
-- (2026-11-05 readiness sweep, Phase 2) Implemented permanent-error retry blocking and bounded exponential backoff for transient save failures (2, 4, 8, 16, 32, then 60 seconds), preserving dirty edits, manual retry, paused sync and account isolation. Controlled permanent-error test: one attempt in 12 simulated seconds instead of 11 (90.9% fewer). Validated 241 tests (5 new recovery cases), root and MCP TypeScript checks, and a production frontend/PWA build. No real-account write or deployment performed.
-
-- (2026-11-05 readiness sweep, Phase 1; supersedes earlier pending status) Implemented account-scoped wallet/settings and offline queues, preserved unowned legacy local data for manual recovery, protected pending edits on account switches and reloads, and cleared only acknowledged queue entries. Validated 236 tests (10 new ownership/race regressions), root and MCP TypeScript checks, and a production frontend/PWA build. Firebase Functions and cloud schema unchanged. No real-account write, deployment or real-device test performed. Legacy unowned backup has no in-app recovery control.
-
-- (2026-10-25 sweep, Phase 3 release) Pushed implementation commits 26c15e0 and 3410da3 to origin/main. Railway deployed code revision 3410da354b5a539816b5665c41c71de782b2c68e successfully: primary deployment 31677918-0772-43e8-b8ec-abb00bd70ece (secondary source deployment df8498d1-dbc6-4114-8573-4a0bd4e2230c also completed). Verified primary health/discovery HTTP 200, exact frontend bundle SHA-256 match to the tested build, MCP initialize/tools-list HTTP 200 with all four tools, invalid-token HTTP 401 with challenge, and session DELETE HTTP 200. 51 tests and all compilation/build checks passed. No real-account writes, one-hour production soak or new penetration test were performed; controlled tests establish the optimization results. Pre-existing local dist/index.html and dist/sw.js edits were excluded from commits.
-
-- (2026-10-25 sweep, Phase 2) Added configurable MCP_SESSION_IDLE_TIMEOUT_MINUTES (default 60), one shared unref cleanup timer, request/stream activity protection, protocol/server/pairing-code cleanup, and HTTP/process shutdown disposal. Preserved SDK close-handler chaining and existing OAuth/account isolation. Validation: 51 tests passed (7 new session tests plus 13 Phase 1 regressions); controlled 1,000-session idle-expiry probe reclaimed 77,771,960 of 79,959,448 bytes (97.3%); expired sessions return 404 and fresh initialization works. Timing used a controlled clock, not a production one-hour soak.
-
-- (2026-10-25 sweep, Phase 1) Implemented local-edit tracking for wallet, theme and BYOK settings; cloud hydration no longer schedules echo saves. Guarded delayed hydration, visibility refreshes and save acknowledgements against newer edits/account changes; merged offline logs remain pending for upload. Validation: 44 tests passed (13 new sync regressions); zero writes over 60 simulated idle seconds, including repeated snapshots, plus manual sync, offline/reconnect, paused sync, in-flight edits and deletion coverage. Root TypeScript and production frontend/PWA build passed. Firebase Functions, schemas and recommendation logic unchanged.
-
-- (Phase 9) Preconnected Google Fonts and preloaded stylesheet in `index.html` while removing render-blocking `@import` from `src/index.css` to eliminate the network waterfall and accelerate FCP.
-- (Phase 9) Added static `<link rel="manifest">` in `index.html` to guarantee automated PWA install prompt triggers across modern mobile viewports.
-- (Phase 8) None.
-- (Phase 7) None.
-- (Phase 6) Removed dead environment variables from `.env.example` and `.env`.
-- (Phase 6) Deleted the orphan root file `metadata.json`.
-- (Phase 6) Uninstalled unused `workbox-build` devDependency.
-- (Phase 6) Extracted duplicate `mockRates` maps into a module-scoped `FALLBACK_EXCHANGE_RATES` constant in `App.tsx`.
-- (Phase 6) Debounced `localStorage` writes in `useWalletState.ts` with a 500ms trailing debounce.
-- (Phase 6) Memoized `chartData` and optimized the aggregation logic to O(N) using a `Map` in `DashboardModal.tsx`.
-- (Phase 6) Statically imported `httpsCallable` and `functions` at the top of `gemini.ts`.
-- (Phase 6) Capped Firestore client error logging at 5 errors per session in `ErrorBoundary.tsx`.
+- (2026-11-05 readiness sweep, PWA enhancement) Restored service worker delivery and retained caches through sign-in; excluded protected paths and query strings from navigation fallback; migrated old caches; contained chart failures. Validated offline launch, Swiggy recommendation, and legacy worker migration. 244 tests passed.
+- (2026-11-05 readiness sweep, Phase 3) Deferred savings chart until displayed. Reduced initial JS gzip-equivalent 417,593 to 347,035 bytes (16.90% reduction). 241 tests passed.
+- (2026-11-05 readiness sweep, Phase 2) Implemented permanent-error retry blocking and exponential backoff for transient failures (2, 4, 8, 16, 32, 60s); preserved dirty edits, manual retry, and paused sync. Cut permanent-error attempts 90.9% (1 in 12s vs 11). 241 tests passed.
+- (2026-11-05 readiness sweep, Phase 1) Account-scoped wallet/settings and offline queues; preserved unowned legacy data; protected pending edits across switches. 236 tests passed.
+- (2026-10-25 sweep, Phase 3 release) Pushed commits 26c15e0 and 3410da3. Railway deployed 3410da354b5a539816b5665c41c71de782b2c68e. Verified health HTTP 200, frontend bundle SHA-256 match, MCP tools list HTTP 200, 401 challenge, session DELETE HTTP 200.
+- (2026-10-25 sweep, Phase 2) Added configurable `MCP_SESSION_IDLE_TIMEOUT_MINUTES` (default 60), shared unref cleanup timer, activity protection, and shutdown disposal. 1,000-session probe reclaimed 77.7MB of 79.9MB (97.3%). 51 tests passed.
+- (2026-10-25 sweep, Phase 1) Local-edit tracking for wallet, theme, BYOK; stopped hydration echo saves. 44 tests passed; zero writes across 60s idle.
+- (Phase 9) Preconnected Google Fonts, preloaded stylesheet in `index.html`, removed render-blocking `@import` from `src/index.css`.
+- (Phase 9) Added static `<link rel="manifest">` in `index.html`.
+- (Phase 6) Removed dead env vars from `.env.example` and `.env`.
+- (Phase 6) Deleted orphan `metadata.json`.
+- (Phase 6) Uninstalled unused `workbox-build`.
+- (Phase 6) Extracted duplicate `mockRates` maps into `FALLBACK_EXCHANGE_RATES` constant in `App.tsx`.
+- (Phase 6) Debounced `localStorage` writes in `useWalletState.ts` (500ms trailing).
+- (Phase 6) Memoized `chartData` to O(N) using `Map` in `DashboardModal.tsx`.
+- (Phase 6) Statically imported `httpsCallable` and `functions` in `gemini.ts`.
+- (Phase 6) Capped Firestore client error logging at 5 per session in `ErrorBoundary.tsx`.
 - (Phase 6) Removed `woff2` from PWA `globPatterns` in `vite.config.ts`.
-- (Phase 5) Implemented robust offline array queuing in `useAuthAndSync.ts` preventing offline data loss.
-- (Phase 5) Added `isAnimationActive={false}` to `DashboardModal.tsx` to eliminate mobile memory bloat.
-- (Phase 4) Added `X-Permitted-Cross-Domain-Policies: none` to `server.ts` to harden cross-domain security posture.
-- (Phase 4) Implemented `evictStaleCache` inside `gemini.ts` leveraging `idb-keyval` keys and timestamps.
-- (Phase 4) Deferred the heavy synchronous `useEffect` calculation in `App.tsx` reducing the First Contentful Paint block.
-- (Phase 4) Removed the dead `/api/categorize` endpoint, `rateLimiter`, and `MerchantInfoSchema` from `server.ts`.
+- (Phase 5) Implemented offline array queue in `useAuthAndSync.ts`.
+- (Phase 5) Added `isAnimationActive={false}` in `DashboardModal.tsx`.
+- (Phase 4) Added `X-Permitted-Cross-Domain-Policies: none` in `server.ts`.
+- (Phase 4) Implemented `evictStaleCache` in `gemini.ts` using `idb-keyval`.
+- (Phase 4) Deferred heavy synchronous `useEffect` calculation in `App.tsx`.
+- (Phase 4) Removed dead `/api/categorize` endpoint, `rateLimiter`, and schema from `server.ts`.
 - (Phase 4) Uninstalled `zod` from `package.json`.
-- (Phase 4) Migrated `handleTestConnection` in `App.tsx` to use Firebase Functions instead of local fetch.
-- Phase 1: Migrated gemini.ts to use Firebase Functions (httpsCallable(functions, 'categorize')) instead of local Express fetch API. (User pivoted from deletion).
+- (Phase 4) Migrated `handleTestConnection` in `App.tsx` to Firebase `httpsCallable`.
+- Phase 1: Migrated `gemini.ts` to Firebase Functions (`httpsCallable(functions, 'categorize')`).
 
 ## Denied or Not Implemented
 
-- (2026-11-05 readiness sweep, Phase 1) Account isolation explicitly approved; implementation and validation remain pending. No application code has been changed.
-
-- (2026-10-25 sweep, final implementation status) User explicitly approved all phases, pushing code and deployment, superseding the earlier per-phase approval wait. Both scoped optimizations are implemented and locally validated; no scoped optimization was rejected. The earlier pending Phase 2 note below records its prior status. Production deployment verification will be recorded after release.
-
-- (2026-10-25 sweep) No approved optimization rejected. Extra compression was excluded after live Brotli delivery was verified; micro-optimizations and cosmetic deletions failed the impact threshold. Historical decisions below remain in force. Phase 2 implementation/release validation is pending.
-
-- (Phase 8) Combining RegExp patterns in `src/services/gemini.ts` (Rejected: Previously rejected in Phase 7; reduces code readability and maintainability).
-- (Phase 8) Replacing `DEFAULT_EXCLUSIONS.find` with Set in `src/lib/recommendation.ts:699` (Rejected: Already hoisted out of card loop; Set lookups break substring matching).
-- (Phase 8) Removing 'unsafe-inline' from CSP in `server.ts:28` (Rejected: High operational risk of breaking Vite inline scripts and dynamic component styles without measurable performance gain).
-- (Phase 8) Refactoring `error: any` to `error: unknown` in `src/App.tsx:455` (Rejected: Violates 'No Any Stripping' constraint; cleanliness-only).
-- (Phase 8) Refactoring `error: any` to `error: unknown` in `src/App.tsx:200` (Rejected: Violates 'No Any Stripping' constraint; cleanliness-only).
-- (Phase 8) Indexing `card.benefits` in `src/lib/recommendation.ts:459` (Rejected: Micro-optimization on 2-5 element static arrays; indexing adds memory overhead).
-- (Phase 7) Removal of unused React import from `src/components/ErrorBoundary.tsx` (Rejected: low merit, aesthetic-only).
-- (Phase 7) Avoiding double map lookup in `src/components/DashboardModal.tsx` (Rejected: micro-optimization, negligible benefit).
-- (Phase 7) Optimizing `localStorage` reads in `src/hooks/usePushNotifications.ts` (Rejected: false positive, already outside loop).
-- (Phase 7) Combining RegExp patterns in `src/services/gemini.ts` (Rejected: would reduce code readability and maintainability).
-- (Phase 7) Converting array checks to Set lookups in `src/lib/recommendation.ts:695` (Rejected: Set has fails substring checking).
-- (Phase 7) Optimizing `benefits.find` inside reduce in `src/components/LoungeTrackerModal.tsx` (Rejected: already memoized via useMemo, tiny static dataset).
-- (Phase 7) Combining filters in `src/App.tsx:274` (Rejected: false positive, ternary evaluations evaluate only one filter).
-- (Phase 7) Removing unused destructuring of `isDirtyRef` in `src/App.tsx` (Rejected: cleanliness-only).
-- (Phase 7) Removing unused parameter `entry` in `src/components/DashboardModal.tsx` (Rejected: cleanliness-only).
-- (Phase 7) Removing unused variable `activeAmountRaw` in `src/App.tsx` (Rejected: cleanliness-only).
-- (Phase 7) Removing unused constant `DINING_PLATFORMS` in `src/lib/recommendation.ts` (Rejected: cleanliness-only).
-- (Phase 7) Removing unused React import in `src/components/BillReminders.tsx` (Rejected: cleanliness-only).
-- (Phase 7) Removing unused destructuring of `setNeedRefresh` in `src/App.tsx` (Rejected: cleanliness-only).
-- (Phase 7) Removing unused React import in `src/components/BillDateSelector.tsx` (Rejected: cleanliness-only).
-- (Phase 7) Prefixing/removing unused parameter `req` in `server.ts` (Rejected: cleanliness-only).
-- (Phase 7) Precomputing intersections using Sets in `src/lib/recommendation.ts:834` (Rejected: Set intersection breaks substring matching).
-- (Phase 7) Hoisting evaluateCard computations in `src/lib/recommendation.ts:864` (Rejected: false positive, duplicate computations already hoisted to ctx).
-- (Phase 6) None.
+- (Phase 8) Combine RegExp patterns in `src/services/gemini.ts` (Rejected: reduces readability).
+- (Phase 8) Replace `DEFAULT_EXCLUSIONS.find` with Set in `src/lib/recommendation.ts:699` (Rejected: breaks substring matching).
+- (Phase 8) Remove 'unsafe-inline' from CSP in `server.ts:28` (Rejected: operational risk of breaking Vite inline scripts).
+- (Phase 8) Refactor `error: any` to `error: unknown` in `src/App.tsx:455` (Rejected: violates 'No Any Stripping').
+- (Phase 8) Refactor `error: any` to `error: unknown` in `src/App.tsx:200` (Rejected: violates 'No Any Stripping').
+- (Phase 8) Index `card.benefits` in `src/lib/recommendation.ts:459` (Rejected: micro-optimization on 2-5 element static arrays).
+- (Phase 7) Remove unused React import from `src/components/ErrorBoundary.tsx` (Rejected: aesthetic-only).
+- (Phase 7) Avoid double map lookup in `src/components/DashboardModal.tsx` (Rejected: negligible benefit).
+- (Phase 7) Optimize `localStorage` reads in `src/hooks/usePushNotifications.ts` (Rejected: false positive).
+- (Phase 7) Combine RegExp patterns in `src/services/gemini.ts` (Rejected: reduces maintainability).
+- (Phase 7) Convert array checks to Set lookups in `src/lib/recommendation.ts:695` (Rejected: Set breaks substring checking).
+- (Phase 7) Optimize `benefits.find` in `src/components/LoungeTrackerModal.tsx` (Rejected: already memoized, tiny dataset).
+- (Phase 7) Combine filters in `src/App.tsx:274` (Rejected: false positive).
+- (Phase 7) Remove unused destructuring of `isDirtyRef` in `src/App.tsx` (Rejected: cleanliness-only).
+- (Phase 7) Remove unused parameter `entry` in `src/components/DashboardModal.tsx` (Rejected: cleanliness-only).
+- (Phase 7) Remove unused variable `activeAmountRaw` in `src/App.tsx` (Rejected: cleanliness-only).
+- (Phase 7) Remove unused constant `DINING_PLATFORMS` in `src/lib/recommendation.ts` (Rejected: cleanliness-only).
+- (Phase 7) Remove unused React import in `src/components/BillReminders.tsx` (Rejected: cleanliness-only).
+- (Phase 7) Remove unused destructuring of `setNeedRefresh` in `src/App.tsx` (Rejected: cleanliness-only).
+- (Phase 7) Remove unused React import in `src/components/BillDateSelector.tsx` (Rejected: cleanliness-only).
+- (Phase 7) Prefix/remove unused parameter `req` in `server.ts` (Rejected: cleanliness-only).
+- (Phase 7) Precompute intersections using Sets in `src/lib/recommendation.ts:834` (Rejected: breaks substring matching).
+- (Phase 7) Hoist evaluateCard computations in `src/lib/recommendation.ts:864` (Rejected: duplicate computations already hoisted).
 - (Phase 5) Graceful server-side fallback API key rejected to strictly enforce BYOK policy.
-- (Phase 4) None.
 - Phase 1: Deletion of functions/ directory rejected.
 - Phase 1: Cleanup of src/firebase.ts rejected.
 
 ## Discovered Optimizations (Phase 2)
 
-- localStorage quota loops freeze the main thread for UI.
-- Concurrent searches block input and lock up the UI.
+- localStorage quota loops freeze main thread.
+- Concurrent searches block input and lock UI.
 
 ## Previously Suggested (Phase 2)
 
@@ -203,25 +181,24 @@
 
 ## Approved and Implemented (Phase 2)
 
-- Migrated gemini.ts caching to idb-keyval to eliminate UI stutter.
-- Added AbortController to handleSearch in App.tsx to free up pending UX states and bandwidth.
+- Migrated `gemini.ts` caching to `idb-keyval` to eliminate UI stutter.
+- Added AbortController to `handleSearch` in `App.tsx` to cancel pending requests.
 
 ## Discovered Optimizations (Phase 3)
 
-- Unauthenticated crash telemetry was missing, violating visibility goals but securing the database.
+- Unauthenticated crash telemetry missing.
 
 ## Previously Suggested (Phase 3)
 
-- Analytics Integration in Error Boundary.
+- Analytics integration in Error Boundary.
 
 ## Approved and Implemented (Phase 3)
 
-- Imported Firebase Analytics and added logEvent('exception') inside ErrorBoundary to securely monitor all client crashes.
-
+- Imported Firebase Analytics and added `logEvent('exception')` inside `ErrorBoundary`.
 
 ## Design system
 
-- Before UI or styling changes, read `PRODUCT.md` and `DESIGN.md`. Product truth and the captured incumbent UI guide the work.
-- Use `opendesigner/references/captured-values.json` and `opendesigner/captured-wallet.css` for captured roles, including light, dark and OLED themes. Generated foundations in `opendesigner/tokens/` contain labeled defaults that require review before adoption.
-- For system changes, use `opendesigner-extend` and read `opendesigner/PROTOCOL.md`, `opendesigner/decisions.md` and `opendesigner/RULES.md` when present. Preserve the confirmed product record and captured design guidance when regenerating files.
-- Review affected screens at desktop and phone sizes, including themes, keyboard focus and reduced motion. Record verification gaps alongside the result. The UI capture does not establish complete accessibility compliance.
+- Before UI or styling changes, read `PRODUCT.md` and `DESIGN.md`.
+- Use `opendesigner/references/captured-values.json` and `opendesigner/captured-wallet.css` for captured roles.
+- For system changes, use `opendesigner-extend` and read `opendesigner/PROTOCOL.md`, `opendesigner/decisions.md` and `opendesigner/RULES.md`.
+- Review affected screens at desktop and phone sizes, including themes, keyboard focus and reduced motion.

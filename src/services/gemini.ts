@@ -224,7 +224,9 @@ export async function categorizeMerchant(merchantName: string, apiKey?: string):
         return cached.data;
       }
     }
-  } catch (e) { }
+  } catch (e) {
+    console.warn("Cached merchant read failed:", e);
+  }
 
   try {
     const categorize = httpsCallable(functions, 'categorize');
