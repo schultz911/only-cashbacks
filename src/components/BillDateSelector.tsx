@@ -55,7 +55,7 @@ export function BillDateSelector({ date, onChange }: BillDateSelectorProps) {
           e.preventDefault();
           stopAdjusting();
         }}
-        className="w-8 h-8 rounded-lg outline-none hover:bg-white/10 flex items-center justify-center text-white/70 hover:text-white transition-colors"
+        className="w-11 h-11 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 hover:bg-white/10 flex items-center justify-center text-white/70 hover:text-white transition-colors"
       >
         <ChevronLeft className="w-5 h-5" />
       </button>
@@ -83,7 +83,7 @@ export function BillDateSelector({ date, onChange }: BillDateSelectorProps) {
           e.preventDefault();
           stopAdjusting();
         }}
-        className="w-8 h-8 rounded-lg outline-none hover:bg-white/10 flex items-center justify-center text-white/70 hover:text-white transition-colors"
+        className="w-11 h-11 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 hover:bg-white/10 flex items-center justify-center text-white/70 hover:text-white transition-colors"
       >
         <ChevronRight className="w-5 h-5" />
       </button>

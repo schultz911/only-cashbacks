@@ -16,6 +16,7 @@ class ChartLoadBoundary extends React.Component<React.PropsWithChildren, { unava
 }
 
 import { indiaDate } from '../lib/billingDates';
+import { useDialogFocus } from '../hooks/useDialogFocus';
 
 interface Props {
   isOpen: boolean;
@@ -26,6 +27,7 @@ interface Props {
 }
 
 export function DashboardModal({ isOpen, onClose, logs, setLogs, onRemoveLogs }: Props) {
+  const dialogRef = useDialogFocus(isOpen, () => { setShowConfirm(false); onClose(); });
   const [showConfirm, setShowConfirm] = useState(false);
   const [viewMode, setViewMode] = useState<'category' | 'card'>('category');
 
@@ -86,17 +88,17 @@ export function DashboardModal({ isOpen, onClose, logs, setLogs, onRemoveLogs }:
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.95, y: 20 }}
             onClick={(e) => e.stopPropagation()}
+            ref={dialogRef}
+            tabIndex={-1}
             role="dialog"
             aria-modal="true"
             aria-label="My Savings"
-            onKeyDown={(e) => { if (e.key === 'Escape') handleClose(); }}
             className="bg-[#F5F5F7] dark:bg-gray-900 oled:bg-black/95 backdrop-blur-xl border border-white/60 dark:border-gray-800 rounded-3xl p-6 sm:p-7 max-w-lg w-full shadow-2xl flex flex-col items-center text-center relative max-h-[90dvh] overflow-y-auto"
           >
             <button
               onClick={handleClose}
-              autoFocus
                 aria-label="Close Savings Dashboard"
-              className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-500 dark:text-gray-400 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none z-10"
+              className="absolute top-4 right-4 w-11 h-11 rounded-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-500 dark:text-gray-400 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none z-10"
             >
               <X className="w-4 h-4" />
             </button>

@@ -29,6 +29,23 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const selectRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const [focusIndex, setFocusIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (isOpen && focusIndex !== null) selectRef.current?.querySelectorAll<HTMLElement>('[role=option]')[focusIndex]?.focus();
+  }, [isOpen, focusIndex]);
+
+  const close = () => { setIsOpen(false); setFocusIndex(null); triggerRef.current?.focus(); };
+  const onKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === 'Escape' && isOpen) { event.preventDefault(); event.stopPropagation(); close(); return; }
+    if (event.key === 'Tab') { setIsOpen(false); setFocusIndex(null); return; }
+    if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key) || !options.length) return;
+    event.preventDefault();
+    const selected = Math.max(0, options.findIndex(option => option.value === value));
+    setIsOpen(true);
+    setFocusIndex(current => event.key === 'Home' ? 0 : event.key === 'End' ? options.length - 1 : current === null ? selected : Math.max(0, Math.min(options.length - 1, current + (event.key === 'ArrowDown' ? 1 : -1))));
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -41,13 +58,14 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   }, []);
 
   return (
-    <div ref={selectRef} className={cn("relative", className)} style={{ zIndex: isOpen ? 50 : 10 }}>
+    <div ref={selectRef} onKeyDown={onKeyDown} className={cn("relative", className)} style={{ zIndex: isOpen ? 50 : 10 }}>
       <button
+        ref={triggerRef}
         type="button"
         aria-haspopup="listbox"
         aria-expanded={isOpen}
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full h-full flex items-center justify-between outline-none cursor-pointer gap-1 pl-3 bg-transparent text-gray-800 dark:text-gray-200"
+        onClick={() => { setIsOpen(!isOpen); setFocusIndex(null); }}
+        className="w-full h-full flex items-center justify-between focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-lg cursor-pointer gap-1 pl-3 bg-transparent text-gray-800 dark:text-gray-200"
       >
         <span className="truncate">{value ? options.find(o => o.value === value)?.label : placeholder}</span>
         <ChevronDown className={cn("w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform duration-200 shrink-0", isOpen && "rotate-180")} />
@@ -76,14 +94,14 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
                   role="option"
                   aria-selected={value === option.value}
                   className={cn(
-                    "w-full text-left px-3 py-2 flex items-center justify-between transition-all duration-200 rounded-xl text-sm",
+                    "w-full text-left px-3 py-2 flex items-center justify-between focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-all duration-200 rounded-xl text-sm",
                     value === option.value 
                       ? "bg-gradient-to-r from-blue-500 to-blue-600 shadow-sm text-white font-bold" 
                       : "text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-gray-600 dark:hover:text-white"
                   )}
                   onClick={() => {
                     onChange(option.value);
-                    setIsOpen(false);
+                    close();
                   }}
                 >
                   <span className="truncate pr-4">{option.label}</span>

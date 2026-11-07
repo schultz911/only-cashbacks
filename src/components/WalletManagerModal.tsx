@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, Check, Search, Wallet, CreditCard } from 'lucide-react';
 import { CARD_DATA } from '../data/cards';
 import { cn } from '../lib/utils';
+import { useDialogFocus } from '../hooks/useDialogFocus';
 
 const BANK_LOGOS: Record<string, string> = {
   SBI: '/logos/sbi.svg', HDFC: '/logos/hdfc.svg', HSBC: '/logos/hsbc.svg',
@@ -21,6 +22,7 @@ interface Props {
 }
 
 export function WalletManagerModal({ isOpen, onClose, walletCards, setWalletCards }: Props) {
+  const dialogRef = useDialogFocus(isOpen, onClose);
   const [search, setSearch] = useState('');
   const allCards = useMemo(() => CARD_DATA.filter(c => !c.isDummy), []);
   
@@ -66,10 +68,11 @@ export function WalletManagerModal({ isOpen, onClose, walletCards, setWalletCard
             exit={{ scale: 0.95, y: 100 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
             onClick={(e) => e.stopPropagation()}
+            ref={dialogRef}
+            tabIndex={-1}
             role="dialog"
             aria-modal="true"
             aria-labelledby="wallet-title"
-            onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}
             className="bg-[#F5F5F7] dark:bg-gray-900 rounded-t-[2rem] sm:rounded-3xl max-w-lg w-full shadow-2xl overflow-hidden flex flex-col h-[90dvh] sm:h-[min(760px,85dvh)] border border-white/60 dark:border-gray-800"
           >
             <div className="p-6 pb-4 border-b border-gray-200/70 dark:border-gray-800 shrink-0 bg-white/50 dark:bg-gray-900/80">
@@ -81,7 +84,7 @@ export function WalletManagerModal({ isOpen, onClose, walletCards, setWalletCard
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Choose the cards you own.</p>
                   </div>
                 </div>
-                <button onClick={onClose} autoFocus
+                <button onClick={onClose}
                 aria-label="Close Wallet Manager" className="p-2.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"><X className="w-4 h-4" /></button>
               </div>
               <div className="relative">

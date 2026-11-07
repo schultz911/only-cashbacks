@@ -19,6 +19,7 @@ import { CardRewardUsage } from './components/CardRewardUsage';
 import { dateInMonth, indiaDate, statementReminder, statementDay } from './lib/billingDates';
 import { recordRewardAllocations, removeRewardLogs } from './lib/rewardRules';
 import { useBillingDay } from './hooks/useBillingDay';
+import { useDialogFocus } from './hooks/useDialogFocus';
 
 const LoungeTrackerModal = lazy(() => import('./components/LoungeTrackerModal').then(module => ({ default: module.LoungeTrackerModal })));
 const WalletManagerModal = lazy(() => import('./components/WalletManagerModal').then(module => ({ default: module.WalletManagerModal })));
@@ -463,19 +464,6 @@ export default function App() {
 
 
   useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (showOffersOverlay) setShowOffersOverlay(false);
-        else if (selectedCardForDetails) setSelectedCardForDetails(null);
-        else if (isLoungeOpen) setIsLoungeOpen(false);
-        else if (isApiModalOpen) setIsApiModalOpen(false);
-      }
-    };
-    window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
-  }, [showOffersOverlay, selectedCardForDetails, isLoungeOpen, isApiModalOpen]);
-
-  useEffect(() => {
     if (history.length > 0) {
       const info = history[0];
       const parsedAmount = parseFloat(debouncedAmount) || 0;
@@ -591,6 +579,11 @@ export default function App() {
   };
 
   usePushNotifications(isDataLoaded, walletCards, cardBillDates, paidBills, getCycleForCard);
+
+  const cardDialogRef = useDialogFocus(!!selectedCardForDetails, () => setSelectedCardForDetails(null));
+  const offersDialogRef = useDialogFocus(showOffersOverlay, () => setShowOffersOverlay(false));
+  const apiDialogRef = useDialogFocus(isApiModalOpen, () => setIsApiModalOpen(false));
+  const deleteDialogRef = useDialogFocus(showDeleteConfirm, () => { setShowDeleteConfirm(false); setDeleteConfirmText(''); });
 
   return (
     <div className="min-h-screen bg-[#F5F5F7] text-[#1D1D1F] font-sans selection:bg-blue-100 pb-12 isolate relative z-0">
@@ -1061,6 +1054,8 @@ export default function App() {
                 backfaceVisibility: 'hidden',
                 transform: 'translateZ(0)'
               }}
+              ref={cardDialogRef}
+              tabIndex={-1}
               role="dialog"
               aria-modal="true"
               aria-label={`${selectedCardForDetails.card.name} rewards`}
@@ -1265,10 +1260,15 @@ export default function App() {
               exit={{ scale: 0.9, y: 40, opacity: 0 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
               onClick={(e) => e.stopPropagation()}
+              ref={offersDialogRef}
+              tabIndex={-1}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="offers-title"
               className="w-full max-w-lg bg-white dark:bg-gray-900 rounded-2xl overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-800 relative flex flex-col max-h-[85vh]"
             >
               <div className="p-6 flex items-center justify-between gap-4 border-b border-gray-200 dark:border-gray-700">
-                <h3 className="text-2xl font-semibold text-gray-900 dark:text-white">Card Offers</h3>
+                <h3 id="offers-title" className="text-2xl font-semibold text-gray-900 dark:text-white">Card Offers</h3>
                 <button aria-label="Close offers overlay" onClick={() => setShowOffersOverlay(false)} className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"><X className="w-5 h-5" /></button>
               </div>
               <div className="overflow-y-auto p-6 space-y-3">
@@ -1299,33 +1299,39 @@ export default function App() {
               animate={{ scale: 1 }}
               exit={{ scale: 0.95 }}
               transition={{ type: "spring", damping: 35, stiffness: 400 }}
-              className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl relative"
+              ref={apiDialogRef}
+              tabIndex={-1}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="api-title"
+              className="bg-white dark:bg-gray-900 dark:text-white rounded-3xl p-6 w-full max-w-md shadow-2xl relative max-h-[90dvh] overflow-y-auto"
             >
               <button aria-label="Close configure API key modal" onClick={() => setIsApiModalOpen(false)} className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500">
                 <X className="w-5 h-5" />
               </button>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Configure API Key</h2>
-              <p className="text-sm text-gray-500 mb-6 font-medium">
+              <h2 id="api-title" className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Configure API Key</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-6 font-medium">
                 Live verification requires an OpenRouter API key. Without it, the app relies on a local database.<br />
                 <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-700 underline underline-offset-2">Create a free OpenRouter API key here</a>.
               </p>
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Your OpenRouter API Key</label>
+                  <label htmlFor="api-key" className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">Your OpenRouter API Key</label>
                   <input
                     type="password"
+                    id="api-key"
                     value={tempApiKey}
                     onChange={(e) => setTempApiKey(e.target.value)}
                     placeholder="sk-or-v1-..."
                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 ring-blue-500 transition-all font-mono text-sm"
                   />
-                  <div className="flex items-center justify-between pt-2">
+                  <div className="flex flex-wrap items-start justify-between gap-2 pt-2">
                     <button
                       type="button"
                       onClick={handleTestConnection}
                       disabled={testStatus === 'testing'}
-                      className="text-xs font-semibold text-blue-600 hover:text-blue-700 disabled:opacity-50 flex items-center gap-1.5"
+                      className="text-xs font-semibold text-blue-700 dark:text-blue-300 hover:text-blue-800 disabled:opacity-50 flex items-center gap-1.5"
                     >
                       {testStatus === 'testing' && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                       Test Connection
@@ -1338,7 +1344,7 @@ export default function App() {
                     )}
 
                     {testStatus === 'error' && (
-                      <span className="text-xs font-semibold text-red-500 max-w-[200px] text-right truncate" title={testErrorMessage}>
+                      <span className="text-xs font-semibold text-red-600 dark:text-red-400 min-w-0 break-all text-right" role="alert">
                         {testErrorMessage}
                       </span>
                     )}
@@ -1381,7 +1387,12 @@ export default function App() {
               initial={{ scale: 0.95, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.95, y: 20 }}
-              className="bg-white rounded-[2.5rem] p-8 w-full max-w-md shadow-2xl relative border border-red-100"
+              ref={deleteDialogRef}
+              tabIndex={-1}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="delete-title"
+              className="bg-white dark:bg-gray-900 dark:text-white rounded-[2.5rem] p-8 w-full max-w-md shadow-2xl relative border border-red-100 max-h-[90dvh] overflow-y-auto"
             >
               <button
                 aria-label="Close delete confirmation modal"
@@ -1395,16 +1406,17 @@ export default function App() {
                 <Trash2 className="w-8 h-8 text-red-600" />
               </div>
 
-              <h2 className="text-2xl font-black text-gray-900 mb-2 tracking-tight">Delete all data?</h2>
-              <p className="text-sm text-gray-500 mb-8 font-medium leading-relaxed">
+              <h2 id="delete-title" className="text-2xl font-black text-gray-900 dark:text-white mb-2 tracking-tight">Delete all data?</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-8 font-medium leading-relaxed">
                 This action is <span className="text-red-600 font-bold">permanent</span> and cannot be undone. All your card tracking, lounge passes, and settings will be wiped from our database.
               </p>
 
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <label className="block text-xs font-black uppercase tracking-widest text-gray-400">Type <span className="text-red-600">DELETE</span> to confirm</label>
+                  <label htmlFor="delete-confirm" className="block text-xs font-black uppercase tracking-widest text-gray-500 dark:text-gray-300">Type <span className="text-red-600">DELETE</span> to confirm</label>
                   <input
                     type="text"
+                    id="delete-confirm"
                     value={deleteConfirmText}
                     onChange={(e) => setDeleteConfirmText(e.target.value)}
                     placeholder="Type DELETE..."

@@ -217,7 +217,7 @@ export const SearchSection: React.FC<SearchSectionProps> = React.memo(({
           </div>
         )}
 
-        <div className="flex flex-nowrap md:portrait:flex-wrap items-center justify-between xl:justify-start gap-2 md:gap-3 px-3 md:px-4 py-3 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm w-full overflow-x-auto scrollbar-hide">
+        <div className="flex flex-wrap items-center justify-between xl:justify-start gap-2 md:gap-3 px-3 md:px-4 py-3 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm w-full">
           <div className="flex items-center gap-2 md:gap-3 shrink-0">
             <button
               type="button"
