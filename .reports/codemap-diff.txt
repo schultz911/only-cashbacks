@@ -1,0 +1,27 @@
+# Codemap Analysis Report
+Generated: 2026-11-08
+
+## Scan Scope
+- Total Files Scanned: 83
+- Target Directory: docs/CODEMAPS/
+- Codemaps Generated:
+  - architecture.md (System topology, client/server boundaries, data flow)
+  - backend.md (server.ts, mcp-server routes & tools, Firebase Functions)
+  - frontend.md (React 19 component tree, contexts, PWA worker)
+  - data.md (Firestore schema, account-isolated localStorage, idb-keyval cache)
+  - dependencies.md (Runtime packages, build tooling, third-party services)
+
+## Architecture Summary
+- Project Type: Full-Stack PWA + Agentic MCP Server + Serverless Functions
+- Core Engine: Local-first rule-based credit card recommendation engine with zero-network offline execution
+- Agent Interface: Model Context Protocol (MCP) server supporting Streamable HTTP (/mcp) and SSE (/sse) with RFC 7636 OAuth PKCE
+- Client State: Multi-account isolated storage (wallet:${uid}, settings:${uid}) with exponential transient backoff
+
+## Newly Established Testing & Tooling
+- Playwright E2E test suite added (tests/e2e/, 11 tests across 5 user journeys)
+- Domain Model & Glossary established (GLOSSARY.md, docs/adr/0001-all-cards-sentinel.md, docs/adr/0002-account-isolated-storage-and-sync.md)
+
+## Documentation Health & Staleness Check
+- All codemaps freshly generated as of 2026-11-08.
+- 0 staleness warnings detected.
+

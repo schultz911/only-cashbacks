@@ -9,8 +9,10 @@ export default defineConfig(({ mode }) => {
     base: '/',
     experimental: {
       renderBuiltUrl(filename: string) {
-        if (mode === 'production' && !filename.endsWith('.js') && !filename.endsWith('.css')) {
-          return 'https://cdn.jsdelivr.net/gh/schultz911/only-cashbacks@main/dist/' + filename;
+        const cdnPrefix = process.env.VITE_CDN_URL || process.env.CDN_URL;
+        if (cdnPrefix && mode === 'production' && !filename.endsWith('.js') && !filename.endsWith('.css')) {
+          const base = cdnPrefix.endsWith('/') ? cdnPrefix : cdnPrefix + '/';
+          return base + filename;
         }
         return '/' + filename;
       }
@@ -20,7 +22,7 @@ export default defineConfig(({ mode }) => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['favicon.svg'],
+        includeAssets: ['favicon.svg', 'favicon.ico'],
         manifest: {
           name: 'OnlyCashbacks',
           short_name: 'OnlyCashbacks',
@@ -131,6 +133,7 @@ export default defineConfig(({ mode }) => {
     test: {
       environment: 'jsdom',
       globals: true,
+      include: ['src/**/*.{test,spec}.{ts,tsx}', 'mcp-server/tests/**/*.{test,spec}.{ts,tsx}'],
     },
   };
 });

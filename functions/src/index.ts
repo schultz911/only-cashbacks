@@ -78,8 +78,18 @@ Output strictly a JSON object matching this TypeScript interface:
       }
 
       const responseData = await response.json();
-      const content = responseData.choices[0]?.message?.content || "{}";
-      return JSON.parse(content);
+      const content = responseData?.choices?.[0]?.message?.content?.trim() || "{}";
+      try {
+        return JSON.parse(content);
+      } catch (parseError) {
+        console.warn("Failed to parse OpenRouter response as JSON:", content, parseError);
+        return {
+          name: sanitizedMerchantName,
+          category: "Other",
+          isOnline: true,
+          isP2P: false
+        };
+      }
     } catch (error: any) {
       console.error("Server-side Error during categorization:", error);
       throw new HttpsError("internal", "Failed to categorize merchant");

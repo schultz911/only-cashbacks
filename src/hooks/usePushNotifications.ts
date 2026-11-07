@@ -2,12 +2,30 @@ import { useEffect } from 'react';
 import { CARD_DICT } from '../data/cards';
 import { dateInMonth, formatBillDate, indiaDate, statementReminder, statementDay, validBillDay } from '../lib/billingDates';
 
+function pruneOldNotificationKeys(todayDateKey: string) {
+  try {
+    if (typeof localStorage === 'undefined' || typeof localStorage.key !== 'function') return;
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && (k.startsWith('oc_notif_bill_') || k.startsWith('oc_notif_reset_')) && !k.endsWith(todayDateKey)) {
+        keysToRemove.push(k);
+      }
+    }
+    for (const k of keysToRemove) {
+      localStorage.removeItem(k);
+    }
+  } catch (e) {
+    console.warn('Failed to prune old notification keys:', e);
+  }
+}
+
 export function usePushNotifications(
   isDataLoaded: boolean,
   walletCards: string[],
   cardBillDates: Record<string, number>,
   paidBills: Record<string, string>,
-  _getCycleForCard: (id: string, dates: Record<string, number>) => string
+  _getCycleForCard?: (id: string, dates: Record<string, number>) => string
 ) {
   useEffect(() => {
     if (typeof window === 'undefined' || !('Notification' in window)) return;
@@ -25,6 +43,7 @@ export function usePushNotifications(
       if (window.Notification.permission !== 'granted') return;
       const today = indiaDate();
       const dateKey = today.toISOString().slice(0, 10);
+      pruneOldNotificationKeys(dateKey);
       for (const cardId of effectiveCards) {
         const card = CARD_DICT[cardId];
         if (!card || card.isDummy) continue;

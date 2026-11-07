@@ -9,7 +9,13 @@ beforeEach(() => {
   vi.setSystemTime(new Date('2026-11-01T06:30Z'));
   sent = [];
   const values = new Map<string, string>();
-  vi.stubGlobal('localStorage', { getItem: (key: string) => values.get(key) ?? null, setItem: (key: string, value: string) => values.set(key, value) });
+  vi.stubGlobal('localStorage', {
+    getItem: (key: string) => values.get(key) ?? null,
+    setItem: (key: string, value: string) => values.set(key, value),
+    removeItem: (key: string) => values.delete(key),
+    key: (index: number) => Array.from(values.keys())[index] ?? null,
+    get length() { return values.size; },
+  });
   vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
   class MockNotification {
     static permission = 'granted';
@@ -88,4 +94,16 @@ it('uses configured cards for the all-selected wallet sentinel, including while 
   act(() => vi.advanceTimersByTime(3000));
   expect(sent.filter(item => /Statement/.test(item.title))).toHaveLength(1);
   expect(sent[0].options.body).toContain('statement date 3 Nov 2026');
+});
+
+it('prunes stale notification keys from prior dates and preserves todays keys', () => {
+  localStorage.setItem('oc_notif_bill_old_2026-10-31', 'true');
+  localStorage.setItem('oc_notif_reset_old_2026-10-31', 'true');
+  localStorage.setItem('other_unrelated_key', 'safe');
+  vi.setSystemTime(new Date('2026-11-01T06:30Z'));
+  renderHook(() => usePushNotifications(true, ['icici-amazon-pay'], { 'icici-amazon-pay:statement': 1 }, {}));
+  act(() => vi.advanceTimersByTime(3000));
+  expect(localStorage.getItem('oc_notif_bill_old_2026-10-31')).toBeNull();
+  expect(localStorage.getItem('oc_notif_reset_old_2026-10-31')).toBeNull();
+  expect(localStorage.getItem('other_unrelated_key')).toBe('safe');
 });

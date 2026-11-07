@@ -1,58 +1,59 @@
-# OnlyCashbacks — Make Your Credit Cards Pay
+# OnlyCashbacks
 
-**OnlyCashbacks** is a **_fully open-source_**, privacy-first personal rewards co-pilot and card optimizer. It calculates the exact net return for every purchase across your credit, debit, and prepaid cards—factoring in real reward rates, merchant exclusions, monthly caps, spend tiers, and forex markups.
+OnlyCashbacks is an open-source rewards optimizer and payment card recommendation engine. It calculates net returns for purchases across credit, debit, and prepaid cards by evaluating reward rates, merchant exclusions, monthly caps, spend tiers, and foreign-exchange markups.
 
 🌐 **Live Web App**: [OnlyCashbacks](https://only-cashbacks.up.railway.app/)  
 🤖 **MCP Server**: `https://only-cashbacks.up.railway.app/mcp`
 
 ---
 
-## 📋 Table of Contents
+## Table of Contents
 
-- [🚀 Key Features](#-key-features)
-- [💳 Supported Cards](#-supported-cards)
-- [🤖 Model Context Protocol (MCP) Integration](#-model-context-protocol-mcp-integration)
-- [💖 Privacy & Security Architecture](#-privacy--security-architecture)
-- [🛠️ How It Works](#️-how-it-works)
-- [🎨 Design & User Experience](#-design--user-experience)
-- [💻 Setup & Development](#-setup--development)
-- [🧪 Testing & Verification](#-testing--verification)
-- [📦 Deployment](#-deployment)
-- [🗺️ Roadmap](#️-roadmap)
+- [Key Features](#key-features)
+- [Supported Cards](#supported-cards)
+- [Model Context Protocol (MCP) Integration](#model-context-protocol-mcp-integration)
+- [Privacy & Security Architecture](#privacy--security-architecture)
+- [How It Works](#how-it-works)
+- [Interface & Styling](#interface--styling)
+- [Setup & Development](#setup--development)
+- [Testing & Verification](#testing--verification)
+- [Documentation & Architecture](#documentation--architecture)
+- [Deployment](#deployment)
+- [Roadmap](#roadmap)
 
 ---
 
-## 🚀 Key Features
+## Key Features
 
-- **🔍 Intelligent Multi-Mode Search**:
+- **Multi-Mode Search**:
   - Instant merchant, category, and keyword matching across **Online**, **In-Store (Offline)**, **International (Forex)**, and **Scan & Pay (UPI)** modes.
   - Hybrid search architecture: deterministic regex pattern engine and client-side [Fuse.js](https://www.fusejs.io/) search with optional BYOK LLM classification.
-- **💰 True Net-Value Calculation**:
+- **Net-Value Calculation**:
   - Accounts for exact base and accelerated reward rates, per-transaction minimums, monthly caps, and platform-specific fees.
-  - Automatically factors in RBI-mandated foreign currency markups and GST on forex spreads to determine true net profitability.
-- **✈️ Offline-First PWA**:
-  - Progressive Web App installable on iOS, Android, and Desktop with service worker caching.
-  - Operates completely offline with zero network roundtrips required for recommendations.
-- **🎟️ Offer & Limit Manager**:
+  - Factors in foreign currency markups and GST on forex spreads to determine net returns.
+- **Offline-First PWA**:
+  - Progressive Web App installable on iOS, Android, and desktop with service worker caching.
+  - Operates offline with zero network roundtrips required for recommendations.
+- **Offer & Limit Manager**:
   - Track monthly and quarterly recurring offers (e.g., Swiggy, BookMyShow, EazyDiner, District, Ajio).
   - Automatically disables exhausted cards and shifts recommendations to next-best alternatives.
-- **📅 Smart Billing Cycle Reminders**:
+- **Billing Cycle Reminders**:
   - Configure statement generation and payment due dates with push notifications.
   - Automatically resets monthly spend caps when billing cycles refresh.
-- **🛫 Lounge & Milestone Tracker**:
+- **Lounge & Milestone Tracker**:
   - Track domestic and international lounge visits per calendar quarter, half-year, or spend milestone.
-  - Direct quick-action redemption portals (e.g., HDFC SmartBuy, Kiwi App).
-- **🛍️ Voucher Stacking Strategies**:
-  - Built-in recommendations for card-to-voucher portal routes (e.g., Gyftr, SmartBuy) to maximize reward yield.
-- **📈 Personal Savings Logger**:
-  - Log completed transactions with one click to monitor cumulative real-world savings over time.
-- **🔄 Robust Multi-Device Cloud Sync**:
+  - Direct redemption links for partner portals (e.g., HDFC SmartBuy, Kiwi App).
+- **Voucher Stacking Strategies**:
+  - Recommendations for card-to-voucher portal routes (e.g., Gyftr, SmartBuy) when purchasing vouchers yields higher net value than direct checkout.
+- **Personal Savings Logger**:
+  - Log completed transactions to track cumulative realized rewards over time.
+- **Multi-Device Cloud Synchronization**:
   - Optional Google Sign-In backed by Firebase Firestore.
-  - Sophisticated revision tracking and offline queueing: preserves offline edits during connectivity interruptions without duplicate cloud save loops.
+  - Partitioned client storage and offline queueing preserve local edits during connectivity drops without save loops.
 
 ---
 
-## 💳 Supported Cards
+## Supported Cards
 
 OnlyCashbacks comes pre-configured with detailed benefit hierarchies, reward caps, and exclusion lists for popular Indian payment instruments:
 
@@ -73,9 +74,9 @@ OnlyCashbacks comes pre-configured with detailed benefit hierarchies, reward cap
 
 ---
 
-## 🤖 Model Context Protocol (MCP) Integration
+## Model Context Protocol (MCP) Integration
 
-OnlyCashbacks includes a production-ready **MCP server** allowing AI assistants (Antigravity, Claude Desktop, Cursor, ChatGPT, and custom LLM agents) to query the recommendation engine and access user wallets.
+OnlyCashbacks includes an MCP server allowing AI assistants (Antigravity, Claude Desktop, Cursor, ChatGPT, and custom LLM agents) to query the recommendation engine and access user wallets.
 
 ### Available MCP Tools
 
@@ -118,51 +119,48 @@ Add to your client configuration (e.g. `claude_desktop_config.json`, Antigravity
 ```
 
 > [!NOTE]
-> Remote MCP connections support OAuth 2.0 with Dynamic Client Registration, PKCE (S256), rotating refresh tokens, and configurable idle session timeouts (default: 60 minutes) to eliminate memory leaks.
+> Remote MCP connections support OAuth 2.0 with Dynamic Client Registration, PKCE (S256), rotating refresh tokens, and idle session timeouts (default: 60 minutes).
 
 ---
 
-## 💖 Privacy & Security Architecture
+## Privacy & Security Architecture
 
-You should never have to sacrifice privacy or disclose personal financial details to maximize your card rewards.
+OnlyCashbacks does not collect credit card numbers, bank credentials, or personal financial statements.
 
-- **📊 Monitoring**: The app initializes Firebase Analytics and Performance Monitoring where supported. It may report application errors to Firebase Analytics and, for signed-in users, Firestore.
-- **🔒 True Client-Side Storage**: In local mode, your wallet settings, offer statuses, and history live solely in your browser's `localStorage` and `IndexedDB`.
-- **🔑 BYOK (Bring Your Own Key)**: Optional AI classification uses your OpenRouter API key. The key is stored in your browser and, when signed in, synced to your Firestore wallet. For classification, it is sent to a Firebase function, which forwards it to OpenRouter.
-- **🛡️ Hardened Security Posture**:
-  - Strict Content Security Policy (CSP), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`.
-  - Firebase App Check with reCAPTCHA Enterprise enforcement to protect database backends.
+- **Monitoring**: The app initializes Firebase Analytics and Performance Monitoring where supported. It may report application errors to Firebase Analytics and, for signed-in users, Firestore.
+- **Client-Side Storage**: In local mode, wallet settings, offer statuses, and savings history are stored in browser `localStorage` and `IndexedDB`.
+- **BYOK (Bring Your Own Key)**: Optional AI classification uses your OpenRouter API key. The key is stored in your browser and, when signed in, synced to your Firestore wallet document.
+- **Security Controls**:
+  - Content Security Policy (CSP), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`.
+  - Firebase App Check with reCAPTCHA Enterprise verification on cloud requests.
   - Device-isolated session handling with cryptographic OAuth token verification.
 
 ---
 
-## 🛠️ How It Works
+## How It Works
 
 ```text
 ┌────────────────────────────────────────────────────────┐
 │                      User Search                       │
 │        (Merchant: "Swiggy", Mode: "Online", ₹800)       │
-└───────────────────────────┬────────────────────────────┘
-                            │
-                            ▼
-┌────────────────────────────────────────────────────────┐
+│                                                        │
+│                           │                            │
+│                           ▼                            │
 │               Category & Merchant Parser               │
 │  1. Deterministic Regex Lookup (Instant, Offline)      │
 │  2. Fuzzy Search Fallback (Fuse.js)                    │
 │  3. Optional LLM Cloud Categorization (BYOK)           │
-└───────────────────────────┬────────────────────────────┘
-                            │
-                            ▼
-┌────────────────────────────────────────────────────────┐
+│                                                        │
+│                           │                            │
+│                           ▼                            │
 │                 Recommendation Engine                  │
 │  - Filter owned cards from local wallet                │
 │  - Check merchant exclusions (e.g., fuel, wallet load) │
 │  - Check monthly reward caps & exhausted limits        │
 │  - Compute net cashback minus forex/platform fees      │
-└───────────────────────────┬────────────────────────────┘
-                            │
-                            ▼
-┌────────────────────────────────────────────────────────┐
+│                                                        │
+│                           │                            │
+│                           ▼                            │
 │                Ranked Card Results                     │
 │    #1 Swiggy HDFC (10% back = ₹80 net savings)         │
 │    #2 HSBC Live+  (10% back = ₹80 net savings)         │
@@ -172,17 +170,15 @@ You should never have to sacrifice privacy or disclose personal financial detail
 
 ---
 
-## 🎨 Design & User Experience
+## Interface & Styling
 
-Built with modern web standards and high visual polish:
-
-- **Tailwind CSS v4 & Glassmorphism**: Tailored dark-mode palettes with glowing ambient gradients and card bank accents.
-- **Framer Motion Micro-Interactions**: Smooth layout transitions, modal animations, and swipe gestures.
-- **Adaptive Responsive Layout**: Unified touch-friendly experience across mobile screens, tablets, and desktop viewports.
+- **Tailwind CSS v4**: Dark-mode palettes with ambient background styling and bank brand accents.
+- **Motion Micro-Interactions**: Smooth layout transitions, modal animations, and swipe gestures.
+- **Adaptive Layout**: Responsive layouts for mobile screens, tablets, and desktop viewports.
 
 ---
 
-## 💻 Setup & Development
+## Setup & Development
 
 ### Prerequisites
 
@@ -224,11 +220,17 @@ Built with modern web standards and high visual polish:
 
 ## 🧪 Testing & Verification
 
-The codebase includes comprehensive unit, integration, and security regression suites across both the React web application and the MCP server:
+The codebase includes comprehensive unit, integration, browser E2E, and security regression suites across both the React web application and the MCP server:
 
 ```bash
-# Run all tests via Vitest
+# Run all unit and integration tests via Vitest (276 tests)
 npm test
+
+# Run browser end-to-end user journeys via Playwright (11 tests)
+npm run test:e2e
+
+# Run PWA protected routes and offline service worker test
+npm run test:pwa-routes
 
 # Typecheck and lint codebase
 npm run lint
@@ -236,6 +238,17 @@ npm run lint
 # Build production bundle
 npm run build
 ```
+
+---
+
+## 📚 Documentation & Architecture
+
+- **[Contributing Guide](docs/CONTRIBUTING.md)**: Development setup, script reference, and PR submission checklist.
+- **[Environment Variables](docs/ENV.md)**: Comprehensive reference for client `.env` and server configuration.
+- **[Operations Runbook](docs/RUNBOOK.md)**: Deployment steps, health checks, incident troubleshooting, and rollbacks.
+- **[Domain Model & Glossary](GLOSSARY.md)**: Ubiquitous language, canonical terms, and definitions.
+- **[Architecture Codemaps](docs/CODEMAPS/)**: Token-lean architecture blueprints for AI and developer context.
+- **[Architecture Decision Records](docs/adr/)**: Permanent record of foundational design trade-offs.
 
 ---
 
@@ -251,11 +264,11 @@ Builds the Vite frontend to `dist/` and compiles the Node.js Express server to `
 
 ### Railway Deployment
 
-The repository includes a multi-stage [Dockerfile](file:///c:/only-cashbacks/Dockerfile) and [railway.json](file:///c:/only-cashbacks/railway.json) that compiles both the frontend application and the backend MCP server into an optimized production container.
+The repository includes a multi-stage [Dockerfile](Dockerfile) and [railway.json](railway.json) that compiles both the frontend application and the backend MCP server into an optimized production container. See the [Operations Runbook](docs/RUNBOOK.md) for step-by-step verification and rollback instructions.
 
 ---
 
-## 🗺️ Roadmap
+## Roadmap
 
 - [ ] Expanded international and co-branded card database.
 - [ ] User-contributed community merchant exclusions database.

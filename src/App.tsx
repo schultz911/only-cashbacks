@@ -584,7 +584,7 @@ export default function App() {
     }
   };
 
-  usePushNotifications(isDataLoaded, walletCards, cardBillDates, paidBills, getCycleForCard);
+  usePushNotifications(isDataLoaded, walletCards, cardBillDates, paidBills);
 
   const cardDialogRef = useDialogFocus(!!selectedCardForDetails, () => setSelectedCardForDetails(null));
   const offersDialogRef = useDialogFocus(showOffersOverlay, () => setShowOffersOverlay(false));
