@@ -1,3 +1,5 @@
+import type { Card } from '../types';
+
 // Display-only fee summaries verified against the linked issuer/programme pages.
 // Checked 5 November 2026; account-specific offers can differ.
 export const CARD_DETAIL_INFO: Record<string, {
@@ -53,7 +55,7 @@ export const CARD_DETAIL_INFO: Record<string, {
   }
 };
 
-export const ETERNAL_REWARD_COPY: Record<string, string> = {
+const ETERNAL_REWARD_COPY: Record<string, string> = {
   'Zomato, District & Bistro': '10% instant discount on eligible app purchases.',
   Blinkit: '10% off beauty and electronics; 5% off other eligible items. Shares the monthly app limit.',
   'Uber, Urban Company & Apollo': '5% cashback on eligible partner purchases of ₹100 or more.',
@@ -66,7 +68,6 @@ export function benefitCodes(description: string): string[] {
   return [...new Set(Array.from(description.matchAll(/(?:[Cc]ode|[Cc]oupon|[Uu]se)\s*:?\s*([A-Z][A-Z0-9]{3,})\b/g), match => match[1]))];
 }
 
-import type { Card } from '../types';
 type Benefit = Card['benefits'][number];
 export type DetailBenefit = Benefit & { trackingCategory: string; trackingValue: string; isBase?: boolean; detailChips?: string[]; extraChips?: string[] };
 

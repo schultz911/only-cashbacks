@@ -11,7 +11,6 @@ import { calculateRewardProgram } from './rewardRules';
 const TATA_NEU_MERCHANTS = ['croma', 'westside', 'zudio', 'ihcl', 'bigbasket', '1mg', 'cliq', 'air india', 'air india express', 'qmin', 'cult', 'tata play', 'titan', 'tanishq', 'mia', 'fastrack', 'caratlane', 'helios', 'zoya'];
 const DEFAULT_EXCLUSIONS = ['fuel', 'wallet', 'rent', 'housing', 'gambling', 'gaming', 'tolls', 'toll', 'finance', 'school', 'education', 'jewellery', 'insurance', 'railway', 'rail', 'government', 'tax', 'utilities', 'utility', 'bills', 'bill', 'telecom', 'internet', 'atm', 'cash', 'charity', 'donation'];
 const MOVIE_PLATFORMS = ['bookmyshow', 'bms', 'paytm insider', 'townscript', 'mera event', 'pvr', 'inox', 'cinepolis', 'movie', 'cinema', 'theatre', 'district'];
-const DINING_PLATFORMS = ['dineout', 'eazydiner', 'district', 'magicpin', 'cafe', 'restaurant', 'diner', 'eatery', 'pub', 'bar', 'coffee'];
 const FOOD_PLATFORMS = ['swiggy', 'zomato', 'toing', 'bistro', 'eatsure', 'fresh menu', 'box8', 'eat club', 'uber eats', 'domino', 'pizza hut', 'starbucks', 'mcdonald', 'kfc', 'burger king', 'haldiram', 'bikanervala'];
 
 

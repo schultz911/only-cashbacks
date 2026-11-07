@@ -29,7 +29,7 @@ const CARD_BENEFIT_LABELS: Record<string, string> = {
 };
 const BANK_LABELS: Record<string, string> = { YES: 'YES BANK', IDIB: 'INDIAN BANK' };
 
-export const getCardBenefitLabel = (card: Card): string =>
+const getCardBenefitLabel = (card: Card): string =>
   CARD_BENEFIT_LABELS[card.id] || `${card.benefits[0]?.value} ${card.benefits[0]?.category}`;
 
 interface CardItemProps {

@@ -242,7 +242,6 @@ export function createOnlyCashbacksServer(
 
       // Get user-specific state for THIS connection
       const currentUid = getSessionUid();
-      const baseUrl = getBaseUrl();
 
       // Enforce activation requirement: block personalized comparisons until sign-in succeeds
       if (!currentUid) {
@@ -576,9 +575,6 @@ export function createRemoteApp() {
     if (!Number.isFinite(idleTimeoutMs) || idleTimeoutMinutes <= 0) {
       throw new Error('MCP_SESSION_IDLE_TIMEOUT_MINUTES must be a positive number');
     }
-    
-    // Store active transports for cleanup
-    const transports = new Map<string, SSEServerTransport>();
     
     // CORS headers for cross-origin MCP clients
     app.use((req, res, next) => {

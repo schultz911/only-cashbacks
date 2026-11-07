@@ -231,7 +231,7 @@ export const CARD_DATA: Card[] = [
     forexMarkup: 3.5,
     baseRewardRate: 0,
     benefits: [
-      { type: 'offer', category: 'Movies', value: 'BookMyShow', percentValue: 25, usageLimit: 1, description: '25% cashback points up to ₹250 on online tickets per calendar month.', maxSpend: 1000 },
+      { type: 'offer', category: 'Movies', value: 'BMS', percentValue: 25, usageLimit: 1, description: '25% cashback points up to ₹250 on online tickets per calendar month.', maxSpend: 1000 },
       { type: 'offer', category: 'Food', value: 'Swiggy', percentValue: 5, usageLimit: 1, description: '5% cashback points up to ₹150 on online spends per calendar month.', maxSpend: 3000 },
       { type: 'cashback', category: 'Online', value: '1%', percentValue: 1, description: 'Cashback points on all eligible online spends.', maxSpend: 75000 },
       { type: 'lounge', category: 'Domestic', value: '2/qtr', description: 'Generate voucher on the SmartBuy portal on quarterly spends of 10k.' }

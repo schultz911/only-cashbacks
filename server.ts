@@ -17,7 +17,7 @@ async function startServer() {
   app.set("trust proxy", ["loopback", "linklocal", "uniquelocal"]); // Security: Ensure req.ip works behind reverse proxies for rate limiting and prevents IP spoofing
 
   // Security headers middleware
-  app.use((req, res, next) => {
+  app.use((_req, res, next) => {
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("X-Frame-Options", "DENY");
     res.setHeader("X-XSS-Protection", "1; mode=block");
@@ -43,13 +43,13 @@ async function startServer() {
     app.use(express.static(distPath, {
       maxAge: '1y',
       immutable: true,
-      setHeaders: (res, path) => {
-        if (path.endsWith('.html') || path.endsWith('sw.js') || path.endsWith('.webmanifest') || path.includes('workbox-')) {
+      setHeaders: (res, resourcePath) => {
+        if (resourcePath.endsWith('.html') || resourcePath.endsWith('sw.js') || resourcePath.endsWith('.webmanifest') || resourcePath.includes('workbox-')) {
           res.setHeader('Cache-Control', 'no-cache');
         }
       }
     }));
-    app.get('*', (req, res) => {
+    app.get('*', (_req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }

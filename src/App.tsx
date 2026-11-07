@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useRef, useMemo, useCallback, Suspense, lazy } from 'react';
-import { Search, Loader2, Sparkles, Wallet, X, ChevronDown, Check, AlertCircle, Ticket, Tag, Info, Trash2, Store, PiggyBank, Plane, CloudOff } from 'lucide-react';
+import { Search, Loader2, Sparkles, Wallet, X, Check, AlertCircle, Ticket, Tag, Info, Trash2, PiggyBank, Plane, CloudOff } from 'lucide-react';
 
 import { motion, AnimatePresence } from 'motion/react';
 import { categorizeMerchant } from './services/gemini';
@@ -63,7 +63,7 @@ const FALLBACK_EXCHANGE_RATES: Record<string, number> = { 'USD': 0.012, 'EUR': 0
 export default function App() {
   const billingDay = useBillingDay();
   const {
-    needRefresh: [needRefresh, setNeedRefresh],
+    needRefresh: [needRefresh],
     updateServiceWorker,
   } = useRegisterSW();
 
@@ -83,7 +83,7 @@ export default function App() {
   const {
     user, isAuthLoading, isDataLoaded,
     syncError, isSyncing, isSyncPaused, setIsSyncPaused,
-    isDirty, setIsDirty, isDirtyRef, markDirty,
+    isDirty, setIsDirty, isDirtyRef,
     theme, setTheme,
     handleLogin, handleLogout,
     saveData, saveDataAutomatically, retryBlocked, retryAt, useSyncEffect, skipSyncRef, latestStateRef, pendingEditsRef, authEpochRef
@@ -537,7 +537,6 @@ export default function App() {
     setIsLogged(false);
     setRecommendationError(false);
     const activeQuery = directQuery !== undefined ? directQuery : query;
-    let activeAmountRaw = prefilledAmount !== undefined ? prefilledAmount : (isIntl ? foreignAmount : amount);
     const parsedAmount = parseFloat(prefilledAmount !== undefined ? prefilledAmount : amount) || 0;
     const parsedForeign = parseFloat(prefilledAmount !== undefined ? prefilledAmount : foreignAmount) || 0;
 

@@ -1,10 +1,9 @@
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Plane, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CARD_DATA } from '../data/cards';
 import { LoungeTrackerItem } from './LoungeTrackerItem';
 import { CustomSelect } from './CustomSelect';
-import { cn } from '../lib/utils';
-import React from 'react';
 
 const BENEFIT_CACHE = new Map<string, { spend: number, isFree: boolean, passesStr: string, passesCount: number, description: string }>();
 
@@ -23,7 +22,7 @@ const LOUNGE_TAB_OPTIONS = [
 
 const PASSES_REPLACE_REGEX = /\/(qtr|milestone|qr|half-year|yr)/;
 
-export const parseLoungeBenefit = (b: { value: string, description: string }) => {
+const parseLoungeBenefit = (b: { value: string, description: string }) => {
   const cacheKey = `${b.value}|${b.description}`;
   const cached = BENEFIT_CACHE.get(cacheKey);
   if (cached) return cached;
@@ -73,10 +72,10 @@ export function LoungeTrackerModal({
   loungeMilestonesVerified, setLoungeMilestonesVerified,
   kiwiNeonEarnRate
 }: LoungeTrackerModalProps) {
-  const [confirmingCard, setConfirmingCard] = React.useState<string | null>(null);
-  React.useEffect(() => { setConfirmingCard(null); }, [isOpen, loungeTab]);
+  const [confirmingCard, setConfirmingCard] = useState<string | null>(null);
+  useEffect(() => { setConfirmingCard(null); }, [isOpen, loungeTab]);
 
-  const openDialog = React.useCallback((dialog: HTMLDialogElement | null) => {
+  const openDialog = useCallback((dialog: HTMLDialogElement | null) => {
     if (!dialog) return;
     const previousFocus = document.activeElement as HTMLElement | null;
     dialog.showModal();
@@ -86,7 +85,7 @@ export function LoungeTrackerModal({
     };
   }, []);
 
-  const renderedCards = React.useMemo(() => {
+  const renderedCards = useMemo(() => {
     return CARD_DATA.reduce((acc, card: any) => {
       if (card.isDummy) return acc;
       const b = card.benefits.find((x: any) => x.type === 'lounge' && x.category === loungeTab);

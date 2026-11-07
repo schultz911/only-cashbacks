@@ -1,11 +1,11 @@
 import React from 'react';
-import { render, act, cleanup, fireEvent, screen, within } from '@testing-library/react';
+import { render, act, cleanup } from '@testing-library/react';
 import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import App from '../App';
 import { AuthSyncProvider, useAuthSyncContext } from '../contexts/AuthSyncContext';
 import { WalletProvider, useWalletContext } from '../contexts/WalletContext';
-import { SearchProvider, useSearchContext } from '../contexts/SearchContext';
-import { getDocFromServer, deleteDoc, runTransaction } from 'firebase/firestore';
+import { SearchProvider } from '../contexts/SearchContext';
+import { runTransaction } from 'firebase/firestore';
 
 // State/persistence tests do not wait for exit animations. Real animation and
 // responsive layout are verified separately in the compiled browser app.
@@ -85,8 +85,7 @@ const cloudWallet = () => ({
 });
 let wallet: ReturnType<typeof useWalletContext>;
 let sync: ReturnType<typeof useAuthSyncContext>;
-let search: ReturnType<typeof useSearchContext>;
-function Observe() { wallet = useWalletContext(); sync = useAuthSyncContext(); search = useSearchContext(); return null; }
+function Observe() { wallet = useWalletContext(); sync = useAuthSyncContext(); return null; }
 function mount() {
   return render(<AuthSyncProvider><WalletProvider><SearchProvider><App /><Observe /></SearchProvider></WalletProvider></AuthSyncProvider>);
 }
@@ -97,11 +96,6 @@ async function advance(ms: number) {
 }
 async function hydrate(data = cloudWallet()) {
   await act(async () => { state.snapshot(snapshot(data)); });
-}
-function deferred<T>() {
-  let resolve!: (value: T) => void;
-  const promise = new Promise<T>(done => { resolve = done; });
-  return { promise, resolve };
 }
 
 beforeEach(() => {

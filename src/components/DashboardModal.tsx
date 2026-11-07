@@ -1,10 +1,13 @@
-import React, { useState, useMemo, lazy, Suspense } from 'react';
+import { useState, useMemo, lazy, Suspense, Component, PropsWithChildren, Dispatch, SetStateAction } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, TrendingUp, Undo2, RotateCcw, AlertTriangle } from 'lucide-react';
 import { CashbackLog } from '../types';
+import { indiaDate } from '../lib/billingDates';
+import { useDialogFocus } from '../hooks/useDialogFocus';
+
 const SavingsChart = lazy(() => import('./SavingsChart'));
 
-class ChartLoadBoundary extends React.Component<React.PropsWithChildren, { unavailable: boolean }> {
+class ChartLoadBoundary extends Component<PropsWithChildren, { unavailable: boolean }> {
   state = { unavailable: false };
   static getDerivedStateFromError() { return { unavailable: true }; }
   render() {
@@ -15,14 +18,11 @@ class ChartLoadBoundary extends React.Component<React.PropsWithChildren, { unava
   }
 }
 
-import { indiaDate } from '../lib/billingDates';
-import { useDialogFocus } from '../hooks/useDialogFocus';
-
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   logs: CashbackLog[];
-  setLogs: React.Dispatch<React.SetStateAction<CashbackLog[]>>;
+  setLogs: Dispatch<SetStateAction<CashbackLog[]>>;
   onRemoveLogs?: (dates: number[]) => void;
 }
 

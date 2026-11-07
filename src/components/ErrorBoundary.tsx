@@ -1,4 +1,4 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { db, auth, analytics } from '../firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';

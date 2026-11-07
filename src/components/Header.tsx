@@ -1,4 +1,4 @@
-import React from 'react';
+import { memo, type FC, type RefObject } from 'react';
 import { 
   Loader2, Check, UserCircle, LogOut, AlertCircle, 
   RefreshCw, Trash2, Moon, Sun, CloudOff, Cloud 
@@ -26,10 +26,10 @@ interface HeaderProps {
   handleLogout: () => void;
   handleLogin: () => void;
   setShowDeleteConfirm: (show: boolean) => void;
-  profileMenuRef: React.RefObject<HTMLDivElement>;
+  profileMenuRef: RefObject<HTMLDivElement | null>;
 }
 
-export const Header: React.FC<HeaderProps> = React.memo(({
+export const Header: FC<HeaderProps> = memo(({
   user,
   isAuthLoading,
   openRouterApiKey,

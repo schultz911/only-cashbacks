@@ -1,11 +1,10 @@
 import React from 'react';
-import { render, act, cleanup, fireEvent, screen, within } from '@testing-library/react';
+import { render, act, cleanup, fireEvent, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import App from '../App';
 import { AuthSyncProvider, useAuthSyncContext } from '../contexts/AuthSyncContext';
 import { WalletProvider, useWalletContext } from '../contexts/WalletContext';
 import { SearchProvider, useSearchContext } from '../contexts/SearchContext';
-import { getDocFromServer, deleteDoc } from 'firebase/firestore';
 
 // State/persistence tests do not wait for exit animations. Real animation and
 // responsive layout are verified separately in the compiled browser app.
