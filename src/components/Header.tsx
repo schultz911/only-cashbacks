@@ -51,20 +51,20 @@ export const Header: FC<HeaderProps> = memo(({
   profileMenuRef
 }) => {
   return (
-    <header className="sticky top-0 z-[200] bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 px-6 py-4">
-      <div className="max-w-6xl mx-auto flex flex-wrap justify-between items-center gap-x-3 gap-y-3">
-        <div className="flex items-center gap-2">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 shrink-0 bg-[#0095f6] rounded-full flex items-center justify-center shadow-md relative overflow-hidden">
+    <header className="sticky top-0 z-[200] bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 px-2 sm:px-6 py-4">
+      <div className="max-w-6xl mx-auto flex flex-wrap justify-between items-center gap-x-1 sm:gap-x-3 gap-y-3">
+        <div className="flex items-center gap-1 sm:gap-2">
+          <div className="w-8 h-8 sm:w-12 sm:h-12 md:w-14 md:h-14 shrink-0 bg-[#0095f6] rounded-full flex items-center justify-center shadow-md relative overflow-hidden">
             <svg viewBox="0 0 100 100" className="w-[85%] h-[85%] mt-0.5 ml-0.5" fill="white" xmlns="http://www.w3.org/2000/svg">
               <path d="M 50 15 A 35 35 0 1 0 50 85 A 35 35 0 0 0 50 15 Z M 50 35 A 15 15 0 1 1 50 65 A 15 15 0 0 1 50 35 Z" />
               <path d="M 68 35 C 75 35 85 40 90 30 C 88 45 80 50 72 50 C 82 50 95 60 92 75 C 80 75 70 65 65 60 L 65 35 Z" />
             </svg>
           </div>
           <div className="flex flex-col">
-            <h1 className="text-lg sm:text-xl md:text-2xl font-black tracking-tight text-gray-900 dark:text-white leading-none pb-1">
+            <h1 className="text-sm sm:text-xl md:text-2xl font-black tracking-tight text-gray-900 dark:text-white leading-none pb-1">
               OnlyCashbacks
             </h1>
-            <p className="text-[10px] sm:text-[10px] md:text-xs font-bold tracking-widest text-[#006bb3] dark:text-blue-300 uppercase leading-tight">
+            <p className="text-[8px] sm:text-[10px] md:text-xs font-bold tracking-normal sm:tracking-widest text-[#006bb3] dark:text-blue-300 uppercase leading-tight">
               Make Your Credit Cards Pay
             </p>
           </div>
@@ -75,7 +75,7 @@ export const Header: FC<HeaderProps> = memo(({
             <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
           </div>
         ) : user ? (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 sm:gap-3">
             {!openRouterApiKey && (
               <div className="relative group flex items-center">
                 <button 
@@ -116,7 +116,7 @@ export const Header: FC<HeaderProps> = memo(({
               </button>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
               <div className="relative group flex">
                 <button
                   onClick={() => setIsSyncPaused(!isSyncPaused)}
@@ -129,7 +129,7 @@ export const Header: FC<HeaderProps> = memo(({
                     <Cloud className={cn("w-5 h-5 transition-transform group-hover:scale-110", isDirty ? "text-blue-500 group-hover:text-blue-400" : "text-emerald-500 group-hover:text-emerald-400")} />
                   )}
                 </button>
-                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity bg-gray-900 border border-gray-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg whitespace-nowrap shadow-xl z-50">
+                <div className="absolute top-full end-0 mt-2 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity bg-gray-900 border border-gray-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg whitespace-nowrap shadow-xl z-50">
                   {isSyncPaused ? "Enable Cloud Sync" : (isDirty ? "Cloud Sync: Pending" : "Cloud Sync: Saved")}
                 </div>
               </div>
@@ -150,7 +150,7 @@ export const Header: FC<HeaderProps> = memo(({
                     <Sun className="w-5 h-5 text-amber-500 transition-transform group-hover:rotate-45" />
                   )}
                 </button>
-                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity bg-gray-900 border border-gray-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg whitespace-nowrap shadow-xl z-50">
+                <div className="absolute top-full end-0 mt-2 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity bg-gray-900 border border-gray-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg whitespace-nowrap shadow-xl z-50">
                   {theme === 'light' ? "Switch to Dark Mode" : theme === 'dark' ? "Switch to OLED Mode" : "Switch to Light Mode"}
                 </div>
               </div>
@@ -229,7 +229,7 @@ export const Header: FC<HeaderProps> = memo(({
           </div>
         )}
       </div>
-      {user && !isAuthLoading && (
+      {user && !isAuthLoading && (isSyncPaused || isSyncing || syncError || isDirty) && (
         <div className="sm:hidden max-w-6xl mx-auto mt-2 flex items-center justify-end gap-2 text-xs text-gray-700 dark:text-gray-300" role="status">
           <span>{isSyncPaused ? 'Sync paused' : isSyncing ? 'Syncing…' : syncError ? 'Sync failed' : isDirty ? 'Pending save' : 'Synced'}</span>
           {syncError && !isSyncPaused && <button type="button" onClick={() => saveData()} disabled={isSyncing} className="font-semibold text-blue-700 dark:text-blue-300 underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">Retry sync</button>}
