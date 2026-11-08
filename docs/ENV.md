@@ -24,9 +24,14 @@ Source of truth: `.env.example`
 
 | Variable | Required | Description | Default |
 | :--- | :---: | :--- | :--- |
-| `PORT` | No | HTTP listening port for Express and MCP server | `3000` |
+| `PORT` | No | HTTP listening port for Express and MCP server | `3000` (`3001` for standalone MCP) |
 | `NODE_ENV` | No | Runtime environment (`development` \| `production`) | `development` |
+| `MCP_TRANSPORT` | No | MCP transport mode (`stdio` \| `streamable-http` \| `sse`) | `streamable-http` |
 | `MCP_SESSION_IDLE_TIMEOUT_MINUTES` | No | Idle minutes before unreferenced MCP sessions are reclaimed | `60` |
-| `FIREBASE_SERVICE_ACCOUNT` | No | Path or inline JSON for Firebase Admin credentials (MCP) | None |
+| `GOOGLE_APPLICATION_CREDENTIALS` | No | Path to Firebase service account JSON file (MCP Admin SDK) | None |
+| `FIREBASE_SERVICE_ACCOUNT_JSON` | No | Inline JSON string of Firebase service account credentials | None |
+| `FIREBASE_DATABASE_ID` | No | Firestore database identifier override | `ai-studio-onlycashbacks-9dfa3f2d-5762-4049-a6c8-583bd3c24948` |
+| `OAUTH_CLIENT_SIGNING_KEY` | No | Cryptographic key (32+ bytes) for signing dynamic OAuth client registrations | In-memory ephemeral |
+| `OAUTH_REGISTERED_CLIENTS_JSON` | No | JSON mapping existing client IDs to authorized callback URLs | None |
 | `DISABLE_HMR` | No | Disables Vite Hot Module Replacement in sandboxed web agents | `false` |
 

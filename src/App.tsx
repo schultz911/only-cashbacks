@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useRef, useMemo, useCallback, Suspense, lazy } from 'react';
-import { Search, Loader2, Sparkles, Wallet, X, Check, AlertCircle, Ticket, Tag, Info, Trash2, PiggyBank, Plane, CloudOff } from 'lucide-react';
+import { Search, Loader2, Sparkles, Wallet, X, Check, AlertCircle, Ticket, Tag, Info, Trash2, PiggyBank, Plane, CloudOff, ShieldCheck } from 'lucide-react';
 
 import { motion, AnimatePresence } from 'motion/react';
 import { categorizeMerchant } from './services/gemini';
@@ -593,6 +593,12 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#F5F5F7] text-[#1D1D1F] font-sans selection:bg-blue-100 pb-12 isolate relative z-0">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[300] focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:font-bold focus:rounded-lg focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+      >
+        Skip to main content
+      </a>
       {/* Header */}
       <Header
         isAuthLoading={isAuthLoading}
@@ -630,7 +636,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      <main className="max-w-6xl mx-auto px-6 pt-8">
+      <main id="main-content" className="max-w-6xl mx-auto px-6 pt-8">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
           {/* Left Column - Input */}
           <div className="md:col-span-5 lg:col-span-4 lg:landscape:col-span-5 xl:col-span-5 space-y-8 md:sticky md:top-24 relative z-50">
@@ -976,8 +982,12 @@ export default function App() {
               </span>
             </h3>
             <div className="flex items-center gap-3">
-              <div className="relative group flex cursor-pointer" onClick={() => setIsDashboardOpen(true)}>
-                <button aria-label="My Savings" className="relative overflow-hidden flex items-center justify-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-white/10 transition-colors shadow-sm text-yellow-700 dark:text-yellow-500 min-h-11 min-w-11 px-4 py-1.5 rounded-full text-sm font-bold gap-2 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none group/piggy">
+              <div className="relative group flex">
+                <button
+                  onClick={() => setIsDashboardOpen(true)}
+                  aria-label="My Savings"
+                  className="relative overflow-hidden flex items-center justify-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-white/10 transition-colors shadow-sm text-yellow-700 dark:text-yellow-500 min-h-11 min-w-11 px-4 py-1.5 rounded-full text-sm font-bold gap-2 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none group/piggy"
+                >
                   <span className="absolute -top-1 left-[50%] w-1.5 h-1.5 rounded-full bg-yellow-600 dark:bg-yellow-500 opacity-0 group-hover/piggy:opacity-0 group-hover/piggy:animate-[coin-drop_0.5s_ease-in_forwards] z-[5]"></span>
                   <PiggyBank className="w-5 h-5 transition-transform group-hover/piggy:scale-110 relative z-10 fill-white dark:fill-gray-800" strokeWidth={2} />
                 </button>
@@ -1487,7 +1497,21 @@ export default function App() {
         />
       </Suspense>
 
-      <footer className="text-center py-6 mt-8 text-xs text-gray-600 dark:text-gray-300 font-medium px-6 flex flex-col items-center gap-3">
+      <footer className="text-center py-6 mt-8 text-xs text-gray-600 dark:text-gray-300 font-medium px-6 flex flex-col items-center gap-4">
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 shadow-xs">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" aria-hidden="true" />
+            ISO 27001
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 shadow-xs">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" aria-hidden="true" />
+            GDPR / DSGVO
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 shadow-xs">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" aria-hidden="true" />
+            SOC 2 Type I
+          </span>
+        </div>
         <div>
           <p>Crafted by Chief Keefe. Coded with Codex.</p>
           <p className="mt-2">I built this web app for myself, but feel free to fork it and customize it for your own cards.</p>
